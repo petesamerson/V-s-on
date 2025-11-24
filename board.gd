@@ -13,7 +13,7 @@ func _process(delta: float) -> void:
 	timer += delta
 	if timer >= interval:
 		timer = 0.0
-		animate_board()
+		# animate_board()
 
 var player = 1
 
@@ -35,29 +35,6 @@ func animate_board():
 	cur_ani_y = 0
 	ani_offset = 0 
 	cur_ani_x += 1
-		# set_cell(Vector2i(center.x - offset_neg, center.y + i), line_color_id, Vector2i(0,0))
-	# set_cell(Vector2i(center.x + offset_pos, center.y - i), line_color_id, Vector2i(0,0))
-	# if (cur_ani_y) % 2 == 0:
-	# 	ani_offset += 2
-	# if(cur_ani_y >= cur_ani_x*2):
-	# 	cur_ani_y = 0
-	# 	cur_ani_x += 1
-	# 	ani_offset = 1
-
-	# if(x_ani):
-	# 	cur_ani_x += 1
-	# else:
-	# 	cur_ani_y +=1
-
-	# if(cur_ani_x > 15):
-	# 	x_ani = false
-	# 	ani_index += 1
-	# 	cur_ani_x  = ani_index
-
-	# if(cur_ani_y > 15):
-	# 	x_ani = true
-	# 	# ani_index += 1
-	# 	cur_ani_y  = ani_index
 
 
 
@@ -71,15 +48,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			5,
 			Vector2i(0,0)
 		)
-		draw_hex_around(cell)
-		draw_horz_line(cell)
-		draw_forward_dia_line(cell)
-		draw_back_dia_line(cell)
+		# draw_hex_around(cell)
+		# draw_horz_line(cell)
+		# draw_forward_dia_line(cell)
+		# draw_back_dia_line(cell)
 		
-		if(player == 1) :
-			player = 2
-		else:
-			player = 1
+		# if(player == 1) :
+		# 	draw_vision_range(cell, 2)
+		# 	player = 2
+		# else:
+		# 	draw_vision_range(cell, 5)
+		# 	player = 1
+		# draw_vision_range(cell,4)
+		# draw_hex_tile_line(cell,Vector2i(cell.x + 5, cell.y + 5), 8)
 
 		var tile_pos = map_to_local(Vector2i(3, 4))
 		print(tile_pos)
@@ -158,6 +139,41 @@ func draw_hex_around(center: Vector2i) :
 			Vector2i(0,0)
 		)
 
+
+func draw_line_from_center(center: Vector2i,direction: int, length: int, color: int):
+	#clockwise
+	var center_even = center.y % 2 == 0
+	match direction:
+		0: 
+			var offset = 0
+			if(center_even):
+				offset = 1
+			offset = offset + length / 2 
+			draw_hex_tile_line(center, Vector2i(center.x + offset, center.y - length), color)
+		1: 
+			draw_hex_tile_line(center, Vector2i(center.x + length, center.y), color)
+		2: 
+			var offset = 0
+			if(center_even):
+				offset = 1
+			offset = offset + length / 2 
+			draw_hex_tile_line(center, Vector2i(center.x + offset, center.y + length), color)
+		3: 
+			var offset = 1
+			if(center_even):
+				offset = 0
+			offset = offset + length / 2 
+			draw_hex_tile_line(center, Vector2i(center.x - offset, center.y + length), color)
+		4:
+			draw_hex_tile_line(center, Vector2i(center.x - length, center.y), color)
+		5: 
+			var offset = 1
+			if(center_even):
+				offset = 0
+			offset = offset + length / 2 
+			draw_hex_tile_line(center, Vector2i(center.x - offset, center.y - length), color)
+			
+
 		
 func draw_horz_line(center: Vector2i):
 	var line_color_id = 3
@@ -202,3 +218,177 @@ func draw_forward_dia_line(center: Vector2i):
 			offset_pos += 1
 		if (center.y + i) % 2 == 1:
 			offset_neg += 1
+
+func draw_vision_range(center: Vector2i, vision_range: int):
+	var hex_color_id = 7
+	var offset_pos = 0
+	if (center.y) % 2 == 0:
+		offset_pos = 1
+	
+	var offset_neg = 1
+	if (center.y) % 2 == 0:
+		offset_neg = 0
+
+	var minXTop = 10
+	var minXBottom= 10
+
+	for i in range(1,vision_range + 1):
+		print(["offset", offset_pos,"i", i, center])
+
+		# set_cell(Vector2i(center.x - offset_neg, center.y + i), 6, Vector2i(0,0))
+		# set_cell(Vector2i(center.x + offset_pos, center.y + i), 6, Vector2i(0,0))
+
+		#below
+		draw_hex_tile_line(
+			Vector2i(center.x - offset_neg, center.y + i), 
+			Vector2i(center.x + offset_pos, center.y + i),
+			hex_color_id
+		)
+
+		# above
+		draw_hex_tile_line(
+			Vector2i(center.x + offset_pos, center.y - i),	
+			Vector2i(center.x - offset_neg, center.y - i),
+			hex_color_id
+		)
+
+		var temp_color = 7
+		draw_hex_tile_line(
+			Vector2i(center.x - offset_neg, center.y + i), 
+			Vector2i(center.x - i, center.y),
+			temp_color
+		)
+		draw_hex_tile_line(
+			Vector2i(center.x - offset_neg, center.y - i), 
+			Vector2i(center.x - i, center.y),
+			temp_color
+		)
+
+		draw_hex_tile_line(
+			Vector2i(center.x + offset_pos, center.y + i), 
+			Vector2i(center.x + i, center.y),
+			temp_color
+		)
+		draw_hex_tile_line(
+			Vector2i(center.x + offset_pos, center.y - i), 
+			Vector2i(center.x + i, center.y),
+			temp_color
+		)
+
+		# draw_hex_tile_line(
+		# 	Vector2i(center.x - offset_neg, center.y + i), 
+		# 	Vector2i(center.x - i, center.y),
+		# 	temp_color
+		# )
+
+		set_cell(Vector2i(center.x + i, center.y), 3, Vector2i(0,0))
+		set_cell(Vector2i(center.x - i, center.y), 3, Vector2i(0,0))
+
+		# if(i == vision_range):
+		# 	# center.y + i 
+		# 	for x in range(center.x - offset_neg, center.x + offset_pos):
+		# 		set_cell(Vector2i(x, center.y + i), hex_color_id, Vector2i(0,0))
+
+		# 	#center.y - i
+		# 	for x in range(center.x - offset_neg, center.x + offset_pos):
+		# 		set_cell(Vector2i(x, center.y - i), hex_color_id, Vector2i(0,0))
+
+			# center.y
+			# draw_line( Vector2i(center.x - i,  center.y),Vector2i(center.x - offset_neg),hex_color_id , 2.0)
+			# draw_hex_tile_line(Vector2i(center.x - i, center.y),Vector2i(center.x - offset_neg, center.y - i), hex_color_id)
+
+		if (center.y + i) % 2 == 0:
+			offset_pos += 1
+		if (center.y + i) % 2 == 1:
+			offset_neg += 1
+
+
+
+func draw_hex_tile_line(a: Vector2i, b: Vector2i, tile_id: int) -> void:
+	var cells = hex_line(a, b)
+	print(["hexline", cells])
+	for pos in cells:
+		set_cell(pos, tile_id, Vector2i(0,0))
+
+
+static func offset_to_cube(offset: Vector2i) -> Vector3i:
+	var col = offset.x
+	var row = offset.y
+
+	# even-r conversion
+	var x = col - ((row + (row & 1)) / 2)
+	var z = row
+	var y = -x - z
+
+	return Vector3i(x, y, z)
+
+
+# ------------------------------------------------
+# Cube → Offset
+# ------------------------------------------------
+static func cube_to_offset(c: Vector3i) -> Vector2i:
+	var x = c.x
+	var z = c.z
+
+	# even-r conversion
+	var col = x + ((z + (z & 1)) / 2)
+	var row = z
+
+	return Vector2i(col, row)
+
+
+# ------------------------------------------------
+# Cube interpolation
+# ------------------------------------------------
+static func cube_lerp(a: Vector3, b: Vector3, t: float) -> Vector3:
+	return a.lerp(b, t)
+
+
+# ------------------------------------------------
+# Cube rounding
+# ------------------------------------------------
+static func cube_round(c: Vector3) -> Vector3i:
+	var rx = round(c.x)
+	var ry = round(c.y)
+	var rz = round(c.z)
+
+	var dx = abs(rx - c.x)
+	var dy = abs(ry - c.y)
+	var dz = abs(rz - c.z)
+
+	if dx > dy and dx > dz:
+		rx = -ry - rz
+	elif dy > dz:
+		ry = -rx - rz
+	else:
+		rz = -rx - ry
+
+	return Vector3i(rx, ry, rz)
+
+
+# ------------------------------------------------
+# Hex line generation (cube interpolation)
+# ------------------------------------------------
+static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
+	var ac = offset_to_cube(a)
+	var bc = offset_to_cube(b)
+
+	var dist = max(abs(ac.x - bc.x), abs(ac.y - bc.y), abs(ac.z - bc.z))
+
+	var results: Array[Vector2i] = []
+
+	for i in range(dist + 1):
+		var t = i / float(dist)
+		var c = cube_round(cube_lerp(ac, bc, t))
+		results.append(cube_to_offset(c))
+
+	return results
+
+
+# ------------------------------------------------
+# Replace tiles along a hex line
+# ------------------------------------------------
+# static func draw_hex_tile_line(tilemap: TileMap, a: Vector2i, b: Vector2i, tile_id: int) -> void:
+# 	var cells = hex_line(a, b)
+# 	for pos in cells:
+# 		tilemap.set_cell(pos, tile_id)
