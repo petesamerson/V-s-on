@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=4 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=25 format=4 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://hex_grey_chrome.png" id="2_jvre3"]
@@ -78,6 +78,8 @@ sources/10 = SubResource("TileSetAtlasSource_ni26a")
 sources/11 = SubResource("TileSetAtlasSource_ay483")
 sources/12 = SubResource("TileSetAtlasSource_hwg3g")
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3lrhi"]
+
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0]
 
@@ -86,7 +88,14 @@ tile_map_data = PackedByteArray("AAAAAAEAAAAAAAAAAAABAAEAAAAAAAAAAAAAAAAAAAAAAAA
 tile_set = SubResource("TileSet_7e6gu")
 script = ExtResource("2_qcxwf")
 
-[node name="Piece" type="Sprite2D" parent="."]
+[node name="Piece" type="Sprite2D" parent="." node_paths=PackedStringArray("board")]
 scale = Vector2(1, -1.042)
 texture = ExtResource("6_anra8")
 script = ExtResource("12_3lrhi")
+board = NodePath("../Board")
+
+[node name="Area2D" type="Area2D" parent="Piece"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Piece/Area2D"]
+scale = Vector2(3, 3)
+shape = SubResource("RectangleShape2D_3lrhi")

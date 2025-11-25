@@ -3,6 +3,7 @@ extends TileMapLayer
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	self.z_index = 0
 	pass # Replace with function body.
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -43,11 +44,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		var local = to_local(event.position)
 		var cell = local_to_map(local)
 
-		set_cell(
-			cell, 
-			5,
-			Vector2i(0,0)
-		)
+		# set_cell(
+		# 	cell, 
+		# 	5,
+		# 	Vector2i(0,0)
+		# )
 		# draw_hex_around(cell)
 		# draw_horz_line(cell)
 		# draw_forward_dia_line(cell)
