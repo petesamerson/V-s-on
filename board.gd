@@ -1,9 +1,18 @@
 extends TileMapLayer
 
 
+@export var camera: Camera2D
+
+var board_center = Vector2i(10, 10)
+var board_size = 10
+var board_tiles: Array[Vector2i] = []
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	self.z_index = 0
+	board_tiles = get_hexagon_tiles(board_center, board_size)
+	for c in board_tiles:
+		set_cell(c, 12, Vector2i(0,0))
 	pass # Replace with function body.
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -41,7 +50,10 @@ func animate_board():
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
-		var local = to_local(event.position)
+
+		var local = to_local(
+			camera.get_global_mouse_position() - position
+		)
 		var cell = local_to_map(local)
 
 		# set_cell(
@@ -53,14 +65,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		# draw_horz_line(cell)
 		# draw_forward_dia_line(cell)
 		# draw_back_dia_line(cell)
+
 		
+		# # draw_vision_range(cell, 2)
 		# if(player == 1) :
-		# 	draw_vision_range(cell, 2)
+		# 	draw_hex_tile_line(cell, Vector2i(cell.x - 5, cell.y), 5)
 		# 	player = 2
 		# else:
-		# 	draw_vision_range(cell, 5)
+		# 	draw_hex_tile_line(cell, Vector2i(cell.x + 5, cell.y), 5)
 		# 	player = 1
-		# draw_vision_range(cell,4)
+		draw_vision_range(cell,4)
 		# draw_hex_tile_line(cell,Vector2i(cell.x + 5, cell.y + 5), 8)
 
 		var tile_pos = map_to_local(Vector2i(3, 4))
@@ -304,6 +318,76 @@ func draw_vision_range(center: Vector2i, vision_range: int):
 			offset_neg += 1
 
 
+func get_hexagon_tiles(center: Vector2i, hex_radius: int):
+	var offset_pos = 0
+	if (center.y) % 2 == 0:
+		offset_pos = 1
+	
+	var offset_neg = 1
+	if (center.y) % 2 == 0:
+		offset_neg = 0
+
+	var hexagon_tiles: Array[Vector2i] = []
+
+	for i in range(1,hex_radius + 1):
+
+		#below
+		hexagon_tiles.append_array(
+			hex_line(
+				Vector2i(center.x - offset_neg, center.y + i), 
+				Vector2i(center.x + offset_pos, center.y + i),
+			)
+		)
+
+		# above
+		hexagon_tiles.append_array(
+			hex_line(
+				Vector2i(center.x + offset_pos, center.y - i),	
+				Vector2i(center.x - offset_neg, center.y - i),
+			)
+		)
+
+		var temp_color = 7
+		hexagon_tiles.append_array(
+			hex_line(
+				Vector2i(center.x - offset_neg, center.y + i), 
+				Vector2i(center.x - i, center.y),
+			)
+		)
+	
+		hexagon_tiles.append_array(
+			hex_line(
+				Vector2i(center.x - offset_neg, center.y - i), 
+				Vector2i(center.x - i, center.y),
+			)
+		)
+
+		hexagon_tiles.append_array(
+			hex_line(
+				Vector2i(center.x + offset_pos, center.y + i), 
+				Vector2i(center.x + i, center.y),
+			)
+		)
+
+		hexagon_tiles.append_array(
+			hex_line(
+				Vector2i(center.x + offset_pos, center.y - i), 
+				Vector2i(center.x + i, center.y),
+			)
+		)
+
+
+		hexagon_tiles.append(Vector2i(center.x + i, center.y))
+		hexagon_tiles.append(Vector2i(center.x - i, center.y))
+
+		if (center.y + i) % 2 == 0:
+			offset_pos += 1
+		if (center.y + i) % 2 == 1:
+			offset_neg += 1
+
+	return hexagon_tiles
+
+
 
 func draw_hex_tile_line(a: Vector2i, b: Vector2i, tile_id: int) -> void:
 	var cells = hex_line(a, b)
@@ -371,12 +455,20 @@ static func cube_round(c: Vector3) -> Vector3i:
 # Hex line generation (cube interpolation)
 # ------------------------------------------------
 static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
+	var results: Array[Vector2i] = []
+	if(a.y == b.y):
+		for i in range(abs(a.x - b.x) + 1):
+			if(a.x > b.x):
+				results.append(Vector2i(b.x + i, b.y))			
+			else:
+				results.append(Vector2i(a.x + i, a.y))
+		return results
+
 	var ac = offset_to_cube(a)
 	var bc = offset_to_cube(b)
 
 	var dist = max(abs(ac.x - bc.x), abs(ac.y - bc.y), abs(ac.z - bc.z))
 
-	var results: Array[Vector2i] = []
 
 	for i in range(dist + 1):
 		var t = i / float(dist)

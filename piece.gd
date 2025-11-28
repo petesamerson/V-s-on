@@ -22,9 +22,9 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 		var new_cell = cell + Vector2i(1, 0)
 		position = board.map_to_local(new_cell)
 		
-		board.set_cell(cell, 0, Vector2i(0, 0))
+		# board.set_cell(cell, 0, Vector2i(0, 0))
 
-		board.draw_vision_range(
-			new_cell,
-			3
-		)
+		# board.draw_vision_range(
+		# 	new_cell,
+		# 	3
+		# )
