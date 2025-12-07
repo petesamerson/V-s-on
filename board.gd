@@ -49,7 +49,7 @@ func animate_board():
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 
 		var local = to_local(
 			camera.get_global_mouse_position() - position

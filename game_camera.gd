@@ -21,9 +21,9 @@ var drag_start_position = Vector2(0,0)
 func _unhandled_input(event):
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			zoom *= 1.1
+			_zoom_to_mouse(1.1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom *= 0.9
+			_zoom_to_mouse(0.9)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			if event.pressed:
 				print("At dragging")
@@ -35,5 +35,12 @@ func _unhandled_input(event):
 	elif event is InputEventMouseMotion and dragging:
 		var current_mouse = get_global_mouse_position()
 		print(["move",current_mouse,drag_start_mouse, drag_start_position])
-		position = drag_start_position + (current_mouse - drag_start_mouse)
-				
+		var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
+		position = position.lerp(drag_target, 0.5)
+
+
+func _zoom_to_mouse(factor: float):
+	var mouse_screen = get_global_mouse_position()  # mouse in world coords
+	var delta = mouse_screen - position
+	zoom *= factor
+	position += delta * (factor - 1)
