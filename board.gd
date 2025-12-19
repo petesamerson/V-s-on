@@ -3,6 +3,8 @@ extends TileMapLayer
 
 @export var camera: Camera2D
 
+var Tiles = preload("res://tiles.gd")
+
 var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
@@ -12,7 +14,7 @@ func _ready() -> void:
 	self.z_index = 0
 	board_tiles = get_hexagon_tiles(board_center, board_size)
 	for c in board_tiles:
-		set_cell(c, 12, Vector2i(0,0))
+		set_cell(c, Tiles.DARK_GREY, Vector2i(0,0))
 	pass # Replace with function body.
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -46,7 +48,8 @@ func animate_board():
 	ani_offset = 0 
 	cur_ani_x += 1
 
-
+func cell_in_board(cell: Vector2i) -> bool:
+	return cell in board_tiles
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -55,6 +58,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			camera.get_global_mouse_position() - position
 		)
 		var cell = local_to_map(local)
+		print(["unhandle board", cell])
 
 		# set_cell(
 		# 	cell, 
@@ -74,7 +78,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# else:
 		# 	draw_hex_tile_line(cell, Vector2i(cell.x + 5, cell.y), 5)
 		# 	player = 1
-		draw_vision_range(cell,4)
+		# draw_vision_range(cell,4)
 		# draw_hex_tile_line(cell,Vector2i(cell.x + 5, cell.y + 5), 8)
 
 		var tile_pos = map_to_local(Vector2i(3, 4))
@@ -154,8 +158,7 @@ func draw_hex_around(center: Vector2i) :
 			Vector2i(0,0)
 		)
 
-
-func draw_line_from_center(center: Vector2i,direction: int, length: int, color: int):
+func get_line_end_from_center(center: Vector2i, direction, length: int):
 	#clockwise
 	var center_even = center.y % 2 == 0
 	match direction:
@@ -164,29 +167,111 @@ func draw_line_from_center(center: Vector2i,direction: int, length: int, color: 
 			if(center_even):
 				offset = 1
 			offset = offset + length / 2 
-			draw_hex_tile_line(center, Vector2i(center.x + offset, center.y - length), color)
+			return Vector2i(center.x + offset, center.y - length)	
 		1: 
-			draw_hex_tile_line(center, Vector2i(center.x + length, center.y), color)
+			return Vector2i(center.x + length, center.y)
 		2: 
 			var offset = 0
 			if(center_even):
 				offset = 1
 			offset = offset + length / 2 
-			draw_hex_tile_line(center, Vector2i(center.x + offset, center.y + length), color)
+			return Vector2i(center.x + offset, center.y + length)
 		3: 
 			var offset = 1
 			if(center_even):
 				offset = 0
 			offset = offset + length / 2 
-			draw_hex_tile_line(center, Vector2i(center.x - offset, center.y + length), color)
+			return Vector2i(center.x - offset, center.y + length)
 		4:
-			draw_hex_tile_line(center, Vector2i(center.x - length, center.y), color)
+			return Vector2i(center.x - length, center.y)
 		5: 
 			var offset = 1
 			if(center_even):
 				offset = 0
 			offset = offset + length / 2 
-			draw_hex_tile_line(center, Vector2i(center.x - offset, center.y - length), color)
+			return Vector2i(center.x - offset, center.y - length)
+
+
+func get_line_from_center(center: Vector2i, direction: int, length: int):
+	#clockwise
+	var center_even = center.y % 2 == 0
+	match direction:
+		0: 
+			var offset = 0
+			if(center_even):
+				offset = 1
+				if(length % (length/2) == 0):
+					offset = offset - length/5 + 1
+			offset = offset + length / 2 
+			print(["offset", offset, center_even])
+			return hex_line(center, Vector2i(center.x + offset, center.y - length))	
+		1: 
+			return hex_line(center, Vector2i(center.x + length, center.y))
+		2: 
+			var offset = 0
+			if(center_even):
+				offset = 1
+				if(length % (length/2) == 0):
+					offset = offset - length/5 + 1
+			offset = offset + length / 2 
+			return hex_line(center, Vector2i(center.x + offset, center.y + length))
+		3: 
+			var offset = 1
+			if(center_even):
+				offset = 0
+			else:
+				if(length % (length/2) == 0):
+					offset = offset - length/5 + 1
+			offset = offset + length / 2 
+			return hex_line(center, Vector2i(center.x - offset, center.y + length))
+		4:
+			return hex_line(center, Vector2i(center.x - length, center.y))
+		5: 
+			var offset = 1
+			if(center_even):
+				offset = 0
+			else:
+				if(length % (length/2) == 0):
+					offset = offset - length/5 + 1
+			offset = offset + length / 2 
+			return hex_line(center, Vector2i(center.x - offset, center.y - length))
+
+
+func draw_line_from_center(center: Vector2i,direction: int, length: int, color: int):
+	var cells = get_line_from_center(center, direction, length)
+	for cell in cells:
+		set_cell(cell, color, Vector2i(0,0))
+	#clockwise
+	# var center_even = center.y % 2 == 0
+	# match direction:
+	# 	0: 
+	# 		var offset = 0
+	# 		if(center_even):
+	# 			offset = 1
+	# 		offset = offset + length / 2 
+	# 		draw_hex_tile_line(center, Vector2i(center.x + offset, center.y - length), color)
+	# 	1: 
+	# 		draw_hex_tile_line(center, Vector2i(center.x + length, center.y), color)
+	# 	2: 
+	# 		var offset = 0
+	# 		if(center_even):
+	# 			offset = 1
+	# 		offset = offset + length / 2 
+	# 		draw_hex_tile_line(center, Vector2i(center.x + offset, center.y + length), color)
+	# 	3: 
+	# 		var offset = 1
+	# 		if(center_even):
+	# 			offset = 0
+	# 		offset = offset + length / 2 
+	# 		draw_hex_tile_line(center, Vector2i(center.x - offset, center.y + length), color)
+	# 	4:
+	# 		draw_hex_tile_line(center, Vector2i(center.x - length, center.y), color)
+	# 	5: 
+	# 		var offset = 1
+	# 		if(center_even):
+	# 			offset = 0
+	# 		offset = offset + length / 2 
+	# 		draw_hex_tile_line(center, Vector2i(center.x - offset, center.y - length), color)
 			
 
 		
@@ -234,8 +319,8 @@ func draw_forward_dia_line(center: Vector2i):
 		if (center.y + i) % 2 == 1:
 			offset_neg += 1
 
-func draw_vision_range(center: Vector2i, vision_range: int):
-	var hex_color_id = 7
+func draw_vision_range(center: Vector2i, vision_range: int, color: int):
+	var hex_color_id = color
 	var offset_pos = 0
 	if (center.y) % 2 == 0:
 		offset_pos = 1
@@ -296,8 +381,8 @@ func draw_vision_range(center: Vector2i, vision_range: int):
 		# 	temp_color
 		# )
 
-		set_cell(Vector2i(center.x + i, center.y), 3, Vector2i(0,0))
-		set_cell(Vector2i(center.x - i, center.y), 3, Vector2i(0,0))
+		set_cell(Vector2i(center.x + i, center.y), hex_color_id, Vector2i(0,0))
+		set_cell(Vector2i(center.x - i, center.y), hex_color_id, Vector2i(0,0))
 
 		# if(i == vision_range):
 		# 	# center.y + i 
@@ -384,7 +469,8 @@ func get_hexagon_tiles(center: Vector2i, hex_radius: int):
 			offset_pos += 1
 		if (center.y + i) % 2 == 1:
 			offset_neg += 1
-
+		
+	hexagon_tiles.append(center)
 	return hexagon_tiles
 
 
