@@ -14,3 +14,7 @@ config/name="V!s!on"
 run/main_scene="uid://br3rtq2rlri2y"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[rendering]
+
+environment/defaults/default_clear_color=Color(0.45150018, 0.49655288, 0.53697926, 1)

@@ -1,5 +1,5 @@
 extends TileMapLayer
-
+class_name Board
 
 @export var camera: Camera2D
 
@@ -9,12 +9,15 @@ var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
 
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	self.z_index = 0
 	board_tiles = get_hexagon_tiles(board_center, board_size)
 	for c in board_tiles:
-		set_cell(c, Tiles.DARK_GREY, Vector2i(0,0))
+		set_cell(c, Tiles.BLACK, Vector2i(0,0))
+
+	call_deferred("spawn_pieces")
 	pass # Replace with function body.
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -26,6 +29,19 @@ func _process(delta: float) -> void:
 	if timer >= interval:
 		timer = 0.0
 		# animate_board()
+
+@onready var pieces_container = $Pieces
+@onready var tilemap_layer = $TileMapLayer
+@export var piece_scene: PackedScene
+
+func spawn_pieces():
+	var positions = [Vector2i(10,10), Vector2i(5,5)]
+	for pos in positions:
+		var piece := piece_scene.instantiate() as Piece
+		pieces_container.add_child(piece)
+		piece.setup(pos, self)
+		
+		# piece.set_board_position(pos, tilemap)
 
 var player = 1
 

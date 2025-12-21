@@ -1,16 +1,29 @@
 extends Node2D
+class_name Piece
 
 
-@export var board: TileMapLayer
+var board: TileMapLayer
 
 var Tiles = preload("res://tiles.gd")
 
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	position = board.map_to_local(Vector2i(5, 5))
+func _init() -> void:
+	pass
+	
+func setup(inital_pos: Vector2i, b: TileMapLayer):
+	if(inital_pos == null):
+		return
+	board = b
+	position = board.map_to_local(inital_pos)
 	$Area2D.input_event.connect(_on_area_2d_input_event)
 	self.z_index = 1
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	pass
+	# position = board.map_to_local(Vector2i(5, 5))
+	# $Area2D.input_event.connect(_on_area_2d_input_event)
+	# self.z_index = 1
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -37,7 +50,7 @@ func draw_vision():
 			new_vision.append(cell)
 
 	for cell in cur_vision:
-		board.set_cell(cell,Tiles.LIGHT_GREY, Vector2i(0,0))
+		board.set_cell(cell,Tiles.BLACK, Vector2i(0,0))
 
 	cur_vision = new_vision
 	for cell in cur_vision:
@@ -59,7 +72,7 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 					if(board.cell_in_board(move)):
 						cur_moves.append(move)
 			for potential_move in cur_moves: 
-				board.set_cell(potential_move, 11, Vector2i(0,0))
+				board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
 			selected = true
 
 func _input(event):
@@ -77,11 +90,11 @@ func handle_move_input_event(event):
 		if cell in cur_moves:
 			position = board.map_to_local(cell)
 			for old_move in cur_moves:
-				board.set_cell(old_move, Tiles.DARK_GREY, Vector2i(0,0))
+				board.set_cell(old_move, Tiles.BLACK, Vector2i(0,0))
 			cur_moves = []
 		else:
 			for old_move in cur_moves:
-				board.set_cell(old_move, Tiles.DARK_GREY, Vector2i(0,0))
+				board.set_cell(old_move, Tiles.BLACK, Vector2i(0,0))
 			cur_moves = []
 
 		vision_drawn = false
