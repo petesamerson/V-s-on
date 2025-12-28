@@ -2,6 +2,7 @@ extends TileMapLayer
 class_name Board
 
 @export var camera: Camera2D
+@onready var tilemap = $TileMap
 
 var Tiles = preload("res://tiles.gd")
 
@@ -33,6 +34,7 @@ func _process(delta: float) -> void:
 @onready var pieces_container = $Pieces
 @onready var tilemap_layer = $TileMapLayer
 @export var piece_scene: PackedScene
+@export var tower_piece_scene: PackedScene
 
 func spawn_pieces():
 	var positions = [Vector2i(10,10), Vector2i(5,5)]
@@ -40,8 +42,26 @@ func spawn_pieces():
 		var piece := piece_scene.instantiate() as Piece
 		pieces_container.add_child(piece)
 		piece.setup(pos, self)
+
+	var tower_piece := tower_piece_scene.instantiate() as TowerRotatePiece
+	pieces_container.add_child(tower_piece)
+	print(tower_piece is TowerRotatePiece)
+	tower_piece.setup(
+		Vector2i(15,15), 
+		self 
+	)
 		
 		# piece.set_board_position(pos, tilemap)
+
+func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
+	for p in pieces_container.get_children():
+		if(!excluded_pieces.has(p)):
+			p.draw_current_vision()
+
+func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
+	for p in pieces_container.get_children():
+		if(!excluded_pieces.has(p)):
+			p.selected = false
 
 var player = 1
 
@@ -417,6 +437,76 @@ func draw_vision_range(center: Vector2i, vision_range: int, color: int):
 			offset_pos += 1
 		if (center.y + i) % 2 == 1:
 			offset_neg += 1
+
+func get_triangle_tiles_from_center(center: Vector2i, hex_radius: int, direction: int):
+
+	var triangle_tiles: Array[Vector2i] = []
+
+	var offset_pos = 0
+	if (center.y) % 2 == 0:
+		offset_pos = 1
+	
+	var offset_neg = 1
+	if (center.y) % 2 == 0:
+		offset_neg = 0
+
+	for i in range(1,hex_radius + 1):
+
+		#below
+		triangle_tiles.append_array(
+			hex_line(
+				Vector2i(center.x - offset_neg, center.y + i), 
+				Vector2i(center.x + offset_pos, center.y + i),
+			)
+		)
+
+		# above
+		triangle_tiles.append_array(
+			hex_line(
+				Vector2i(center.x + offset_pos, center.y - i),	
+				Vector2i(center.x - offset_neg, center.y - i),
+			)
+		)
+
+		triangle_tiles.append_array(
+			hex_line(
+				Vector2i(center.x - offset_neg, center.y + i), 
+				Vector2i(center.x - i, center.y),
+			)
+		)
+	
+		triangle_tiles.append_array(
+			hex_line(
+				Vector2i(center.x - offset_neg, center.y - i), 
+				Vector2i(center.x - i, center.y),
+			)
+		)
+
+		triangle_tiles.append_array(
+			hex_line(
+				Vector2i(center.x + offset_pos, center.y + i), 
+				Vector2i(center.x + i, center.y),
+			)
+		)
+
+		triangle_tiles.append_array(
+			hex_line(
+				Vector2i(center.x + offset_pos, center.y - i), 
+				Vector2i(center.x + i, center.y),
+			)
+		)
+
+
+		triangle_tiles.append(Vector2i(center.x + i, center.y))
+		triangle_tiles.append(Vector2i(center.x - i, center.y))
+
+		if (center.y + i) % 2 == 0:
+			offset_pos += 1
+		if (center.y + i) % 2 == 1:
+			offset_neg += 1
+		
+	triangle_tiles.append(center)
+	return triangle_tiles
 
 
 func get_hexagon_tiles(center: Vector2i, hex_radius: int):

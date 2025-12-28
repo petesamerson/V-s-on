@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=28 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://hex_grey_chrome.png" id="2_jvre3"]
@@ -14,6 +14,8 @@
 [ext_resource type="PackedScene" uid="uid://caic1yu3a6go1" path="res://Piece.tscn" id="12_01iy8"]
 [ext_resource type="Script" uid="uid://bjiry4dqpho0v" path="res://Piece.gd" id="12_blj2i"]
 [ext_resource type="Script" uid="uid://cqa7rx5tlb2hg" path="res://game_camera.gd" id="13_2mb0d"]
+[ext_resource type="PackedScene" uid="uid://m65ucpry42ve" path="res://TowerRotatePiece.tscn" id="13_jjdbg"]
+[ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="14_01iy8"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -88,18 +90,21 @@ tile_set = SubResource("TileSet_7e6gu")
 script = ExtResource("11_2mb0d")
 camera = NodePath("../Camera2D")
 piece_scene = ExtResource("12_01iy8")
+tower_piece_scene = ExtResource("13_jjdbg")
 
 [node name="Pieces" type="Node2D" parent="Board"]
 
-[node name="Piece" type="Node2D" parent="Board/Pieces" node_paths=PackedStringArray("board")]
+[node name="Piece" type="Node2D" parent="Board/Pieces"]
 script = ExtResource("12_blj2i")
-board = NodePath("../..")
 metadata/_custom_type_script = "uid://bjiry4dqpho0v"
 
-[node name="Piece2" type="Node2D" parent="Board/Pieces" node_paths=PackedStringArray("board")]
+[node name="Piece2" type="Node2D" parent="Board/Pieces"]
 script = ExtResource("12_blj2i")
-board = NodePath("../..")
 metadata/_custom_type_script = "uid://bjiry4dqpho0v"
+
+[node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("14_01iy8")
+metadata/_custom_type_script = "uid://byauyvv4yigqx"
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")

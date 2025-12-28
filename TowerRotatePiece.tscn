@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://m65ucpry42ve"]
+
+[ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="1_ttnuk"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ttnuk"]
+
+[node name="TowerRotatePiece" type="Node2D"]
+script = ExtResource("1_ttnuk")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_ttnuk")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
