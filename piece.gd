@@ -69,7 +69,7 @@ func draw_current_vision():
 
 
 func _on_area_2d_input_event(viewport, event, shape_idx):
-	print("handledarea")
+	# print("handledarea")
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		on_clicked()
 
@@ -84,7 +84,7 @@ func on_clicked() -> void:
 			board.deselect_all_pieces([self])
 		else:
 			for i in range(6):
-				var raw_moves = board.get_line_from_center(cell, i, 10)
+				var raw_moves = board.get_line_from_center(cell, i, 6)
 				for move in raw_moves:
 					if(board.cell_in_board(move)):
 						cur_moves.append(move)

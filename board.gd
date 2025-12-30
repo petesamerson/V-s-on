@@ -236,8 +236,8 @@ func get_line_from_center(center: Vector2i, direction: int, length: int):
 			var offset = 0
 			if(center_even):
 				offset = 1
-				if(length % (length/2) == 0):
-					offset = offset - length/5 + 1
+				if(length % 2 == 0):
+					offset = offset - 1
 			offset = offset + length / 2 
 			print(["offset", offset, center_even])
 			return hex_line(center, Vector2i(center.x + offset, center.y - length))	
@@ -247,8 +247,8 @@ func get_line_from_center(center: Vector2i, direction: int, length: int):
 			var offset = 0
 			if(center_even):
 				offset = 1
-				if(length % (length/2) == 0):
-					offset = offset - length/5 + 1
+				if(length % 2 == 0):
+					offset = offset - 1
 			offset = offset + length / 2 
 			return hex_line(center, Vector2i(center.x + offset, center.y + length))
 		3: 
@@ -256,21 +256,21 @@ func get_line_from_center(center: Vector2i, direction: int, length: int):
 			if(center_even):
 				offset = 0
 			else:
-				if(length % (length/2) == 0):
-					offset = offset - length/5 + 1
+				if(length % 2 == 0):
+					offset = offset - 1
 			offset = offset + length / 2 
-			return hex_line(center, Vector2i(center.x - offset, center.y + length))
+			return hex_line(center,Vector2i(center.x - offset, center.y + length))
 		4:
-			return hex_line(center, Vector2i(center.x - length, center.y))
+			return hex_line(center,Vector2i(center.x - length, center.y))
 		5: 
 			var offset = 1
 			if(center_even):
 				offset = 0
 			else:
-				if(length % (length/2) == 0):
-					offset = offset - length/5 + 1
+				if(length % 2 == 0):
+					offset = offset - 1
 			offset = offset + length / 2 
-			return hex_line(center, Vector2i(center.x - offset, center.y - length))
+			return hex_line(center,Vector2i(center.x - offset, center.y - length))
 
 
 func draw_line_from_center(center: Vector2i,direction: int, length: int, color: int):
@@ -451,54 +451,60 @@ func get_triangle_tiles_from_center(center: Vector2i, hex_radius: int, direction
 		offset_neg = 0
 
 	for i in range(1,hex_radius + 1):
+		match direction:
+			0:
+				triangle_tiles.append_array(
+					hex_line(
+						Vector2i(center.x + offset_pos, center.y - i), 
+						Vector2i(center.x + i, center.y),
+					)
+				)
+			1:
+				triangle_tiles.append_array(
+					hex_line(
+						Vector2i(center.x + offset_pos, center.y + i), 
+						Vector2i(center.x + i, center.y),
+					)
+				)
+			2:
+				# below
+				triangle_tiles.append_array(
+					hex_line(
+						Vector2i(center.x - offset_neg, center.y + i), 
+						Vector2i(center.x + offset_pos, center.y + i),
+					)
+				)
+			3:
+				triangle_tiles.append_array(
+					hex_line(
+						Vector2i(center.x - offset_neg, center.y + i), 
+						Vector2i(center.x - i, center.y),
+					)
+				)
+			4:
+				triangle_tiles.append_array(
+					hex_line(
+						Vector2i(center.x - offset_neg, center.y - i), 
+						Vector2i(center.x - i, center.y),
+					)
+				)
+			5:
+				# above
+				triangle_tiles.append_array(
+					hex_line(
+						Vector2i(center.x + offset_pos, center.y - i),	
+						Vector2i(center.x - offset_neg, center.y - i),
+					)
+				)
 
-		#below
-		triangle_tiles.append_array(
-			hex_line(
-				Vector2i(center.x - offset_neg, center.y + i), 
-				Vector2i(center.x + offset_pos, center.y + i),
-			)
-		)
-
-		# above
-		triangle_tiles.append_array(
-			hex_line(
-				Vector2i(center.x + offset_pos, center.y - i),	
-				Vector2i(center.x - offset_neg, center.y - i),
-			)
-		)
-
-		triangle_tiles.append_array(
-			hex_line(
-				Vector2i(center.x - offset_neg, center.y + i), 
-				Vector2i(center.x - i, center.y),
-			)
-		)
 	
-		triangle_tiles.append_array(
-			hex_line(
-				Vector2i(center.x - offset_neg, center.y - i), 
-				Vector2i(center.x - i, center.y),
-			)
-		)
-
-		triangle_tiles.append_array(
-			hex_line(
-				Vector2i(center.x + offset_pos, center.y + i), 
-				Vector2i(center.x + i, center.y),
-			)
-		)
-
-		triangle_tiles.append_array(
-			hex_line(
-				Vector2i(center.x + offset_pos, center.y - i), 
-				Vector2i(center.x + i, center.y),
-			)
-		)
 
 
-		triangle_tiles.append(Vector2i(center.x + i, center.y))
-		triangle_tiles.append(Vector2i(center.x - i, center.y))
+		if(direction == 0 or direction == 1): 
+			triangle_tiles.append(Vector2i(center.x + i, center.y))
+
+		if(direction == 3 or direction == 4): 
+			triangle_tiles.append(Vector2i(center.x - i, center.y))
 
 		if (center.y + i) % 2 == 0:
 			offset_pos += 1
@@ -651,7 +657,7 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 	if(a.y == b.y):
 		for i in range(abs(a.x - b.x) + 1):
 			if(a.x > b.x):
-				results.append(Vector2i(b.x + i, b.y))			
+				results.append(Vector2i(a.x - i, a.y))			
 			else:
 				results.append(Vector2i(a.x + i, a.y))
 		return results

@@ -2,7 +2,6 @@ extends Piece
 class_name TowerRotatePiece
 
 
-
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	print("reached tower ready")
@@ -27,11 +26,11 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	])
 	print("reached tower setup")
 	
-
+var cur_direction = 5
 
 func draw_vision_change():
 	var cur_pos = board.local_to_map(position)
-	var raw_vision = board.get_triangle_tiles_from_center(cur_pos, 5, 0)
+	var raw_vision = board.get_triangle_tiles_from_center(cur_pos, 5, cur_direction)
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:
@@ -48,7 +47,6 @@ func draw_vision_change():
 	board.update_all_piece_vision([self])
 
 
-
 func on_clicked():
 	print("on_tower_clicked")
 	var cell = board.local_to_map(position)
@@ -58,12 +56,26 @@ func on_clicked():
 		selected = false
 		board.deselect_all_pieces([self])
 	else:
-		var first_axis = board.get_line_from_center(cell, 3, 6)
-		var second_axis = board.get_line_from_center(cell, 4, 6)
+		var first_axis = board.get_line_from_center(cell, cur_direction, 10)
+		var second_axis = board.get_line_from_center(cell, (cur_direction + 1) % 6, 10)
+		
+		# for hex in first_axis: 
+		# 	board.set_cell(hex, Tiles.DARK_RED, Vector2i(0,0))
+		
+		# for hex in second_axis: 
+		# 	board.set_cell(hex, Tiles.HEX_STAR, Vector2i(0,0))
+		
+
 		for i in range(first_axis.size()):
 			if(i%2 == 0):
 				var connect_line = board.hex_line(first_axis[i], second_axis[i])
-				cur_moves.append(connect_line[(connect_line.size())/2])
+
+				# if(i == 2):
+				# 	for hex in connect_line: 
+				# 		board.set_cell(hex, Tiles.DARK_GREY, Vector2i(0,0))
+				var potential_new_move = connect_line[(connect_line.size())/2]
+				if(board.cell_in_board(potential_new_move)):
+					cur_moves.append(potential_new_move)
 				
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
