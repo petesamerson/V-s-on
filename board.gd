@@ -35,9 +35,10 @@ func _process(delta: float) -> void:
 @onready var tilemap_layer = $TileMapLayer
 @export var piece_scene: PackedScene
 @export var tower_piece_scene: PackedScene
+@export var hop_piece_scene: PackedScene
 
 func spawn_pieces():
-	var positions = [Vector2i(10,10), Vector2i(5,5)]
+	var positions = [Vector2i(10,10)]
 	for pos in positions:
 		var piece := piece_scene.instantiate() as Piece
 		pieces_container.add_child(piece)
@@ -50,6 +51,14 @@ func spawn_pieces():
 		Vector2i(15,15), 
 		self 
 	)
+
+	var hop_piece := hop_piece_scene.instantiate() as HopPiece
+	pieces_container.add_child(hop_piece)
+	hop_piece.setup(
+		Vector2i(5,5),
+		self
+	)
+	
 		
 		# piece.set_board_position(pos, tilemap)
 
@@ -61,6 +70,7 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 	for p in pieces_container.get_children():
 		if(!excluded_pieces.has(p)):
+			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
 
 var player = 1

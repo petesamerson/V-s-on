@@ -3,7 +3,8 @@
 [ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://HexStar3.png" id="1_ebr80"]
 [ext_resource type="Script" uid="uid://bjiry4dqpho0v" path="res://Piece.gd" id="2_4wtm1"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_0el1y"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_ebr80"]
+radius = 15.0
 
 [node name="Piece" type="Node2D"]
 script = ExtResource("2_4wtm1")
@@ -14,7 +15,7 @@ scale = Vector2(1, -1.042)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 scale = Vector2(3, 3)
-shape = SubResource("RectangleShape2D_0el1y")
+shape = SubResource("CircleShape2D_ebr80")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 scale = Vector2(1, -1.042)

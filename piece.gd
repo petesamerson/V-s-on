@@ -39,6 +39,7 @@ func _process(delta: float) -> void:
 
 var cur_moves : Array[Vector2i] = []
 var selected = false
+var moving = false
 var old_selected_tile_ids: Array[int] = []
 
 var cur_vision: Array[Vector2i] = []
@@ -67,16 +68,31 @@ func draw_current_vision():
 		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 	
 
+var armed := false
 
 func _on_area_2d_input_event(viewport, event, shape_idx):
-	# print("handledarea")
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if event is InputEventMouseButton \
+	and event.button_index == MOUSE_BUTTON_LEFT \
+	and event.pressed:
 		on_clicked()
+		armed = true
+
+# func _unhandled_input(event: InputEvent) -> void:
+# 	if event is InputEventMouseButton \
+# 	and not event.pressed \
+# 	and event.button_index == MOUSE_BUTTON_LEFT \
+# 	and armed == true:
+# 		armed = false
+# 		on_clicked()
+# 		print("UNHANDLED")
+	
 
 
 func on_clicked() -> void:
+		if(position == null or board == null):
+			return
 		var cell = board.local_to_map(position)  # current tile cell
-		print("Current cell:", cell)
+		print("Current cell:", cell , "selected", selected)
 		cur_moves = []
 		old_selected_tile_ids = []
 		if(selected):
@@ -86,7 +102,7 @@ func on_clicked() -> void:
 			for i in range(6):
 				var raw_moves = board.get_line_from_center(cell, i, 6)
 				for move in raw_moves:
-					if(board.cell_in_board(move)):
+					if(board.cell_in_board(move) && move != cell):
 						cur_moves.append(move)
 			for potential_move in cur_moves: 
 				old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
@@ -99,6 +115,7 @@ func on_clicked() -> void:
 func _input(event):
 	if(selected):
 		handle_move_input_event(event)
+		get_viewport().set_input_as_handled()
 
 func handle_move_input_event(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -106,14 +123,17 @@ func handle_move_input_event(event):
 		var local_mouse = board.to_local(global_mouse)
 		var cell = board.local_to_map(local_mouse)
 
-		# print(["handle move"], cell, cur_moves)
 		if cell in cur_moves:
+			moving = true
 			position = board.map_to_local(cell)
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]
 				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+
 			cur_moves = []
 			old_selected_tile_ids = []
+			selected = false
+			moving = false
 		else:
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]

@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://cmd81nu6wec8w"]
+
+[ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://HopPiece.gd" id="1_thfds"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_thfds"]
+radius = 15.0
+
+[node name="HopPiece" type="Node2D"]
+script = ExtResource("1_thfds")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_thfds")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]

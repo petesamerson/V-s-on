@@ -1,7 +1,8 @@
-[gd_scene load_steps=28 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=32 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://hex_grey_chrome.png" id="2_jvre3"]
+[ext_resource type="Texture2D" uid="uid://capls38okfmy1" path="res://rotate1.png" id="2_ni26a"]
 [ext_resource type="Texture2D" uid="uid://c5k4xofouujet" path="res://hex_light_blue.png" id="3_3lrhi"]
 [ext_resource type="Texture2D" uid="uid://cmoyckc6kmfjt" path="res://hex_light_grey.png" id="4_2mb0d"]
 [ext_resource type="Texture2D" uid="uid://0yf4wg5too3j" path="res://hexOut2.png" id="4_oqo0w"]
@@ -16,9 +17,16 @@
 [ext_resource type="Script" uid="uid://cqa7rx5tlb2hg" path="res://game_camera.gd" id="13_2mb0d"]
 [ext_resource type="PackedScene" uid="uid://m65ucpry42ve" path="res://TowerRotatePiece.tscn" id="13_jjdbg"]
 [ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="14_01iy8"]
+[ext_resource type="PackedScene" uid="uid://cmd81nu6wec8w" path="res://HopPiece.tscn" id="15_hwg3g"]
+[ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://HopPiece.gd" id="17_ay483"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ddjlp"]
+texture = ExtResource("2_ni26a")
 texture_region_size = Vector2i(100, 100)
 0:0/0 = 0
 
@@ -81,6 +89,7 @@ sources/9 = SubResource("TileSetAtlasSource_h480d")
 sources/10 = SubResource("TileSetAtlasSource_ni26a")
 sources/11 = SubResource("TileSetAtlasSource_ay483")
 sources/12 = SubResource("TileSetAtlasSource_hwg3g")
+sources/1 = SubResource("TileSetAtlasSource_ddjlp")
 
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
@@ -91,6 +100,7 @@ script = ExtResource("11_2mb0d")
 camera = NodePath("../Camera2D")
 piece_scene = ExtResource("12_01iy8")
 tower_piece_scene = ExtResource("13_jjdbg")
+hop_piece_scene = ExtResource("15_hwg3g")
 
 [node name="Pieces" type="Node2D" parent="Board"]
 
@@ -98,13 +108,13 @@ tower_piece_scene = ExtResource("13_jjdbg")
 script = ExtResource("12_blj2i")
 metadata/_custom_type_script = "uid://bjiry4dqpho0v"
 
-[node name="Piece2" type="Node2D" parent="Board/Pieces"]
-script = ExtResource("12_blj2i")
-metadata/_custom_type_script = "uid://bjiry4dqpho0v"
-
 [node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces"]
 script = ExtResource("14_01iy8")
 metadata/_custom_type_script = "uid://byauyvv4yigqx"
+
+[node name="HopPiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("17_ay483")
+metadata/_custom_type_script = "uid://ce1udyoosuvs4"
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")

@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://dgqhmggiljsm5"]
+
+[ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://TriangleOddPiece.gd" id="1_vohvd"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pi5cy"]
+radius = 15.0
+
+[node name="TriangleOddPiece" type="Node2D"]
+script = ExtResource("1_vohvd")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_pi5cy")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
