@@ -26,6 +26,13 @@ var previous_pinch_distance := 0.0
 const MIN_ZOOM := 0.5
 const MAX_ZOOM := 3.0
 
+#--------TEST Values Touch Pinch
+# PC pinch testing
+var test_pinch := false
+var test_finger_offset := Vector2(200, 0)
+var test_previous_distance := 0.0
+#---------
+
 func _unhandled_input(event):
 	# Mouse Controls
 	if event is InputEventMouseButton:
@@ -34,18 +41,52 @@ func _unhandled_input(event):
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_to_mouse(0.9)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			#-----More Test Touch Pinch
 			if event.pressed:
-				print("At dragging")
-				dragging = true
-				drag_start_mouse = get_global_mouse_position()  # current tile cell
-				drag_start_position = position
+				test_pinch = true
+				test_previous_distance = 0.0
 			else:
-				dragging = false
+				test_pinch = false
+			#-----More Test Touch Pinch
+
+		# 	if event.pressed:
+		# 		print("At dragging")
+		# 		dragging = true
+		# 		drag_start_mouse = get_global_mouse_position()  # current tile cell
+		# 		drag_start_position = position
+		# 	else:
+		# 		dragging = false
+
 	elif event is InputEventMouseMotion and dragging:
 		var current_mouse = get_global_mouse_position()
 		print(["move", current_mouse, drag_start_mouse, drag_start_position])
 		var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
 		position = position.lerp(drag_target, 0.5)
+
+	#-----More Test Touch Pinch
+	elif event is InputEventMouseMotion:
+		if test_pinch:
+			var finger1 = event.position
+			var finger2 = event.position + Vector2(
+				200.0 + event.position.y,
+				0
+			)
+
+			var current_distance = finger1.distance_to(finger2)
+
+			if test_previous_distance > 0:
+				var difference = current_distance - test_previous_distance
+				var factor = 1.0 + difference * 0.005
+
+				print("Fake pinch: ", current_distance, " factor: ", factor)
+
+				_zoom_to_point(
+					factor,
+					(finger1 + finger2) / 2.0
+				)
+
+			test_previous_distance = current_distance
+	#-----------------
 
 	# Single Touch
 	elif event is InputEventScreenTouch:
@@ -60,8 +101,10 @@ func _unhandled_input(event):
 	# Touch Drag/Pinch
 	elif event is InputEventScreenDrag:
 		touches[event.index] = event.position
+		
 		# Two fingers = pinch zoom
 		if touches.size() == 2:
+			print("Pinch zoom")
 			var positions = touches.values()
 			var current_distance = positions[0].distance_to(
 				positions[1]
