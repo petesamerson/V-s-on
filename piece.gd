@@ -5,6 +5,9 @@ class_name Piece
 var board: Board
 var Tiles = preload("res://tiles.gd")
 
+var owned_player: int = 1
+var vision_range: int = 5
+
 @onready var area: Area2D = $Area2D
 
 func _init() -> void:
@@ -47,7 +50,7 @@ var vision_drawn = false
 
 func draw_vision_change():
 	var cur_pos = board.local_to_map(position)
-	var raw_vision = board.get_hexagon_tiles(cur_pos, 5)
+	var raw_vision = board.get_hexagon_tiles(cur_pos, vision_range)
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:

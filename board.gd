@@ -10,6 +10,7 @@ var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
 
+var player = 1
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -73,7 +74,6 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
 
-var player = 1
 
 var cur_ani_x = 0
 var cur_ani_y = 0
