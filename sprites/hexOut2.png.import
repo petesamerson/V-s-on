@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4cmi1qll3lv8"
-path="res://.godot/imported/BackTriAgain.jpg-b827b658cca82b8e93c898ee8f30fc9c.ctex"
+uid="uid://0yf4wg5too3j"
+path="res://.godot/imported/hexOut2.png-59a920a218e134e976ec102a4717d6f2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://BackTriAgain.jpg"
-dest_files=["res://.godot/imported/BackTriAgain.jpg-b827b658cca82b8e93c898ee8f30fc9c.ctex"]
+source_file="res://sprites/hexOut2.png"
+dest_files=["res://.godot/imported/hexOut2.png-59a920a218e134e976ec102a4717d6f2.ctex"]
 
 [params]
 

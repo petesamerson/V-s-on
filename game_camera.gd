@@ -23,8 +23,8 @@ var drag_start_position = Vector2(0,0)
 #Touch
 var touches: Dictionary = {}
 var previous_pinch_distance := 0.0
-const MIN_ZOOM := 0.5
-const MAX_ZOOM := 3.0
+const MIN_ZOOM := 0.4
+const MAX_ZOOM := 2.0
 
 #--------TEST Values Touch Pinch
 # PC pinch testing
@@ -113,7 +113,7 @@ func _unhandled_input(event):
 				var difference = current_distance \
 					- previous_pinch_distance
 
-				var factor = 1.0 + difference * 0.005
+				var factor = 1.0 + difference * 0.003
 
 				_zoom_to_point(
 					factor,

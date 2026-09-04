@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dd150oyfhq5hh"
-path="res://.godot/imported/tower1.png-f846d866ab3cb6a4615e7eb98e7e0903.ctex"
+uid="uid://dwllv78itts6c"
+path="res://.godot/imported/HexStar2.png-2724a6f486fd8d2247944dc4a4a8848b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tower1.png"
-dest_files=["res://.godot/imported/tower1.png-f846d866ab3cb6a4615e7eb98e7e0903.ctex"]
+source_file="res://sprites/HexStar2.png"
+dest_files=["res://.godot/imported/HexStar2.png-2724a6f486fd8d2247944dc4a4a8848b.ctex"]
 
 [params]
 

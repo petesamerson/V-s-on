@@ -59,6 +59,23 @@ func spawn_pieces():
 		Vector2i(5,5),
 		self
 	)
+
+	var hop_piece_red := hop_piece_scene.instantiate() as HopPiece
+	hop_piece_red.owned_player = 2
+	pieces_container.add_child(hop_piece_red)
+	hop_piece_red.setup(
+		Vector2i(3,6),
+		self
+	)
+
+	var piece_red := piece_scene.instantiate() as Piece
+	piece_red.owned_player = 2
+	pieces_container.add_child(piece_red)
+	piece_red.setup(
+		Vector2i(3,10),
+		self
+	)
+
 	
 		
 		# piece.set_board_position(pos, tilemap)

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bthaug87wx0pj"
-path="res://.godot/imported/TriangleOdd.png-a1720912111a467277ced100abb97c28.ctex"
+uid="uid://capls38okfmy1"
+path="res://.godot/imported/rotate1.png-03156432e8792c6220d12a5e5de191c8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://TriangleOdd.png"
-dest_files=["res://.godot/imported/TriangleOdd.png-a1720912111a467277ced100abb97c28.ctex"]
+source_file="res://sprites/rotate1.png"
+dest_files=["res://.godot/imported/rotate1.png-03156432e8792c6220d12a5e5de191c8.ctex"]
 
 [params]
 

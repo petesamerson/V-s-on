@@ -6,6 +6,7 @@ const LIGHT_BLUE = 11
 const DARK_GREY = 8
 const LIGHT_GREY = 12
 const DARK_RED = 9
+const RED = 6
 
 
 const HEX_LIGHT_BLUE = 3

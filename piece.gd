@@ -62,13 +62,19 @@ func draw_vision_change():
 
 	cur_vision = new_vision
 	for cell in cur_vision:
-		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
+		if(owned_player == 2):
+			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
+		else:
+			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 			
 	board.update_all_piece_vision([self])
 
 func draw_current_vision():
 	for cell in cur_vision:
-		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
+		if(owned_player == 2):
+			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
+		else:
+			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 	
 
 var armed := false
@@ -109,7 +115,10 @@ func on_clicked() -> void:
 						cur_moves.append(move)
 			for potential_move in cur_moves: 
 				old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
-				board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
+				if(owned_player == 2):
+					board.set_cell(potential_move,Tiles.RED, Vector2i(0,0))
+				else:
+					board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
 
 			selected = true
 			board.deselect_all_pieces([self])

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://0yf4wg5too3j"
-path="res://.godot/imported/hexOut2.png-c737537c8d1fa8399a0e71ef1a6992d6.ctex"
+uid="uid://dyy56ypwu01au"
+path="res://.godot/imported/hex_red.png-ecb26e3d1506b7279e7ebcc02c667883.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://hexOut2.png"
-dest_files=["res://.godot/imported/hexOut2.png-c737537c8d1fa8399a0e71ef1a6992d6.ctex"]
+source_file="res://sprites/hex_red.png"
+dest_files=["res://.godot/imported/hex_red.png-ecb26e3d1506b7279e7ebcc02c667883.ctex"]
 
 [params]
 

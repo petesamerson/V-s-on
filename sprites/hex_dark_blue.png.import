@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://capls38okfmy1"
-path="res://.godot/imported/rotate1.png-8261c269012e716433d0c3a2b76a0a78.ctex"
+uid="uid://d3or16dja1a82"
+path="res://.godot/imported/hex_dark_blue.png-f9f14426b00f51ceb8cad784e4401a9c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://rotate1.png"
-dest_files=["res://.godot/imported/rotate1.png-8261c269012e716433d0c3a2b76a0a78.ctex"]
+source_file="res://sprites/hex_dark_blue.png"
+dest_files=["res://.godot/imported/hex_dark_blue.png-f9f14426b00f51ceb8cad784e4401a9c.ctex"]
 
 [params]
 

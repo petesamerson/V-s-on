@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcr661buweyub"
-path="res://.godot/imported/hex_dark_red.png-2dc929598b532d6d7f4577c40dc9dfc5.ctex"
+uid="uid://bthaug87wx0pj"
+path="res://.godot/imported/TriangleOdd.png-df2220bcc9f9d7368bb5f9858c5d8306.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://hex_dark_red.png"
-dest_files=["res://.godot/imported/hex_dark_red.png-2dc929598b532d6d7f4577c40dc9dfc5.ctex"]
+source_file="res://sprites/TriangleOdd.png"
+dest_files=["res://.godot/imported/TriangleOdd.png-df2220bcc9f9d7368bb5f9858c5d8306.ctex"]
 
 [params]
 

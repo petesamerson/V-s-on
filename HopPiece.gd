@@ -14,7 +14,7 @@ func _process(delta: float) -> void:
 func setup(inital_pos: Vector2i, b: TileMapLayer):
 	super.setup(inital_pos, b)
 
-	sprite.texture = preload("res://Hop1.png")
+	sprite.texture = preload("res://sprites/Hop1.png")
 
 
 func draw_vision_change(): 
@@ -31,7 +31,10 @@ func draw_vision_change():
 
 	cur_vision = new_vision
 	for cell in cur_vision:
-		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
+		if(owned_player == 2):
+			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
+		else:
+			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 			
 	board.update_all_piece_vision([self])
 
@@ -59,7 +62,10 @@ func on_clicked() -> void:
 				cur_moves.append(raw_moves[raw_moves.size() - 1])
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
-			board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
+			if(owned_player == 2):
+				board.set_cell(potential_move,Tiles.RED, Vector2i(0,0))
+			else:
+				board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
 		selected = true
 
 		board.deselect_all_pieces([self])

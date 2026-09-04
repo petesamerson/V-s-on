@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c5k4xofouujet"
-path="res://.godot/imported/hex_light_blue.png-699fb91ea94f40738521a738ffbee65a.ctex"
+uid="uid://7wmfy8td1y4v"
+path="res://.godot/imported/HexStar3.png-cc47b3b6af4b1ab9de35ae592857d6ad.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://hex_light_blue.png"
-dest_files=["res://.godot/imported/hex_light_blue.png-699fb91ea94f40738521a738ffbee65a.ctex"]
+source_file="res://sprites/HexStar3.png"
+dest_files=["res://.godot/imported/HexStar3.png-cc47b3b6af4b1ab9de35ae592857d6ad.ctex"]
 
 [params]
 

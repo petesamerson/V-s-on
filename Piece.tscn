@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://caic1yu3a6go1"]
 
-[ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://HexStar3.png" id="1_ebr80"]
+[ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://sprites/HexStar3.png" id="1_ebr80"]
 [ext_resource type="Script" uid="uid://bjiry4dqpho0v" path="res://Piece.gd" id="2_4wtm1"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ebr80"]

@@ -12,4 +12,4 @@ func _process(delta: float) -> void:
 func setup(inital_pos: Vector2i, b: TileMapLayer):
     super.setup(inital_pos, b)
 
-    sprite.texture = preload("res://TriangleOdd.png")
+    sprite.texture = preload("res://sprites/TriangleOdd.png")
