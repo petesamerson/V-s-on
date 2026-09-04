@@ -100,6 +100,8 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 func on_clicked() -> void:
 		if(position == null or board == null):
 			return
+		if(board.current_player != owned_player):
+			return
 		var cell = board.local_to_map(position)  # current tile cell
 		print("Current cell:", cell , "selected", selected)
 		cur_moves = []
@@ -158,6 +160,7 @@ func handle_move_input_event(event):
 			cur_moves = []
 
 		draw_vision_change()
+		board.end_turn()
 
 		# #debug
 		# print("Lines Arrive")

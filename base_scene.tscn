@@ -124,3 +124,11 @@ metadata/_custom_type_script = "uid://ce1udyoosuvs4"
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")
 board = NodePath("../Board")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TurnLabel" type="RichTextLabel" parent="CanvasLayer"]
+offset_right = 40.0
+offset_bottom = 23.0
+fit_content = true
+scroll_active = false

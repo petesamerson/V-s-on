@@ -56,7 +56,7 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 	else:
 		for i in range(6):
-			var raw_moves = board.get_line_from_center(cell, i, 3)
+			var raw_moves = board.get_line_from_center(cell, i, 2)
 			var move = raw_moves[raw_moves.size() - 1]
 			if(board.cell_in_board(move)):
 				cur_moves.append(raw_moves[raw_moves.size() - 1])

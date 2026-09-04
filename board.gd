@@ -3,6 +3,7 @@ class_name Board
 
 @export var camera: Camera2D
 @onready var tilemap = $TileMap
+@onready var turn_label: RichTextLabel = $"../CanvasLayer/TurnLabel"
 
 var Tiles = preload("res://tiles.gd")
 
@@ -10,7 +11,6 @@ var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
 
-var player = 1
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -20,7 +20,32 @@ func _ready() -> void:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
 
 	call_deferred("spawn_pieces")
+
+	# Apply the styling wrapper dynamically without changing the original variable
+	turn_label.bbcode_enabled = true
+	turn_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	turn_label.fit_content = true
+	turn_label.size = Vector2(1000, 100)
+	turn_label.set_anchors_preset(Control.PRESET_CENTER)
+	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var viewport_size = get_viewport().get_visible_rect().size
+	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
+	turn_label.position.y =  5
+
+	var raw_message = "Player 1's Turn"
+	turn_label.text = "[font_size=60][b][color=blue]%s[/color][/b][/font_size]" % raw_message
+
+	# update_turn_text()
 	pass # Replace with function body.
+
+func update_turn_text():
+	if current_player == 1:
+		var raw_message = "Player 1's Turn"
+		turn_label.text = "[font_size=60][b][color=blue]%s[/color][/b][/font_size]" % raw_message
+	else:
+		var raw_message = "Player 2's Turn"
+		turn_label.text = "[font_size=60][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 var timer := 0.0
@@ -91,6 +116,11 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
 
+var current_player: int = 1
+
+func end_turn():
+	current_player = 2 if current_player == 1 else 1
+	update_turn_text()
 
 var cur_ani_x = 0
 var cur_ani_y = 0
@@ -151,7 +181,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func draw_hex_around(center: Vector2i) :
 	var curTile = 0
-	if(player == 1):
+	if(current_player == 1):
 		curTile = 11		
 	else:
 		curTile = 9

@@ -13,7 +13,9 @@ config_version=5
 config/name="V!s!on"
 run/main_scene="uid://br3rtq2rlri2y"
 config/features=PackedStringArray("4.5", "Forward Plus")
+boot_splash/image="uid://bb56cxu85pn2k"
 config/icon="res://icon.svg"
+boot_splash/minimum_display_time=2000
 
 [input_devices]
 
