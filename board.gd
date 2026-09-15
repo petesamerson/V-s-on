@@ -124,11 +124,19 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 			if(!excluded_pieces.has(p)):
 				print("updating vision for player 1")
 				p.draw_current_vision()
+		for p in player_pieces[0]:
+			p.visible = true
+		for p in player_pieces[1]:
+			p.visible = false
 	else:
 		for p in player_pieces[1]:
 			if(!excluded_pieces.has(p)):
 				print("updating vision for player 2")
 				p.draw_current_vision()
+		for p in player_pieces[0]:
+			p.visible = false
+		for p in player_pieces[1]:
+			p.visible = true
 
 func clear_board():
 	for c in board_tiles:
