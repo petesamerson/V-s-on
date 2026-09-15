@@ -10,6 +10,7 @@ var Tiles = preload("res://tiles.gd")
 var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
+
 var turn = 1
 var current_player: int = 1
 
@@ -43,11 +44,11 @@ func _ready() -> void:
 
 func update_turn_text():
 	if current_player == 1:
-		var raw_message = "Player 1's Turn"
-		turn_label.text = "[font_size=60][b][color=blue]%s[/color][/b][/font_size]" % raw_message
+		var raw_message = "Player 1's Turn \n Click on image to move not tile (temp)"
+		turn_label.text = "[font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 	else:
-		var raw_message = "Player 2's Turn"
-		turn_label.text = "[font_size=60][b][color=red]%s[/color][/b][/font_size]" % raw_message
+		var raw_message = "Player 2's Turn \n Click on image to move not tile (temp)"
+		turn_label.text = "[font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 var timer := 0.0
@@ -59,12 +60,14 @@ func _process(delta: float) -> void:
 		timer = 0.0
 		# animate_board()
 
-@onready var player_pieces = [[],[]]
 @onready var pieces_container = $Pieces
 @onready var tilemap_layer = $TileMapLayer
 @export var piece_scene: PackedScene
 @export var tower_piece_scene: PackedScene
 @export var hop_piece_scene: PackedScene
+
+@onready var player_pieces = [[],[]]
+var player_vision_tiles: Array[Array] = [[],[]]
 
 func spawn_pieces():
 	var positions = [Vector2i(10,10)]
@@ -137,6 +140,30 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 			p.visible = false
 		for p in player_pieces[1]:
 			p.visible = true
+
+	for i in player_pieces.size():
+		for j in player_pieces[i].size():
+			for v in player_pieces[i][j].cur_vision:
+				player_vision_tiles[i].append(v)
+				if (hasEnemyPieceInVision(current_player, v)):
+					setEnemyPieceVisiblity(v, true)
+					
+
+func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
+	var enemy_player = 2 if player == 1 else 1
+	for p in player_pieces[player-1]:
+		if(p.cur_vision.has(enemy)):
+			return true
+	return false
+
+func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
+	print(["setting visibility for", cell, "to", visible])	
+	var enemy_player = 2 if current_player == 1 else 1
+	for p in player_pieces[enemy_player - 1]:
+		if(cell == p.get_cur_pos()):
+			print(["setting visibility for", p, "to", visible])	
+			p.visible = visible
+	return
 
 func clear_board():
 	for c in board_tiles:

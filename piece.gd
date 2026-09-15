@@ -48,6 +48,11 @@ var old_selected_tile_ids: Array[int] = []
 var cur_vision: Array[Vector2i] = []
 var vision_drawn = false
 
+func get_cur_pos() -> Vector2i:
+	if(board == null or position == null):
+		return Vector2i(0,0)
+	return board.local_to_map(position)
+
 func draw_vision_change():
 	var cur_pos = board.local_to_map(position)
 	var raw_vision = board.get_hexagon_tiles(cur_pos, vision_range)
