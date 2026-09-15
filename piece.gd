@@ -66,8 +66,9 @@ func draw_vision_change():
 			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
 		else:
 			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
-			
-	board.update_all_piece_vision([self])
+
+func end_turn():
+	board.end_turn()
 
 func draw_current_vision():
 	for cell in cur_vision:
@@ -160,7 +161,7 @@ func handle_move_input_event(event):
 			cur_moves = []
 
 		draw_vision_change()
-		board.end_turn()
+		end_turn()
 
 		# #debug
 		# print("Lines Arrive")

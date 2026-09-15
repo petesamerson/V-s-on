@@ -10,6 +10,8 @@ var Tiles = preload("res://tiles.gd")
 var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
+var turn = 1
+var current_player: int = 1
 
 
 # Called when the node enters the scene tree for the first time.
@@ -57,6 +59,7 @@ func _process(delta: float) -> void:
 		timer = 0.0
 		# animate_board()
 
+@onready var player_pieces = [[],[]]
 @onready var pieces_container = $Pieces
 @onready var tilemap_layer = $TileMapLayer
 @export var piece_scene: PackedScene
@@ -84,9 +87,14 @@ func spawn_pieces():
 		Vector2i(5,5),
 		self
 	)
+	for p in pieces_container.get_children():			
+		p.owned_player = 1
+		player_pieces[0].append(p)
 
+	var player2_pieces:Array[Piece] = []
 	var hop_piece_red := hop_piece_scene.instantiate() as HopPiece
 	hop_piece_red.owned_player = 2
+	player2_pieces.append(hop_piece_red)
 	pieces_container.add_child(hop_piece_red)
 	hop_piece_red.setup(
 		Vector2i(3,6),
@@ -95,20 +103,37 @@ func spawn_pieces():
 
 	var piece_red := piece_scene.instantiate() as Piece
 	piece_red.owned_player = 2
+	player2_pieces.append(piece_red)
 	pieces_container.add_child(piece_red)
 	piece_red.setup(
 		Vector2i(3,10),
 		self
 	)
 
-	
+	for p in player2_pieces:			
+		player_pieces[1].append(p)
 		
 		# piece.set_board_position(pos, tilemap)
+	update_all_piece_vision()
 
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
-	for p in pieces_container.get_children():
-		if(!excluded_pieces.has(p)):
-			p.draw_current_vision()
+	clear_board()
+	print(player_pieces)
+	if(current_player == 1):
+		for p in player_pieces[0]:
+			if(!excluded_pieces.has(p)):
+				print("updating vision for player 1")
+				p.draw_current_vision()
+	else:
+		for p in player_pieces[1]:
+			if(!excluded_pieces.has(p)):
+				print("updating vision for player 2")
+				p.draw_current_vision()
+
+func clear_board():
+	for c in board_tiles:
+		set_cell(c, Tiles.BLACK, Vector2i(0,0))
+
 
 func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 	for p in pieces_container.get_children():
@@ -116,11 +141,10 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
 
-var current_player: int = 1
-
 func end_turn():
 	current_player = 2 if current_player == 1 else 1
 	update_turn_text()
+	update_all_piece_vision()
 
 var cur_ani_x = 0
 var cur_ani_y = 0

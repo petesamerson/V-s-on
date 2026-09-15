@@ -48,6 +48,9 @@ func draw_vision_change():
 		else:
 			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 			
+	end_turn()
+
+func end_turn():
 	board.update_all_piece_vision([self])
 
 
