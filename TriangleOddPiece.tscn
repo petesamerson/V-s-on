@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://dgqhmggiljsm5"]
+[gd_scene load_steps=4 format=3 uid="uid://dgqhmggiljsm5"]
 
 [ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://TriangleOddPiece.gd" id="1_vohvd"]
+[ext_resource type="Texture2D" uid="uid://bthaug87wx0pj" path="res://sprites/TriangleOdd.png" id="2_pi5cy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_pi5cy"]
 radius = 15.0
@@ -14,3 +15,4 @@ script = ExtResource("1_vohvd")
 shape = SubResource("CircleShape2D_pi5cy")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_pi5cy")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=35 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -19,6 +19,8 @@
 [ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="14_01iy8"]
 [ext_resource type="PackedScene" uid="uid://cmd81nu6wec8w" path="res://HopPiece.tscn" id="15_hwg3g"]
 [ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://HopPiece.gd" id="17_ay483"]
+[ext_resource type="PackedScene" uid="uid://dgqhmggiljsm5" path="res://TriangleOddPiece.tscn" id="20_gqdld"]
+[ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://TriangleOddPiece.gd" id="20_h480d"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -106,6 +108,7 @@ camera = NodePath("../Camera2D")
 piece_scene = ExtResource("12_01iy8")
 tower_piece_scene = ExtResource("13_jjdbg")
 hop_piece_scene = ExtResource("15_hwg3g")
+triangle_odd_piece_scene = ExtResource("20_gqdld")
 
 [node name="Pieces" type="Node2D" parent="Board"]
 
@@ -120,6 +123,10 @@ metadata/_custom_type_script = "uid://byauyvv4yigqx"
 [node name="HopPiece" type="Node2D" parent="Board/Pieces"]
 script = ExtResource("17_ay483")
 metadata/_custom_type_script = "uid://ce1udyoosuvs4"
+
+[node name="TriangleOddPiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("20_h480d")
+metadata/_custom_type_script = "uid://bi2bkqvsov0p3"
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")

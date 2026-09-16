@@ -22,7 +22,7 @@ func _ready() -> void:
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
 
-	call_deferred("spawn_pieces")
+	call_deferred("spawn_all_pieces")
 
 	# Apply the styling wrapper dynamically without changing the original variable
 	turn_label.bbcode_enabled = true
@@ -65,63 +65,120 @@ func _process(delta: float) -> void:
 @export var piece_scene: PackedScene
 @export var tower_piece_scene: PackedScene
 @export var hop_piece_scene: PackedScene
+@export var triangle_odd_piece_scene: PackedScene
 
 @onready var player_pieces = [[],[]]
 var player_vision_tiles: Array[Array] = [[],[]]
 
-func spawn_pieces():
-	var positions = [Vector2i(10,10)]
-	for pos in positions:
-		var piece := piece_scene.instantiate() as Piece
-		pieces_container.add_child(piece)
-		piece.setup(pos, self)
+func spawn_all_pieces():
+	var spawn1 = get_line_from_center(Vector2i(10,10), 0, 5)
+	var spawn2 = get_line_from_center(Vector2i(10,10), 3, 5)
 
-	var tower_piece := tower_piece_scene.instantiate() as TowerRotatePiece
-	pieces_container.add_child(tower_piece)
-	print(tower_piece is TowerRotatePiece)
-	tower_piece.setup(
-		Vector2i(15,15), 
-		self 
-	)
+	
+	spawn_player_location(spawn1.get(spawn1.size() - 1), 1)
+	spawn_player_location(spawn2.get(spawn2.size() - 1), 2)
 
-	var hop_piece := hop_piece_scene.instantiate() as HopPiece
-	pieces_container.add_child(hop_piece)
-	hop_piece.setup(
-		Vector2i(5,5),
-		self
-	)
-	for p in pieces_container.get_children():			
-		p.owned_player = 1
-		player_pieces[0].append(p)
+	# var positions = [Vector2i(10,10)]
+	# for pos in positions:
+	# 	var piece := piece_scene.instantiate() as Piece
+	# 	pieces_container.add_child(piece)
+	# 	piece.setup(pos, self)
 
-	var player2_pieces:Array[Piece] = []
-	var hop_piece_red := hop_piece_scene.instantiate() as HopPiece
-	hop_piece_red.owned_player = 2
-	player2_pieces.append(hop_piece_red)
-	pieces_container.add_child(hop_piece_red)
-	hop_piece_red.setup(
-		Vector2i(3,6),
-		self
-	)
+	# var tower_piece := tower_piece_scene.instantiate() as TowerRotatePiece
+	# pieces_container.add_child(tower_piece)
+	# print(tower_piece is TowerRotatePiece)
+	# tower_piece.setup(
+	# 	Vector2i(15,15), 
+	# 	self 
+	# )
 
-	var piece_red := piece_scene.instantiate() as Piece
-	piece_red.owned_player = 2
-	player2_pieces.append(piece_red)
-	pieces_container.add_child(piece_red)
-	piece_red.setup(
-		Vector2i(3,10),
-		self
-	)
+	# var hop_piece := hop_piece_scene.instantiate() as HopPiece
+	# pieces_container.add_child(hop_piece)
+	# hop_piece.setup(
+	# 	Vector2i(5,5),
+	# 	self
+	# )
+	# for p in pieces_container.get_children():			
+	# 	p.owned_player = 1
+	# 	player_pieces[0].append(p)
 
-	for p in player2_pieces:			
-		player_pieces[1].append(p)
+	# var player2_pieces:Array[Piece] = []
+	# var hop_piece_red := hop_piece_scene.instantiate() as HopPiece
+	# hop_piece_red.owned_player = 2
+	# player2_pieces.append(hop_piece_red)
+	# pieces_container.add_child(hop_piece_red)
+	# hop_piece_red.setup(
+	# 	Vector2i(3,6),
+	# 	self
+	# )
+
+	# var tri_piece_red := triangle_odd_piece_scene.instantiate() as TriangleOddPiece
+	# tri_piece_red.owned_player = 2
+	# player2_pieces.append(tri_piece_red)
+	# pieces_container.add_child(tri_piece_red)
+	# tri_piece_red.setup(
+	# 	Vector2i(3,6),
+	# 	self
+	# )
+
+	# var piece_red := piece_scene.instantiate() as Piece
+	# piece_red.owned_player = 2
+	# player2_pieces.append(piece_red)
+	# pieces_container.add_child(piece_red)
+	# piece_red.setup(
+	# 	Vector2i(3,10),
+	# 	self
+	# )
+
+	# for p in player2_pieces:			
+	# 	player_pieces[1].append(p)
 		
 		# piece.set_board_position(pos, tilemap)
 	update_all_piece_vision()
 
+func spawn_player_location(center: Vector2i, player: int):
+	print("WAHT player " + str(player))
+	var positions = [center]
+	for pos in positions:
+		var piece := piece_scene.instantiate() as Piece
+		piece.owned_player = player
+		player_pieces[player - 1].append(piece)
+		pieces_container.add_child(piece)
+		piece.setup(pos, self)
+
+	
+
+	var hop_piece_locations: Array[Vector2i] = []
+	for i in range(6):
+		hop_piece_locations.append(get_line_end_from_center(center, i, 3))
+	for i in range(6):
+		var hop_piece := hop_piece_scene.instantiate() as HopPiece
+		hop_piece.owned_player = player
+		player_pieces[player - 1].append(hop_piece)
+		pieces_container.add_child(hop_piece)
+		hop_piece.setup(
+			hop_piece_locations[i],
+			self
+		)
+	var tri_odd_piece_locations: Array[Vector2i] = []
+	for i in range(3):
+		tri_odd_piece_locations.append(get_line_end_from_center(center, i*2, 2))
+	for i in range(3):
+		var tri_odd_piece := triangle_odd_piece_scene.instantiate() as TriangleOddPiece
+		tri_odd_piece.owned_player = player
+		player_pieces[player - 1].append(tri_odd_piece)
+		pieces_container.add_child(tri_odd_piece)
+		tri_odd_piece.setup(
+			tri_odd_piece_locations[i],
+			self
+		)
+
+
+
+
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	clear_board()
-	print(player_pieces)
+	print(str("Current player: ") + str(current_player))
 	if(current_player == 1):
 		for p in player_pieces[0]:
 			if(!excluded_pieces.has(p)):

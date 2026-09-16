@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://cmd81nu6wec8w"]
+[gd_scene load_steps=4 format=3 uid="uid://cmd81nu6wec8w"]
 
 [ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://HopPiece.gd" id="1_thfds"]
+[ext_resource type="Texture2D" uid="uid://dmj1ldaisaikg" path="res://sprites/Hop1.png" id="2_q5218"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_thfds"]
 radius = 15.0
@@ -14,3 +15,5 @@ script = ExtResource("1_thfds")
 shape = SubResource("CircleShape2D_thfds")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(1.5, 1.396)
+texture = ExtResource("2_q5218")
