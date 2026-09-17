@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://bjiry4dqpho0v" path="res://Piece.gd" id="2_4wtm1"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ebr80"]
-radius = 15.0
+radius = 50.0
 
 [node name="Piece" type="Node2D"]
 script = ExtResource("2_4wtm1")

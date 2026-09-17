@@ -9,8 +9,6 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	pass
 
-@onready var sprite: Sprite2D = $Sprite2D
-
 func setup(inital_pos: Vector2i, b: TileMapLayer):
 	super.setup(inital_pos, b)
 

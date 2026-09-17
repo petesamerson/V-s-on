@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://oicaiahgfjhr"]
+
+[ext_resource type="Script" uid="uid://yyorinitem65" path="res://TriangleEvenPiece.gd" id="1_mb4gg"]
+[ext_resource type="Texture2D" uid="uid://bthaug87wx0pj" path="res://sprites/TriangleOdd.png" id="2_mb4gg"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_rvpo3"]
+
+[node name="TriangleEvenPiece" type="Node2D"]
+script = ExtResource("1_mb4gg")
+metadata/_custom_type_script = "uid://bjiry4dqpho0v"
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_rvpo3")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+rotation = 0.5235988
+texture = ExtResource("2_mb4gg")

@@ -36,7 +36,7 @@ func _ready() -> void:
 	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y =  5
 
-	var raw_message = "Player 1's Turn"
+	var raw_message = "Player 1's Turn (You are Invisible to Player 2)"
 	turn_label.text = "[font_size=60][b][color=blue]%s[/color][/b][/font_size]" % raw_message
 
 	# update_turn_text()
@@ -44,10 +44,10 @@ func _ready() -> void:
 
 func update_turn_text():
 	if current_player == 1:
-		var raw_message = "Player 1's Turn \n Click on image to move not tile (temp)"
+		var raw_message = "Player 1's Turn"
 		turn_label.text = "[font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 	else:
-		var raw_message = "Player 2's Turn \n Click on image to move not tile (temp)"
+		var raw_message = "Player 2's Turn"
 		turn_label.text = "[font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -66,6 +66,7 @@ func _process(delta: float) -> void:
 @export var tower_piece_scene: PackedScene
 @export var hop_piece_scene: PackedScene
 @export var triangle_odd_piece_scene: PackedScene
+@export var triangle_even_piece_scene: PackedScene
 
 @onready var player_pieces = [[],[]]
 var player_vision_tiles: Array[Array] = [[],[]]
@@ -78,12 +79,6 @@ func spawn_all_pieces():
 	spawn_player_location(spawn1.get(spawn1.size() - 1), 1)
 	spawn_player_location(spawn2.get(spawn2.size() - 1), 2)
 
-	# var positions = [Vector2i(10,10)]
-	# for pos in positions:
-	# 	var piece := piece_scene.instantiate() as Piece
-	# 	pieces_container.add_child(piece)
-	# 	piece.setup(pos, self)
-
 	# var tower_piece := tower_piece_scene.instantiate() as TowerRotatePiece
 	# pieces_container.add_child(tower_piece)
 	# print(tower_piece is TowerRotatePiece)
@@ -92,48 +87,6 @@ func spawn_all_pieces():
 	# 	self 
 	# )
 
-	# var hop_piece := hop_piece_scene.instantiate() as HopPiece
-	# pieces_container.add_child(hop_piece)
-	# hop_piece.setup(
-	# 	Vector2i(5,5),
-	# 	self
-	# )
-	# for p in pieces_container.get_children():			
-	# 	p.owned_player = 1
-	# 	player_pieces[0].append(p)
-
-	# var player2_pieces:Array[Piece] = []
-	# var hop_piece_red := hop_piece_scene.instantiate() as HopPiece
-	# hop_piece_red.owned_player = 2
-	# player2_pieces.append(hop_piece_red)
-	# pieces_container.add_child(hop_piece_red)
-	# hop_piece_red.setup(
-	# 	Vector2i(3,6),
-	# 	self
-	# )
-
-	# var tri_piece_red := triangle_odd_piece_scene.instantiate() as TriangleOddPiece
-	# tri_piece_red.owned_player = 2
-	# player2_pieces.append(tri_piece_red)
-	# pieces_container.add_child(tri_piece_red)
-	# tri_piece_red.setup(
-	# 	Vector2i(3,6),
-	# 	self
-	# )
-
-	# var piece_red := piece_scene.instantiate() as Piece
-	# piece_red.owned_player = 2
-	# player2_pieces.append(piece_red)
-	# pieces_container.add_child(piece_red)
-	# piece_red.setup(
-	# 	Vector2i(3,10),
-	# 	self
-	# )
-
-	# for p in player2_pieces:			
-	# 	player_pieces[1].append(p)
-		
-		# piece.set_board_position(pos, tilemap)
 	update_all_piece_vision()
 
 func spawn_player_location(center: Vector2i, player: int):
@@ -160,6 +113,7 @@ func spawn_player_location(center: Vector2i, player: int):
 			hop_piece_locations[i],
 			self
 		)
+
 	var tri_odd_piece_locations: Array[Vector2i] = []
 	for i in range(3):
 		tri_odd_piece_locations.append(get_line_end_from_center(center, i*2, 2))
@@ -173,8 +127,35 @@ func spawn_player_location(center: Vector2i, player: int):
 			self
 		)
 
+	var tri_even_piece_locations: Array[Vector2i] = []
+	for i in range(3):
+		var line = get_line_from_center(center, 1 + i*2, 2)
+		tri_even_piece_locations.append(line[line.size() - 1])
+	for i in range(3):
+		var tri_even_piece := triangle_even_piece_scene.instantiate() as TriangleEvenPiece
+		tri_even_piece.owned_player = player
+		player_pieces[player - 1].append(tri_even_piece)
+		pieces_container.add_child(tri_even_piece)
+		tri_even_piece.setup(
+			tri_even_piece_locations[i],
+			self
+		)
 
+func remove_piece(piece: Piece):
+	player_pieces[piece.owned_player - 1].erase(piece)
+	pieces_container.remove_child(piece)
 
+func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
+	for node in pieces_container.get_children():
+		var piece := node as Piece
+
+		if piece != null and piece.owned_player == player:
+			var piece_cell = local_to_map(piece.position)
+
+			if piece_cell == cell:
+				return piece
+
+	return null
 
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	clear_board()

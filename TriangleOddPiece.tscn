@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bthaug87wx0pj" path="res://sprites/TriangleOdd.png" id="2_pi5cy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_pi5cy"]
-radius = 15.0
+radius = 50.0
 
 [node name="TriangleOddPiece" type="Node2D"]
 script = ExtResource("1_vohvd")
@@ -15,4 +15,5 @@ script = ExtResource("1_vohvd")
 shape = SubResource("CircleShape2D_pi5cy")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+rotation = -0.5235988
 texture = ExtResource("2_pi5cy")

@@ -9,6 +9,7 @@ var owned_player: int = 1
 var vision_range: int = 5
 
 @onready var area: Area2D = $Area2D
+@onready var sprite: Sprite2D = $Sprite2D
 
 func _init() -> void:
 	pass
@@ -20,6 +21,9 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	position = board.map_to_local(inital_pos)
 
 	area.input_event.connect(_on_area_2d_input_event)
+
+	if(owned_player == 2):
+		sprite.modulate = Color.RED
 
 	self.z_index = 1
 	draw_vision_change()
@@ -135,25 +139,38 @@ func on_clicked() -> void:
 func _input(event):
 	if(selected):
 		handle_move_input_event(event)
-		get_viewport().set_input_as_handled()
+		var viewport = get_viewport()
+		if(viewport != null):
+			get_viewport().set_input_as_handled()
 
 func handle_move_input_event(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var global_mouse = board.camera.get_global_mouse_position()
 		var local_mouse = board.to_local(global_mouse)
 		var cell = board.local_to_map(local_mouse)
+		var moved = false
 
 		if cell in cur_moves:
 			moving = true
 			position = board.map_to_local(cell)
+
+			var enemy_player = 1
+			if(board.current_player == 1):
+				enemy_player = 2
+			var enemy_piece = board.get_enemy_piece_at_cell(cell, enemy_player)
+			if enemy_piece != null:
+				board.remove_piece(enemy_piece)
+
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]
 				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+
 
 			cur_moves = []
 			old_selected_tile_ids = []
 			selected = false
 			moving = false
+			moved = true
 		else:
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]
@@ -166,7 +183,8 @@ func handle_move_input_event(event):
 			cur_moves = []
 
 		draw_vision_change()
-		end_turn()
+		if(moved):
+			end_turn()
 
 		# #debug
 		# print("Lines Arrive")
