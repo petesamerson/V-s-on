@@ -21,6 +21,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -30,4 +31,27 @@ jobs:
         with:
           version: ${{ env.GODOT_VERSION }}
           use-dotnet: false
-          export-templates:
+          export-templates: true
+
+      - name: Build Godot Web
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Web" build/index.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
