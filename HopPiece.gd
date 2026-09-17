@@ -42,6 +42,8 @@ func end_turn():
 
 
 func on_clicked() -> void:
+	if owned_player != board.current_player:
+		return
 	if(board == null or position == null): 
 		return
 	var cell = board.local_to_map(position)  # current tile cell

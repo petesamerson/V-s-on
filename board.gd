@@ -170,6 +170,7 @@ func spawn_player_location(center: Vector2i, player: int):
 		if(i!=(rotate_piece_locations.size()-1)):
 			rotate_piece.cur_direction = (5 + i)%5
 		rotate_piece.update_sprite_rotation()
+		rotate_piece.draw_vision_change()
 
 
 func remove_piece(piece: Piece):

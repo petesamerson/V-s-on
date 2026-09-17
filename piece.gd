@@ -6,7 +6,7 @@ var board: Board
 var Tiles = preload("res://tiles.gd")
 
 var owned_player: int = 1
-var vision_range: int = 5
+var vision_range: int = 3
 
 @onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D

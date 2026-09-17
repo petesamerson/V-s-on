@@ -48,13 +48,15 @@ func draw_vision_change():
 		else:
 			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 			
-	board.update_all_piece_vision([self])
+	board.update_all_piece_vision([])
 
 
 
 func on_clicked():
 	print("on_tower_clicked " + str(sprite.rotation_degrees) +  " " + str(cur_direction))
 	if(board == null or position == null):
+		return
+	if owned_player != board.current_player:
 		return
 	var cell = board.local_to_map(position)
 	cur_moves = []
@@ -110,10 +112,11 @@ func update_cur_rotate():
 			potential_new_move = connect_line[(connect_line.size())/2]
 			if(board.cell_in_board(potential_new_move)):
 				cur_rotate.append(potential_new_move)
+	draw_vision_change()
 	for potential_rotate in cur_rotate: 
 		old_selected_rotate_tile_ids.append(board.get_cell_source_id(potential_rotate))
 		board.set_cell(potential_rotate, Tiles.SNOW_FLAKE, Vector2i(0,0))
-	
+
 
 func handle_move_input_event(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
