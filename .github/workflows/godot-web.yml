@@ -15,10 +15,12 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+env:
+  GODOT_VERSION: "4.5.1"
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -26,14 +28,35 @@ jobs:
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
         with:
-          version: "4.5.1"
+          version: ${{ env.GODOT_VERSION }}
           use-dotnet: false
-          export-templates: true
+          export-templates: false
+
+      - name: Install export templates manually
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          unzip -q Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/
+
+      - name: Debug templates
+        run: |
+          find ~/.local/share/godot/export_templates -maxdepth 2
+
+      - name: Import assets
+        run: |
+          godot --headless --import
+        continue-on-error: true
 
       - name: Export Web
         run: |
           mkdir -p build
           godot --headless --export-release "Web" build/index.html
+
+      - name: Verify export output
+        run: |
+          test -f build/index.wasm
+          ls -la build
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
@@ -46,11 +69,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
