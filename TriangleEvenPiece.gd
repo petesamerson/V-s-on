@@ -15,7 +15,8 @@ func setup(inital_pos: Vector2i, b: TileMapLayer) -> void:
 	sprite.texture = preload("res://sprites/TriangleOdd.png")
 
 func on_clicked() -> void:
-	pass
+	if(owned_player != board.current_player):
+		return
 	if(position == null or board == null):
 		return
 	if(board.current_player != owned_player):

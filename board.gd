@@ -141,6 +141,37 @@ func spawn_player_location(center: Vector2i, player: int):
 			self
 		)
 
+	var rotate_piece_locations: Array[Vector2i] = []
+	for i in range(12):
+		var line = get_line_from_center(center, 1 + i*2, 2)
+		# rotate_piece_locations.append(line[line.size() - 1])
+		var first_axis = get_line_from_center(center, i, 2)
+		var second_axis = get_line_from_center(center, (i + 1) % 6, 2)
+		
+
+		if(first_axis != null and second_axis != null):
+			var connect_line = hex_line(
+				first_axis[first_axis.size()-1], 
+				second_axis[second_axis.size()-1]
+			)
+			var potential_new_move = connect_line[(connect_line.size())/2]
+			rotate_piece_locations.append(potential_new_move)
+
+	for i in rotate_piece_locations.size():
+		var rotate_piece := tower_piece_scene.instantiate() as TowerRotatePiece
+		rotate_piece.owned_player = player
+		
+		player_pieces[player - 1].append(rotate_piece)
+		pieces_container.add_child(rotate_piece)
+		rotate_piece.setup(
+			rotate_piece_locations[i],
+			self
+		)
+		if(i!=(rotate_piece_locations.size()-1)):
+			rotate_piece.cur_direction = (5 + i)%5
+		rotate_piece.update_sprite_rotation()
+
+
 func remove_piece(piece: Piece):
 	player_pieces[piece.owned_player - 1].erase(piece)
 	pieces_container.remove_child(piece)
@@ -195,11 +226,9 @@ func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
 	return false
 
 func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
-	print(["setting visibility for", cell, "to", visible])	
 	var enemy_player = 2 if current_player == 1 else 1
 	for p in player_pieces[enemy_player - 1]:
 		if(cell == p.get_cur_pos()):
-			print(["setting visibility for", p, "to", visible])	
 			p.visible = visible
 	return
 

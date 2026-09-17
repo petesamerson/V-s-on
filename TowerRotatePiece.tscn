@@ -1,9 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://m65ucpry42ve"]
+[gd_scene load_steps=4 format=3 uid="uid://m65ucpry42ve"]
 
 [ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="1_ttnuk"]
+[ext_resource type="Texture2D" uid="uid://dd150oyfhq5hh" path="res://sprites/tower1.png" id="2_3mub2"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ttnuk"]
-radius = 15.0
+radius = 50.0
 
 [node name="TowerRotatePiece" type="Node2D"]
 script = ExtResource("1_ttnuk")
@@ -14,3 +15,5 @@ script = ExtResource("1_ttnuk")
 shape = SubResource("CircleShape2D_ttnuk")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+rotation = -0.5235988
+texture = ExtResource("2_3mub2")
