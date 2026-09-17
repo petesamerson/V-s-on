@@ -21,6 +21,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -30,4 +31,40 @@ jobs:
         with:
           version: ${{ env.GODOT_VERSION }}
           use-dotnet: false
-          export-templates:
+
+      - name: Install Godot export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.5.1.stable
+
+          wget -q https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
+
+          unzip -q Godot_v4.5.1-stable_export_templates.tpz -d /tmp/godot_templates
+
+          cp -r /tmp/godot_templates/templates/* ~/.local/share/godot/export_templates/4.5.1.stable/
+
+      - name: Verify export templates
+        run: |
+          ls -la ~/.local/share/godot/export_templates/4.5.1.stable/
+
+      - name: Build Godot Web
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Web" build/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
