@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://548fpki4pqfl" path="res://sprites/eye_piece.png" id="2_iqw01"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_dt0s0"]
+radius = 15.0
 
 [node name="EyePiece" type="Node2D"]
 script = ExtResource("1_lq0dp")

@@ -257,6 +257,8 @@ func end_turn(movedPiece: Piece):
 				eye_found = true
 	if(eye_found):
 		turn_menu.show()
+	else:
+		display_winner()
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
@@ -905,6 +907,10 @@ func move_camera_to_eye():
 			camera.zoom_to_global_position(p.position,1.5)
 
 func _on_next_pressed() -> void:
+	var enemy_eye = false
+	for p in pieces_container.get_children():
+		if(p is EyePiece and p.owned_player != current_player):
+			enemy_eye = true
 	current_player = 2 if current_player == 1 else 1
 	update_turn_text()
 	update_all_piece_vision()
