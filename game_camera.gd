@@ -17,6 +17,7 @@ func _process(_delta: float) -> void:
 var dragging = false
 var drag_start_mouse = Vector2(0,0)
 var drag_start_position = Vector2(0,0)
+var wasPinched := false
 
 #Touch
 var touches: Dictionary = {}
@@ -33,7 +34,6 @@ var test_previous_distance := 0.0
 
 func _unhandled_input(event):
 	# Mouse Controls
-	var wasPinched = false
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_to_mouse(1.1)
