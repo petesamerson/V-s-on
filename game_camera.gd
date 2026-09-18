@@ -166,3 +166,26 @@ func _zoom_to_point(factor: float, screen_point: Vector2):
 	var world_after = viewport.get_canvas_transform().affine_inverse() * screen_point
 
 	position += world_before - world_after
+
+
+func zoom_to_global_position(
+	target_position: Vector2,
+	target_zoom: float
+) -> void:
+	var tween := create_tween()
+
+	tween.set_parallel(true)
+
+	tween.tween_property(
+		self,
+		"global_position",
+		target_position,
+		0.5
+	)
+
+	tween.tween_property(
+		self,
+		"zoom",
+		Vector2(target_zoom, target_zoom),
+		0.5
+	)

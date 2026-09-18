@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=41 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -13,16 +13,17 @@
 [ext_resource type="Texture2D" uid="uid://bcr661buweyub" path="res://sprites/hex_dark_red.png" id="10_jjdbg"]
 [ext_resource type="Script" uid="uid://calvtyfnhirjj" path="res://Board.gd" id="11_2mb0d"]
 [ext_resource type="PackedScene" uid="uid://caic1yu3a6go1" path="res://Piece.tscn" id="12_01iy8"]
-[ext_resource type="Script" uid="uid://bjiry4dqpho0v" path="res://Piece.gd" id="12_blj2i"]
 [ext_resource type="Script" uid="uid://cqa7rx5tlb2hg" path="res://game_camera.gd" id="13_2mb0d"]
 [ext_resource type="PackedScene" uid="uid://m65ucpry42ve" path="res://TowerRotatePiece.tscn" id="13_jjdbg"]
 [ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="14_01iy8"]
+[ext_resource type="PackedScene" uid="uid://y5au8wvdsi7d" path="res://eye_piece.tscn" id="14_17fj0"]
 [ext_resource type="PackedScene" uid="uid://cmd81nu6wec8w" path="res://HopPiece.tscn" id="15_hwg3g"]
 [ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://HopPiece.gd" id="17_ay483"]
 [ext_resource type="PackedScene" uid="uid://oicaiahgfjhr" path="res://triangle_even_piece.tscn" id="17_ddjlp"]
 [ext_resource type="PackedScene" uid="uid://dgqhmggiljsm5" path="res://TriangleOddPiece.tscn" id="20_gqdld"]
 [ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://TriangleOddPiece.gd" id="20_h480d"]
 [ext_resource type="Script" uid="uid://yyorinitem65" path="res://TriangleEvenPiece.gd" id="21_h480d"]
+[ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://EyePiece.gd" id="22_ddjlp"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -100,6 +101,24 @@ sources/12 = SubResource("TileSetAtlasSource_hwg3g")
 sources/1 = SubResource("TileSetAtlasSource_ddjlp")
 sources/6 = SubResource("TileSetAtlasSource_17fj0")
 
+[sub_resource type="Theme" id="Theme_ddjlp"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ddjlp"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.9244893, 0.826784, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_17fj0"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.9426603, 0.65268576, 1)
+
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
 
@@ -108,16 +127,13 @@ tile_set = SubResource("TileSet_7e6gu")
 script = ExtResource("11_2mb0d")
 camera = NodePath("../Camera2D")
 piece_scene = ExtResource("12_01iy8")
+eye_piece_scene = ExtResource("14_17fj0")
 tower_piece_scene = ExtResource("13_jjdbg")
 hop_piece_scene = ExtResource("15_hwg3g")
 triangle_odd_piece_scene = ExtResource("20_gqdld")
 triangle_even_piece_scene = ExtResource("17_ddjlp")
 
 [node name="Pieces" type="Node2D" parent="Board"]
-
-[node name="Piece" type="Node2D" parent="Board/Pieces"]
-script = ExtResource("12_blj2i")
-metadata/_custom_type_script = "uid://bjiry4dqpho0v"
 
 [node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces"]
 script = ExtResource("14_01iy8")
@@ -135,14 +151,73 @@ metadata/_custom_type_script = "uid://bi2bkqvsov0p3"
 script = ExtResource("21_h480d")
 metadata/_custom_type_script = "uid://yyorinitem65"
 
+[node name="EyePiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("22_ddjlp")
+
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")
 board = NodePath("../Board")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="TurnLayer" type="CanvasLayer" parent="."]
 
-[node name="TurnLabel" type="RichTextLabel" parent="CanvasLayer"]
+[node name="TurnLabel" type="RichTextLabel" parent="TurnLayer"]
 offset_right = 40.0
 offset_bottom = 23.0
 fit_content = true
 scroll_active = false
+
+[node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="TurnLayer/PlayerSwitchOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.11119685, 0.11119684, 0.11119684, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -355.0
+offset_top = -229.0
+offset_right = 355.0
+offset_bottom = 229.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_ddjlp")
+
+[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_colors/icon_normal_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 100
+theme_override_styles/normal = SubResource("StyleBoxFlat_ddjlp")
+text = "Next Player
+(Normal Turn)"
+
+[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+layout_mode = 2
+
+[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_font_sizes/font_size = 100
+theme_override_styles/normal = SubResource("StyleBoxFlat_17fj0")
+text = "Add Turn to 
+Current Player
+"
+
+[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
+[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]

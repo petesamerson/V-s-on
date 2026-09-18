@@ -3,7 +3,8 @@ class_name Board
 
 @export var camera: Camera2D
 @onready var tilemap = $TileMap
-@onready var turn_label: RichTextLabel = $"../CanvasLayer/TurnLabel"
+@onready var turn_label: RichTextLabel = $"../TurnLayer/TurnLabel"
+@onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 
 var Tiles = preload("res://tiles.gd")
 
@@ -36,19 +37,27 @@ func _ready() -> void:
 	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y =  5
 
-	var raw_message = "Player 1's Turn (You are Invisible to Player 2)"
-	turn_label.text = "[font_size=60][b][color=blue]%s[/color][/b][/font_size]" % raw_message
+	var raw_message = "Player 1's Turn \nCapture Eye To Win! \n(You are Invisible to Player 2)"
+	turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 
-	# update_turn_text()
-	pass # Replace with function body.
+	turn_menu.hide()
+
 
 func update_turn_text():
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
-		turn_label.text = "[font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 	else:
 		var raw_message = "Player 2's Turn"
-		turn_label.text = "[font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
+
+func display_winner():
+	if current_player == 1:
+		var raw_message = "Player 1 WINS!"
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	else:
+		var raw_message = "Player 2's WINS"
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 var timer := 0.0
@@ -63,6 +72,7 @@ func _process(delta: float) -> void:
 @onready var pieces_container = $Pieces
 @onready var tilemap_layer = $TileMapLayer
 @export var piece_scene: PackedScene
+@export var eye_piece_scene: PackedScene
 @export var tower_piece_scene: PackedScene
 @export var hop_piece_scene: PackedScene
 @export var triangle_odd_piece_scene: PackedScene
@@ -80,12 +90,13 @@ func spawn_all_pieces():
 	spawn_player_location(spawn2.get(spawn2.size() - 1), 2)
 
 	update_all_piece_vision()
+	move_camera_to_eye()
 
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
 	var positions = [center]
 	for pos in positions:
-		var piece := piece_scene.instantiate() as Piece
+		var piece := eye_piece_scene.instantiate() as EyePiece
 		piece.owned_player = player
 		player_pieces[player - 1].append(piece)
 		pieces_container.add_child(piece)
@@ -237,9 +248,27 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			p.selected = false
 
 func end_turn():
-	current_player = 2 if current_player == 1 else 1
-	update_turn_text()
-	update_all_piece_vision()
+	var eye_found = false
+	for i in get_enemy_player_numbers():
+		for p in player_pieces[i - 1]:
+			if(p is EyePiece):
+				eye_found = true
+	for p in pieces_container.get_children():
+		if(p is EyePiece and p.owned_player == current_player):
+			camera.zoom_to_global_position(p.position,1.5)
+	if(eye_found):
+		turn_menu.show()
+	else: 
+		display_winner()
+
+func get_enemy_player_numbers():
+	var enemy_players: Array[int] = []
+	for i in range(player_pieces.size()) :
+		if(i+1) != current_player:
+			enemy_players.append((i + 1))
+	print(enemy_players)
+	return enemy_players
+
 
 var cur_ani_x = 0
 var cur_ani_y = 0
@@ -851,11 +880,20 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 
 	return results
 
+func move_camera_to_eye():
+	for p in pieces_container.get_children():
+		if(p is EyePiece and p.owned_player == current_player):
+			camera.zoom_to_global_position(p.position,1.5)
 
-# ------------------------------------------------
-# Replace tiles along a hex line
-# ------------------------------------------------
-# static func draw_hex_tile_line(tilemap: TileMap, a: Vector2i, b: Vector2i, tile_id: int) -> void:
-# 	var cells = hex_line(a, b)
-# 	for pos in cells:
-# 		tilemap.set_cell(pos, tile_id)
+func _on_next_pressed() -> void:
+	current_player = 2 if current_player == 1 else 1
+	update_turn_text()
+	update_all_piece_vision()
+	move_camera_to_eye()
+	turn_menu.hide()
+
+
+func _on_stay_button_pressed() -> void:
+	update_turn_text()
+	update_all_piece_vision()
+	turn_menu.hide()
