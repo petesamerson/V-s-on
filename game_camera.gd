@@ -21,8 +21,8 @@ var drag_start_position = Vector2(0,0)
 #Touch
 var touches: Dictionary = {}
 var previous_pinch_distance := 0.0
-const MIN_ZOOM := 0.4
-const MAX_ZOOM := 2.0
+const MIN_ZOOM := 0.7
+const MAX_ZOOM := 3.0
 
 #--------TEST Values Touch Pinch
 # PC pinch testing
@@ -33,6 +33,7 @@ var test_previous_distance := 0.0
 
 func _unhandled_input(event):
 	# Mouse Controls
+	var wasPinched = false
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_to_mouse(1.1)
@@ -92,6 +93,7 @@ func _unhandled_input(event):
 			touches[event.index] = event.position
 			# Start pinch tracking
 			if touches.size() == 2:
+				wasPinched = true
 				var positions = touches.values()
 				previous_pinch_distance = positions[0].distance_to(positions[1])
 		else:
@@ -102,6 +104,7 @@ func _unhandled_input(event):
 		
 		# Two fingers = pinch zoom
 		if touches.size() == 2:
+			wasPinched = true
 			print("Pinch zoom")
 			var positions = touches.values()
 			var current_distance = positions[0].distance_to(
@@ -122,8 +125,11 @@ func _unhandled_input(event):
 
 		# One finger = pan
 		elif touches.size() == 1:
-			var delta = event.relative
-			position -= delta / zoom.x
+			if(wasPinched):
+				wasPinched = false
+			else:
+				var delta = event.relative
+				position -= delta / zoom.x
 
 # =====================================
 # Zoom around mouse

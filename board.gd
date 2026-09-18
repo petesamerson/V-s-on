@@ -79,14 +79,6 @@ func spawn_all_pieces():
 	spawn_player_location(spawn1.get(spawn1.size() - 1), 1)
 	spawn_player_location(spawn2.get(spawn2.size() - 1), 2)
 
-	# var tower_piece := tower_piece_scene.instantiate() as TowerRotatePiece
-	# pieces_container.add_child(tower_piece)
-	# print(tower_piece is TowerRotatePiece)
-	# tower_piece.setup(
-	# 	Vector2i(15,15), 
-	# 	self 
-	# )
-
 	update_all_piece_vision()
 
 func spawn_player_location(center: Vector2i, player: int):

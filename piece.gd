@@ -22,7 +22,9 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	area.input_event.connect(_on_area_2d_input_event)
 
-	if(owned_player == 2):
+	if(owned_player == 1):
+		sprite.modulate = Color.BLUE
+	else:
 		sprite.modulate = Color.RED
 
 	self.z_index = 1

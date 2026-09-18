@@ -49,7 +49,16 @@ func draw_vision_change():
 			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 			
 	board.update_all_piece_vision([])
+	if(selected):
+		select_piece()
 
+
+#use to reselect
+func select_piece():
+	print("select piece" +  str(selected))
+	if(selected):
+		selected = false
+	on_clicked()
 
 
 func on_clicked():
@@ -98,7 +107,13 @@ func update_cur_rotate():
 				cur_moves.append(potential_new_move)
 
 	first_axis = board.get_line_from_center(cell, cur_direction, 10)
-	second_axis = board.get_line_from_center(cell, (cur_direction - 1) % 6, 10)
+	var second_direction = cur_direction
+	if(second_direction == 0):
+		second_direction = 5
+	else:
+		second_direction = (cur_direction - 1) % 6
+	second_axis = board.get_line_from_center(cell, second_direction, 10)
+	print("axis" + str([first_axis, second_axis]))
 	if(first_axis != null and second_axis != null):
 		var connect_line = board.hex_line(first_axis[2], second_axis[2])
 		var potential_new_move = connect_line[(connect_line.size())/2]
