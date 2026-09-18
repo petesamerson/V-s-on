@@ -23,13 +23,13 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	area.input_event.connect(_on_area_2d_input_event)
 
 	if(owned_player == 1):
-		sprite.modulate = Color.BLUE
+		sprite.modulate = Color("#00BFFF")
 	else:
 		sprite.modulate = Color.RED
 
 	self.z_index = 1
 	draw_vision_change()
-
+	
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	pass

@@ -23,4 +23,4 @@ pointing/emulate_touch_from_mouse=true
 
 [rendering]
 
-environment/defaults/default_clear_color=Color(0.16489848, 0.19667831, 0.27283025, 1)
+environment/defaults/default_clear_color=Color(0.11935415, 0.1180763, 0.119977884, 1)
