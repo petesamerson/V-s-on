@@ -37,9 +37,6 @@ func draw_vision_change():
 	# board.update_all_piece_vision([self])
 
 
-func end_turn():
-	board.end_turn()
-
 
 func on_clicked() -> void:
 	if owned_player != board.current_player:

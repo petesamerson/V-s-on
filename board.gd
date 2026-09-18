@@ -79,6 +79,7 @@ func _process(delta: float) -> void:
 @export var triangle_even_piece_scene: PackedScene
 
 @onready var player_pieces = [[],[]]
+var player_last_moves: Array[Piece] = []
 var player_vision_tiles: Array[Array] = [[],[]]
 
 func spawn_all_pieces():
@@ -247,19 +248,37 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
 
-func end_turn():
+func end_turn(movedPiece: Piece):
 	var eye_found = false
+	await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
 		for p in player_pieces[i - 1]:
 			if(p is EyePiece):
 				eye_found = true
-	for p in pieces_container.get_children():
-		if(p is EyePiece and p.owned_player == current_player):
-			camera.zoom_to_global_position(p.position,1.5)
 	if(eye_found):
 		turn_menu.show()
-	else: 
-		display_winner()
+
+func update_move_camera(movedPiece: Piece):
+	update_all_piece_vision()
+	if(movedPiece.owned_player == current_player):
+		await camera.zoom_to_global_position(
+			movedPiece.global_position,
+			camera.zoom.x
+		)
+	else:
+		if(player_last_moves.size() == player_pieces.size()):
+			await camera.zoom_to_global_position(
+				player_last_moves[current_player - 1].global_position,
+				camera.zoom.x
+			)
+
+	if(player_last_moves.size() < 2):
+		print("zoomAppend")
+		player_last_moves.append(movedPiece)
+	else:
+		print("moved")
+		player_last_moves[current_player - 1] = movedPiece
+
 
 func get_enemy_player_numbers():
 	var enemy_players: Array[int] = []
@@ -891,6 +910,10 @@ func _on_next_pressed() -> void:
 	update_all_piece_vision()
 	move_camera_to_eye()
 	turn_menu.hide()
+	if(player_last_moves.size() == player_pieces.size()):
+		await update_move_camera(
+			player_last_moves[current_player - 1]
+		)
 
 
 func _on_stay_button_pressed() -> void:

@@ -180,12 +180,14 @@ func zoom_to_global_position(
 		self,
 		"global_position",
 		target_position,
-		0.5
+		1.0
 	)
 
 	tween.tween_property(
 		self,
 		"zoom",
 		Vector2(target_zoom, target_zoom),
-		0.5
+		1.0
 	)
+	await tween.finished
+	

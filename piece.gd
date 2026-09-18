@@ -79,7 +79,7 @@ func draw_vision_change():
 			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 
 func end_turn():
-	board.end_turn()
+	board.end_turn(self)
 
 func draw_current_vision():
 	for cell in cur_vision:
