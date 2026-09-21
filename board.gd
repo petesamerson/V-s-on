@@ -200,7 +200,11 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 		for p in player_pieces[0]:
 			if(!excluded_pieces.has(p)):
 				print("updating vision for player 1")
-				p.draw_current_vision()
+				if(p.selected == true):
+					p.highlightVisionRange()
+				else:
+					p.draw_current_vision()
+				# p.draw_current_vision()
 		for p in player_pieces[0]:
 			p.visible = true
 		for p in player_pieces[1]:
@@ -209,7 +213,10 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 		for p in player_pieces[1]:
 			if(!excluded_pieces.has(p)):
 				print("updating vision for player 2")
-				p.draw_current_vision()
+				if(p.selected == true):
+					p.highlightVisionRange()
+				else:
+					p.draw_current_vision()
 		for p in player_pieces[0]:
 			p.visible = false
 		for p in player_pieces[1]:
@@ -227,6 +234,12 @@ func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
 	var enemy_player = 2 if player == 1 else 1
 	for p in player_pieces[player-1]:
 		if(p.cur_vision.has(enemy)):
+			return true
+	return false
+
+func hasCellInVision(player: int, cell: Vector2i) -> bool:
+	for p in player_pieces[player-1]:
+		if(p.cur_vision.has(cell)):
 			return true
 	return false
 

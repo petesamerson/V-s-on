@@ -54,6 +54,7 @@ func on_clicked() -> void:
 		print(["selected reached", selected])
 		board.deselect_all_pieces([self])
 	else:
+		highlightVisionRange()
 		for i in range(6):
 			var raw_moves = board.get_line_from_center(cell, i, 2)
 			var move = raw_moves[raw_moves.size() - 1]

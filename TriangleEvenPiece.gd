@@ -28,11 +28,13 @@ func on_clicked() -> void:
 		selected = false
 		board.deselect_all_pieces([self])
 	else:
+		highlightVisionRange()
 		for i in range(3):
 			var raw_moves = board.get_line_from_center(cell, 1 + i*2, 6)
 			for move in raw_moves:
 				if(board.cell_in_board(move) and move != cell):
-					cur_moves.append(move)
+					if(board.hasCellInVision(owned_player, move)):
+						cur_moves.append(move)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):

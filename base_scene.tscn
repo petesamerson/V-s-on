@@ -1,11 +1,13 @@
-[gd_scene load_steps=41 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=45 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
 [ext_resource type="Texture2D" uid="uid://capls38okfmy1" path="res://sprites/rotate1.png" id="2_ni26a"]
 [ext_resource type="Texture2D" uid="uid://c5k4xofouujet" path="res://sprites/hex_light_blue.png" id="3_3lrhi"]
 [ext_resource type="Texture2D" uid="uid://0yf4wg5too3j" path="res://sprites/hexOut2.png" id="4_oqo0w"]
+[ext_resource type="Texture2D" uid="uid://dq4qbep4elc11" path="res://sprites/hex_dark_blue_light_outline.png" id="5_0rpld"]
 [ext_resource type="Texture2D" uid="uid://dwllv78itts6c" path="res://sprites/HexStar2.png" id="5_21qnn"]
+[ext_resource type="Texture2D" uid="uid://wtxepl7dlc0h" path="res://sprites/hex_dark_red_light_outline.png" id="5_ua0oy"]
 [ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://sprites/HexStar3.png" id="6_anra8"]
 [ext_resource type="Texture2D" uid="uid://dyy56ypwu01au" path="res://sprites/hex_red.png" id="6_cl7ii"]
 [ext_resource type="Texture2D" uid="uid://d3or16dja1a82" path="res://sprites/hex_dark_blue.png" id="8_blj2i"]
@@ -46,6 +48,16 @@ texture_region_size = Vector2i(100, 100)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_hwg3g"]
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_u1i3c"]
+texture = ExtResource("5_ua0oy")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ua0oy"]
+texture = ExtResource("5_0rpld")
 texture_region_size = Vector2i(100, 100)
 0:0/0 = 0
 
@@ -100,6 +112,8 @@ sources/11 = SubResource("TileSetAtlasSource_ay483")
 sources/12 = SubResource("TileSetAtlasSource_hwg3g")
 sources/1 = SubResource("TileSetAtlasSource_ddjlp")
 sources/6 = SubResource("TileSetAtlasSource_17fj0")
+sources/2 = SubResource("TileSetAtlasSource_ua0oy")
+sources/13 = SubResource("TileSetAtlasSource_u1i3c")
 
 [sub_resource type="Theme" id="Theme_ddjlp"]
 

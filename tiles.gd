@@ -1,12 +1,16 @@
 #COLORS
 const BLACK = 0
 const SNOW_FLAKE = 1
+
 const DARK_BLUE = 7
 const LIGHT_BLUE = 11
-const DARK_GREY = 8
+const DARK_BLUE_OUTLINE = 2
+
 const LIGHT_GREY = 12
+
 const DARK_RED = 9
 const RED = 6
+const DARK_RED_OUTLINE = 13
 
 
 const HEX_LIGHT_BLUE = 3

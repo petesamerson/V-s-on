@@ -77,6 +77,7 @@ func on_clicked():
 		board.deselect_all_pieces([self])
 	else:
 		update_cur_rotate()
+		highlightVisionRange()
 		print("on_tower_clicked " + str(cur_moves.size()))
 		old_selected_tile_ids = []
 		for potential_move in cur_moves: 
@@ -104,7 +105,8 @@ func update_cur_rotate():
 			# 		board.set_cell(hex, Tiles.DARK_GREY, Vector2i(0,0))
 			var potential_new_move = connect_line[(connect_line.size())/2]
 			if(board.cell_in_board(potential_new_move) && cell != potential_new_move):
-				cur_moves.append(potential_new_move)
+				if(board.hasCellInVision(owned_player, potential_new_move)):
+					cur_moves.append(potential_new_move)
 
 	first_axis = board.get_line_from_center(cell, cur_direction, 10)
 	var second_direction = cur_direction

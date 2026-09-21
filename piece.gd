@@ -108,7 +108,6 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 # 		print("UNHANDLED")
 	
 
-
 func on_clicked() -> void:
 	if(owned_player != board.current_player):
 		return
@@ -116,6 +115,7 @@ func on_clicked() -> void:
 		return
 	if(board.current_player != owned_player):
 		return
+
 	var cell = board.local_to_map(position)  # current tile cell
 	print("Current cell:", cell , "selected", selected)
 	cur_moves = []
@@ -124,11 +124,13 @@ func on_clicked() -> void:
 		selected = false
 		board.deselect_all_pieces([self])
 	else:
+		highlightVisionRange()
 		for i in range(6):
 			var raw_moves = board.get_line_from_center(cell, i, 6)
 			for move in raw_moves:
 				if(board.cell_in_board(move) && move != cell):
-					cur_moves.append(move)
+					if(board.hasCellInVision(owned_player, cell)):
+						cur_moves.append(move)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):
@@ -138,6 +140,15 @@ func on_clicked() -> void:
 
 		selected = true
 		board.deselect_all_pieces([self])
+
+func highlightVisionRange():
+	print("hightlight")
+	for cell in cur_vision:
+		if(owned_player == 1):
+			board.set_cell(cell, Tiles.DARK_BLUE_OUTLINE, Vector2i(0,0))
+		else:
+			board.set_cell(cell, Tiles.DARK_RED_OUTLINE, Vector2i(0,0))
+	
 
 
 func _input(event):

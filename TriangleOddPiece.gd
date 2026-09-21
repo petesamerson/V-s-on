@@ -20,6 +20,8 @@ func on_clicked() -> void:
 	if owned_player != board.current_player:
 		return
 
+	highlightVisionRange()
+
 	var cell: Vector2i = board.local_to_map(position)
 	print("Current cell:", cell , "selected", selected)
 
@@ -34,7 +36,8 @@ func on_clicked() -> void:
 		var raw_moves = board.get_line_from_center(cell, direction * 2, 6)
 		for move in raw_moves:
 			if board.cell_in_board(move) and move != cell:
-				cur_moves.append(move)
+				if(board.hasCellInVision(owned_player, move)):
+					cur_moves.append(move)
 
 	for potential_move in cur_moves:
 		old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
