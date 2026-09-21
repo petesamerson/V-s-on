@@ -72,6 +72,7 @@ func _process(delta: float) -> void:
 @onready var pieces_container = $Pieces
 @onready var tilemap_layer = $TileMapLayer
 @export var piece_scene: PackedScene
+@export var core_piece_scene: PackedScene
 @export var eye_piece_scene: PackedScene
 @export var tower_piece_scene: PackedScene
 @export var hop_piece_scene: PackedScene
@@ -95,7 +96,16 @@ func spawn_all_pieces():
 
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
-	var positions = [center]
+	var core_piece := core_piece_scene.instantiate() as CorePiece
+	core_piece.owned_player = player
+	player_pieces[player - 1].append(core_piece)
+	pieces_container.add_child(core_piece)
+	core_piece.setup(center, self)
+
+	var positions = [
+		Vector2i(center.x-1,center.y),
+		Vector2i(center.x+1,center.y)
+	]
 	for pos in positions:
 		var piece := eye_piece_scene.instantiate() as EyePiece
 		piece.owned_player = player
@@ -199,11 +209,11 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	if(current_player == 1):
 		for p in player_pieces[0]:
 			if(!excluded_pieces.has(p)):
-				print("updating vision for player 1")
-				if(p.selected == true):
-					p.highlightVisionRange()
-				else:
-					p.draw_current_vision()
+				print(p.getTypeString())
+				# if(p.selected == true p.vision):
+				# 	p.highlightVisionRange()
+				# else:
+				p.draw_current_vision()
 				# p.draw_current_vision()
 		for p in player_pieces[0]:
 			p.visible = true
@@ -213,10 +223,11 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 		for p in player_pieces[1]:
 			if(!excluded_pieces.has(p)):
 				print("updating vision for player 2")
-				if(p.selected == true):
-					p.highlightVisionRange()
-				else:
-					p.draw_current_vision()
+				print(p.getTypeString())
+				# if(p.selected == true):
+				# 	p.highlightVisionRange()
+				# else:
+				p.draw_current_vision()
 		for p in player_pieces[0]:
 			p.visible = false
 		for p in player_pieces[1]:
@@ -251,6 +262,7 @@ func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
 	return
 
 func clear_board():
+	print("clear")
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
 

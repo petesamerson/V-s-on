@@ -1,5 +1,6 @@
+
 extends Piece
-class_name EyePiece
+class_name CorePiece
 
 func _ready() -> void:
 	pass
@@ -11,9 +12,12 @@ func _process(delta: float) -> void:
 func setup(inital_pos: Vector2i, b: TileMapLayer):
 	super.setup(inital_pos, b)
 
-	sprite.texture = preload("res://sprites/eye_piece.png")
-	vision_range = 3
+	sprite.texture = preload("res://sprites/core_piece.png")
+	vision_range = 0
 
+
+func draw_vision_change():
+	pass
 
 func on_clicked() -> void:
 	if board == null or position == null:
@@ -27,18 +31,19 @@ func on_clicked() -> void:
 	if selected:
 		selected = false
 		board.deselect_all_pieces([self])
+		board.update_all_piece_vision([self])
 		return
 
-	highlightVisionRange()
+	# highlightVisionRange()
 
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
 	for direction in range(6):
-		var raw_moves = board.get_line_from_center(cell, direction, 6)
+		var raw_moves = board.get_line_from_center(cell, direction, 1)
 		for move in raw_moves:
 			if board.cell_in_board(move) and move != cell:
-				if(board.hasCellInVision(owned_player, cell)):
-					cur_moves.append(move)
+				# if(board.hasCellInVision(owned_player, cell)):
+				cur_moves.append(move)
 
 	for potential_move in cur_moves:
 		old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
@@ -47,7 +52,3 @@ func on_clicked() -> void:
 
 	selected = true
 	board.deselect_all_pieces([self])
-
-func getTypeString() -> String:
-	return "Eye";
-	

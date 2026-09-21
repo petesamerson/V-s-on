@@ -69,3 +69,4 @@ func on_clicked() -> void:
 		selected = true
 
 		board.deselect_all_pieces([self])
+

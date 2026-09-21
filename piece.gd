@@ -213,3 +213,6 @@ func _equals(other) -> bool:
 		return self.position == other.position	
 	return false
 	
+
+func getTypeString() -> String:
+	return "Piece";
