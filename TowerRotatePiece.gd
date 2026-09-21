@@ -106,7 +106,8 @@ func update_cur_rotate():
 			var potential_new_move = connect_line[(connect_line.size())/2]
 			if(board.cell_in_board(potential_new_move) && cell != potential_new_move):
 				if(board.hasCellInVision(owned_player, potential_new_move)):
-					cur_moves.append(potential_new_move)
+					if(!board.friendlyPieceExistsAtCell(owned_player,potential_new_move)):
+						cur_moves.append(potential_new_move)
 
 	first_axis = board.get_line_from_center(cell, cur_direction, 10)
 	var second_direction = cur_direction

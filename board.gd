@@ -92,7 +92,7 @@ func spawn_all_pieces():
 	spawn_player_location(spawn2.get(spawn2.size() - 1), 2)
 
 	update_all_piece_vision()
-	move_camera_to_eye()
+	move_camera_to_core()
 
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
@@ -251,6 +251,12 @@ func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
 func hasCellInVision(player: int, cell: Vector2i) -> bool:
 	for p in player_pieces[player-1]:
 		if(p.cur_vision.has(cell)):
+			return true
+	return false
+
+func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
+	for p in player_pieces[player-1]:
+		if(p.get_cur_pos() == cell):
 			return true
 	return false
 
@@ -926,9 +932,9 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 
 	return results
 
-func move_camera_to_eye():
+func move_camera_to_core():
 	for p in pieces_container.get_children():
-		if(p is EyePiece and p.owned_player == current_player):
+		if(p is CorePiece and p.owned_player == current_player):
 			camera.zoom_to_global_position(p.position,1.5)
 
 func _on_next_pressed() -> void:
@@ -939,7 +945,7 @@ func _on_next_pressed() -> void:
 	current_player = 2 if current_player == 1 else 1
 	update_turn_text()
 	update_all_piece_vision()
-	move_camera_to_eye()
+	move_camera_to_core()
 	turn_menu.hide()
 	if(player_last_moves.size() == player_pieces.size()):
 		await update_move_camera(

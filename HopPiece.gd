@@ -59,7 +59,8 @@ func on_clicked() -> void:
 			var raw_moves = board.get_line_from_center(cell, i, 2)
 			var move = raw_moves[raw_moves.size() - 1]
 			if(board.cell_in_board(move)):
-				cur_moves.append(raw_moves[raw_moves.size() - 1])
+				if(!board.friendlyPieceExistsAtCell(owned_player,move)):
+					cur_moves.append(raw_moves[raw_moves.size() - 1])
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):
