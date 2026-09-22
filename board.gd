@@ -4,9 +4,11 @@ class_name Board
 @export var camera: Camera2D
 @onready var tilemap = $TileMap
 @onready var turn_label: RichTextLabel = $"../TurnLayer/TurnLabel"
+@onready var core_label: RichTextLabel = $"../TurnLayer/CoreLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 
 var Tiles = preload("res://tiles.gd")
+const GameColors = preload("res://colors.gd")
 
 var board_center = Vector2i(10, 10)
 var board_size = 10
@@ -25,6 +27,13 @@ func _ready() -> void:
 
 	call_deferred("spawn_all_pieces")
 
+	get_viewport().size_changed.connect(resize_text_overlay)
+	instantiate_turn_menu()
+	instantiate_core_menu()
+
+
+
+func instantiate_turn_menu():
 	# Apply the styling wrapper dynamically without changing the original variable
 	turn_label.bbcode_enabled = true
 	turn_label.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -42,8 +51,34 @@ func _ready() -> void:
 
 	turn_menu.hide()
 
+func resize_text_overlay():
+	update_turn_text()
+	update_core_text()
+
+
+func instantiate_core_menu():
+	# Apply the styling wrapper dynamically without changing the original variable
+	core_label.bbcode_enabled = true
+	core_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	core_label.fit_content = true
+	core_label.size = Vector2(1000, 100)
+	core_label.set_anchors_preset(Control.PRESET_CENTER)
+	core_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var viewport_size = get_viewport().get_visible_rect().size
+	core_label.position.x = (viewport_size.x - core_label.size.x) / 2
+	core_label.position.y = viewport_size.y - core_label.size.y
+
+	var raw_message = "Core Seen By 6 Pieces"
+	core_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=white]%s[/color][/b][/font_size]" % raw_message
+
+	# core_menu.hide()
+
 
 func update_turn_text():
+	var viewport_size = get_viewport().get_visible_rect().size
+	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
+	turn_label.position.y =  5
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
 		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
@@ -51,13 +86,19 @@ func update_turn_text():
 		var raw_message = "Player 2's Turn"
 		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
-func display_winner():
-	if current_player == 1:
-		var raw_message = "Player 1 WINS!"
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
-	else:
-		var raw_message = "Player 2's WINS"
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
+func display_winner(winner):
+	var raw_message = "Player "+str(winner)+" WINS!"
+	turn_label.text = "[outline_size=30][outline_color=black][font_size=60][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+
+func update_core_text(numberCanSeeCore : int = -1):
+	var viewport_size = get_viewport().get_visible_rect().size
+	core_label.position.x = (viewport_size.x - core_label.size.x) / 2
+	core_label.position.y = viewport_size.y - core_label.size.y
+
+	if(numberCanSeeCore != -1):
+		var raw_message = "Core Seen By " +  str(numberCanSeeCore) +  " Pieces"
+		core_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=white]%s[/color][/b][/font_size]" % raw_message
+
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 var timer := 0.0
@@ -272,6 +313,8 @@ func updateCorePower():
 		if(c is CorePiece and c.owned_player == current_player):
 			current_core = c
 
+	#Pieces that can see Core
+	var see_count = 0
 	for p in player_pieces[(current_player + 1)%2]:
 		if(!(p is CorePiece)):
 			if (p.cur_vision.has(current_core.get_cur_pos())):
@@ -282,7 +325,22 @@ func updateCorePower():
 				])
 				line.width = 10.0
 				line.z_index = -1
+				
+				line.default_color = get_player_color()
 				add_child(line)
+				see_count += 1
+	update_core_text(see_count)
+
+	if(see_count == 0):
+		display_winner((current_player + 1)%2 + 1)
+		
+
+
+func get_player_color() -> Color:
+	match current_player:
+		1: return GameColors.PLAYER_BLUE
+		2: return GameColors.PLAYER_RED
+	return Color.WHITE
 
 func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
 	var enemy_player = 2 if current_player == 1 else 1
@@ -313,7 +371,7 @@ func end_turn(movedPiece: Piece):
 	if(eye_found):
 		turn_menu.show()
 	else:
-		display_winner()
+		display_winner(current_player)
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()

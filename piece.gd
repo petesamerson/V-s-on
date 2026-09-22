@@ -2,9 +2,10 @@ extends Node2D
 class_name Piece
 
 
-var board: Board
 var Tiles = preload("res://tiles.gd")
+const GameColors = preload("res://colors.gd")
 
+var board: Board
 var owned_player: int = 1
 var vision_range: int = 3
 
@@ -23,9 +24,9 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	area.input_event.connect(_on_area_2d_input_event)
 
 	if(owned_player == 1):
-		sprite.modulate = Color("#00BFFF")
+		sprite.modulate = GameColors.PLAYER_BLUE
 	else:
-		sprite.modulate = Color.RED
+		sprite.modulate = GameColors.PLAYER_RED
 
 	self.z_index = 1
 	draw_vision_change()

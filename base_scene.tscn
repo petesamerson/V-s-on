@@ -187,6 +187,10 @@ offset_bottom = 23.0
 fit_content = true
 scroll_active = false
 
+[node name="CoreLabel" type="RichTextLabel" parent="TurnLayer"]
+offset_right = 40.0
+offset_bottom = 40.0
+
 [node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
 layout_mode = 3
 anchors_preset = 15
