@@ -54,6 +54,7 @@ var old_selected_tile_ids: Array[int] = []
 var cur_vision: Array[Vector2i] = []
 var vision_drawn = false
 
+#TODO rename for board position
 func get_cur_pos() -> Vector2i:
 	if(board == null or position == null):
 		return Vector2i(0,0)

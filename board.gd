@@ -93,6 +93,7 @@ func spawn_all_pieces():
 
 	update_all_piece_vision()
 	move_camera_to_core()
+	updateCorePower()
 
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
@@ -239,6 +240,8 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 				player_vision_tiles[i].append(v)
 				if (hasEnemyPieceInVision(current_player, v)):
 					setEnemyPieceVisiblity(v, true)
+
+	updateCorePower()
 					
 
 func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
@@ -259,6 +262,27 @@ func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
 		if(p.get_cur_pos() == cell):
 			return true
 	return false
+
+func updateCorePower():
+	for child in get_children():
+		if child is Line2D:
+			child.queue_free()
+	var current_core: CorePiece = null
+	for c in player_pieces[current_player-1]:
+		if(c is CorePiece and c.owned_player == current_player):
+			current_core = c
+
+	for p in player_pieces[(current_player + 1)%2]:
+		if(!(p is CorePiece)):
+			if (p.cur_vision.has(current_core.get_cur_pos())):
+				var line := Line2D.new()
+				line.points = PackedVector2Array([
+					Vector2(current_core.position.x, current_core.position.y),
+					Vector2(p.position.x, p.position.y)
+				])
+				line.width = 10.0
+				line.z_index = -1
+				add_child(line)
 
 func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
 	var enemy_player = 2 if current_player == 1 else 1
