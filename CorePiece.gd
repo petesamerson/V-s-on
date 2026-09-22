@@ -14,10 +14,14 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	sprite.texture = preload("res://sprites/core_piece.png")
 	vision_range = 0
+	z_index = 0
 
 
 func draw_vision_change():
 	pass
+
+var power_count = 8
+var move_range = 2
 
 func on_clicked() -> void:
 	if board == null or position == null:
@@ -39,7 +43,7 @@ func on_clicked() -> void:
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
 	for direction in range(6):
-		var raw_moves = board.get_line_from_center(cell, direction, 1)
+		var raw_moves = board.get_line_from_center(cell, direction, move_range)
 		for move in raw_moves:
 			if board.cell_in_board(move) and move != cell:
 				if(!board.friendlyPieceExistsAtCell(owned_player,move)):

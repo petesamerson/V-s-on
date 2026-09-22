@@ -37,7 +37,7 @@ func on_clicked() -> void:
 		var raw_moves = board.get_line_from_center(cell, direction, 6)
 		for move in raw_moves:
 			if board.cell_in_board(move) and move != cell:
-				if(board.hasCellInVision(owned_player, cell)):
+				if(board.hasCellInVision(owned_player, move)):
 					if(!board.friendlyPieceExistsAtCell(owned_player,move)):
 						cur_moves.append(move)
 

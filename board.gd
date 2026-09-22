@@ -88,12 +88,42 @@ func update_turn_text():
 
 func display_winner(winner):
 	var raw_message = "Player "+str(winner)+" WINS!"
-	turn_label.text = "[outline_size=30][outline_color=black][font_size=60][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	if winner == 1:
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=200][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	else:
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=200][b][color=red]%s[/color][/b][/font_size]" % raw_message
+	var viewport_size = get_viewport().get_visible_rect().size
+
+	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
+	turn_label.position.y = (viewport_size.y - turn_label.size.y) / 2 
+
+func determine_winner() -> int:
+	var winner = 0
+	var cores: Array[CorePiece] = []
+	for piece_list in player_pieces:
+		for p in piece_list:
+			if(p is CorePiece):
+				cores.append(p as CorePiece)
+		
+	if(cores.size() == 1):
+		return cores[0].owned_player
+	
+	var loser = 0
+	for core in cores:
+		if(core.power_count == 0):
+			loser = core.owned_player
+	if loser == 0:
+		return 0
+
+	winner = 2 if loser == 1 else 1
+	print("winner " + str(winner))
+	
+	return winner
 
 func update_core_text(numberCanSeeCore : int = -1):
 	var viewport_size = get_viewport().get_visible_rect().size
 	core_label.position.x = (viewport_size.x - core_label.size.x) / 2
-	core_label.position.y = viewport_size.y - core_label.size.y
+	core_label.position.y = viewport_size.y - (core_label.size.y) / 2 
 
 	if(numberCanSeeCore != -1):
 		var raw_message = "Core Seen By " +  str(numberCanSeeCore) +  " Pieces"
@@ -134,7 +164,7 @@ func spawn_all_pieces():
 
 	update_all_piece_vision()
 	move_camera_to_core()
-	updateCorePower()
+	update_core_power()
 
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
@@ -151,6 +181,7 @@ func spawn_player_location(center: Vector2i, player: int):
 	for pos in positions:
 		var piece := eye_piece_scene.instantiate() as EyePiece
 		piece.owned_player = player
+		piece.z_index = 2
 		player_pieces[player - 1].append(piece)
 		pieces_container.add_child(piece)
 		piece.setup(pos, self)
@@ -282,7 +313,7 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 				if (hasEnemyPieceInVision(current_player, v)):
 					setEnemyPieceVisiblity(v, true)
 
-	updateCorePower()
+	update_core_power()
 					
 
 func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
@@ -304,7 +335,7 @@ func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
 			return true
 	return false
 
-func updateCorePower():
+func update_core_power():
 	for child in get_children():
 		if child is Line2D:
 			child.queue_free()
@@ -312,6 +343,9 @@ func updateCorePower():
 	for c in player_pieces[current_player-1]:
 		if(c is CorePiece and c.owned_player == current_player):
 			current_core = c
+
+	if current_core == null:
+		return
 
 	#Pieces that can see Core
 	var see_count = 0
@@ -323,16 +357,17 @@ func updateCorePower():
 					Vector2(current_core.position.x, current_core.position.y),
 					Vector2(p.position.x, p.position.y)
 				])
-				line.width = 10.0
-				line.z_index = -1
+				line.width = 3.0
+				line.z_index = 1
 				
 				line.default_color = get_player_color()
 				add_child(line)
 				see_count += 1
 	update_core_text(see_count)
+	current_core.power_count = see_count
 
 	if(see_count == 0):
-		display_winner((current_player + 1)%2 + 1)
+		display_winner(determine_winner())
 		
 
 
@@ -362,14 +397,18 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			p.selected = false
 
 func end_turn(movedPiece: Piece):
-	var eye_found = false
+	var core_found = false
 	await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
 		for p in player_pieces[i - 1]:
-			if(p is EyePiece):
-				eye_found = true
-	if(eye_found):
-		turn_menu.show()
+			if(p is CorePiece):
+				core_found = true
+	if(core_found):
+		var potential_winner = determine_winner()
+		if(potential_winner == 0):
+			turn_menu.show()
+		else:
+			display_winner(potential_winner)
 	else:
 		display_winner(current_player)
 

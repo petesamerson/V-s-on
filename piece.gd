@@ -28,7 +28,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	else:
 		sprite.modulate = GameColors.PLAYER_RED
 
-	self.z_index = 1
+	self.z_index = 2
 	draw_vision_change()
 	
 # Called when the node enters the scene tree for the first time.
