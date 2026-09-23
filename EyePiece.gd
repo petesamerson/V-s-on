@@ -27,9 +27,10 @@ func on_clicked() -> void:
 	if selected:
 		selected = false
 		board.deselect_all_pieces([self])
+		update_piece_color()
 		return
 
-	highlightVisionRange()
+	highlight_vision_range()
 
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
@@ -47,6 +48,7 @@ func on_clicked() -> void:
 		board.set_cell(potential_move, highlight, Vector2i.ZERO)
 
 	selected = true
+	update_piece_color()
 	board.deselect_all_pieces([self])
 
 func getTypeString() -> String:

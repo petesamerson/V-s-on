@@ -26,9 +26,10 @@ func on_clicked() -> void:
 	old_selected_tile_ids = []
 	if(selected):
 		selected = false
+		update_piece_color()
 		board.deselect_all_pieces([self])
 	else:
-		highlightVisionRange()
+		highlight_vision_range()
 		for i in range(3):
 			var raw_moves = board.get_line_from_center(cell, 1 + i*2, 6)
 			for move in raw_moves:
@@ -44,4 +45,5 @@ func on_clicked() -> void:
 				board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
 
 		selected = true
+		update_piece_color()
 		board.deselect_all_pieces([self])

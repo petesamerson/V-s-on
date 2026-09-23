@@ -51,10 +51,10 @@ func on_clicked() -> void:
 	old_selected_tile_ids = []
 	if(selected):
 		selected = false
-		print(["selected reached", selected])
+		update_piece_color()
 		board.deselect_all_pieces([self])
 	else:
-		highlightVisionRange()
+		highlight_vision_range()
 		for i in range(6):
 			var raw_moves = board.get_line_from_center(cell, i, 2)
 			var move = raw_moves[raw_moves.size() - 1]
@@ -70,4 +70,4 @@ func on_clicked() -> void:
 		selected = true
 
 		board.deselect_all_pieces([self])
-
+		update_piece_color()

@@ -283,11 +283,8 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 		for p in player_pieces[0]:
 			if(!excluded_pieces.has(p)):
 				print(p.getTypeString())
-				# if(p.selected == true p.vision):
-				# 	p.highlightVisionRange()
-				# else:
 				p.draw_current_vision()
-				# p.draw_current_vision()
+				p.update_piece_color()
 		for p in player_pieces[0]:
 			p.visible = true
 		for p in player_pieces[1]:
@@ -297,10 +294,8 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 			if(!excluded_pieces.has(p)):
 				print("updating vision for player 2")
 				print(p.getTypeString())
-				# if(p.selected == true):
-				# 	p.highlightVisionRange()
-				# else:
 				p.draw_current_vision()
+				p.update_piece_color()
 		for p in player_pieces[0]:
 			p.visible = false
 		for p in player_pieces[1]:
@@ -360,9 +355,16 @@ func update_core_power():
 				line.width = 3.0
 				line.z_index = 1
 				
-				line.default_color = get_player_color()
+				current_core.update_piece_color()
+				if(current_core.selected):
+					line.default_color = Color.WHITE
+				else:
+					line.default_color = get_player_color(true)
+				p.powered = true
 				add_child(line)
 				see_count += 1
+			else:
+				p.powered = false
 	update_core_text(see_count)
 	current_core.power_count = see_count
 
@@ -371,10 +373,16 @@ func update_core_power():
 		
 
 
-func get_player_color() -> Color:
+func get_player_color(powered: bool = false) -> Color:
 	match current_player:
-		1: return GameColors.PLAYER_BLUE
-		2: return GameColors.PLAYER_RED
+		1: 
+			if(powered):
+				return GameColors.PLAYER_BLUE_POWER
+			return GameColors.PLAYER_BLUE
+		2: 
+			if(powered):
+				return GameColors.PLAYER_RED_POWER
+			return GameColors.PLAYER_RED
 	return Color.WHITE
 
 func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
@@ -395,6 +403,8 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 		if(!excluded_pieces.has(p)):
 			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
+		p.update_piece_color()
+	update_core_power()
 
 func end_turn(movedPiece: Piece):
 	var core_found = false
@@ -473,27 +483,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		)
 		var cell = local_to_map(local)
 		print(["unhandle board", cell])
-
-		# set_cell(
-		# 	cell, 
-		# 	5,
-		# 	Vector2i(0,0)
-		# )
-		# draw_hex_around(cell)
-		# draw_horz_line(cell)
-		# draw_forward_dia_line(cell)
-		# draw_back_dia_line(cell)
-
-		
-		# # draw_vision_range(cell, 2)
-		# if(player == 1) :
-		# 	draw_hex_tile_line(cell, Vector2i(cell.x - 5, cell.y), 5)
-		# 	player = 2
-		# else:
-		# 	draw_hex_tile_line(cell, Vector2i(cell.x + 5, cell.y), 5)
-		# 	player = 1
-		# draw_vision_range(cell,4)
-		# draw_hex_tile_line(cell,Vector2i(cell.x + 5, cell.y + 5), 8)
 
 		var tile_pos = map_to_local(Vector2i(3, 4))
 		print(tile_pos)

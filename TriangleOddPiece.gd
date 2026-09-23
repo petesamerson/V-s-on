@@ -20,7 +20,7 @@ func on_clicked() -> void:
 	if owned_player != board.current_player:
 		return
 
-	highlightVisionRange()
+	highlight_vision_range()
 
 	var cell: Vector2i = board.local_to_map(position)
 	print("Current cell:", cell , "selected", selected)
@@ -28,6 +28,7 @@ func on_clicked() -> void:
 	if selected:
 		selected = false
 		board.deselect_all_pieces([self])
+		update_piece_color()
 		return
 
 	cur_moves.clear()
@@ -46,4 +47,5 @@ func on_clicked() -> void:
 		board.set_cell(potential_move, highlight, Vector2i.ZERO)
 
 	selected = true
+	update_piece_color()
 	board.deselect_all_pieces([self])

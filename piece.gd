@@ -8,6 +8,7 @@ const GameColors = preload("res://colors.gd")
 var board: Board
 var owned_player: int = 1
 var vision_range: int = 3
+var powered: bool = false
 
 @onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D
@@ -124,9 +125,10 @@ func on_clicked() -> void:
 	old_selected_tile_ids = []
 	if(selected):
 		selected = false
+		update_piece_color()
 		board.deselect_all_pieces([self])
 	else:
-		highlightVisionRange()
+		highlight_vision_range()
 		for i in range(6):
 			var raw_moves = board.get_line_from_center(cell, i, 6)
 			for move in raw_moves:
@@ -142,15 +144,36 @@ func on_clicked() -> void:
 				board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
 
 		selected = true
+		update_piece_color()
+		
 		board.deselect_all_pieces([self])
 
-func highlightVisionRange():
+func highlight_vision_range():
 	print("hightlight")
 	for cell in cur_vision:
 		if(owned_player == 1):
 			board.set_cell(cell, Tiles.DARK_BLUE_OUTLINE, Vector2i(0,0))
 		else:
 			board.set_cell(cell, Tiles.DARK_RED_OUTLINE, Vector2i(0,0))
+	
+
+func update_piece_color():
+	if sprite == null: return
+	print("piece_color_update " + str(selected))
+	if(selected):
+		sprite.modulate = Color.WHITE
+	else:
+		if(owned_player == 1):
+			if(powered):
+				sprite.modulate = GameColors.PLAYER_BLUE_POWER
+			else:
+				sprite.modulate = GameColors.PLAYER_BLUE
+		else:
+			if(powered):
+				sprite.modulate = GameColors.PLAYER_RED_POWER
+			else:
+				sprite.modulate = GameColors.PLAYER_RED
+
 	
 
 

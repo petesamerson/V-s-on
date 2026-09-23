@@ -74,10 +74,11 @@ func on_clicked():
 	old_selected_rotate_tile_ids = []
 	if(selected):
 		selected = false
+		update_piece_color()
 		board.deselect_all_pieces([self])
 	else:
 		update_cur_rotate()
-		highlightVisionRange()
+		highlight_vision_range()
 		print("on_tower_clicked " + str(cur_moves.size()))
 		old_selected_tile_ids = []
 		for potential_move in cur_moves: 
@@ -88,6 +89,7 @@ func on_clicked():
 				board.set_cell(potential_move, Tiles.LIGHT_BLUE, Vector2i(0,0))
 
 		selected = true
+		update_piece_color()
 		board.deselect_all_pieces([self])
 
 func update_cur_rotate():

@@ -15,6 +15,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	sprite.texture = preload("res://sprites/core_piece.png")
 	vision_range = 0
 	z_index = 0
+	powered = true
 
 
 func draw_vision_change():
@@ -36,9 +37,9 @@ func on_clicked() -> void:
 		selected = false
 		board.deselect_all_pieces([self])
 		board.update_all_piece_vision([self])
+		update_piece_color()
+		board.update_core_power()
 		return
-
-	# highlightVisionRange()
 
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
@@ -55,4 +56,6 @@ func on_clicked() -> void:
 		board.set_cell(potential_move, highlight, Vector2i.ZERO)
 
 	selected = true
+	update_piece_color()
+	board.update_core_power()
 	board.deselect_all_pieces([self])

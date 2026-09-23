@@ -244,5 +244,9 @@ text = "Add Turn to
 Current Player
 "
 
+[node name="Panel" type="Panel" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0
+
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
