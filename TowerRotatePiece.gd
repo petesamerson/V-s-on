@@ -76,6 +76,7 @@ func on_clicked():
 		selected = false
 		update_piece_color()
 		board.deselect_all_pieces([self])
+		board.update_cur_rotate_board()
 	else:
 		update_cur_rotate()
 		highlight_vision_range()
@@ -93,6 +94,10 @@ func on_clicked():
 		board.deselect_all_pieces([self])
 
 func update_cur_rotate():
+	if(board == null or position == null):
+		return
+	if owned_player != board.current_player:
+		return
 	var cell = board.local_to_map(position)
 	var first_axis = board.get_line_from_center(cell, cur_direction, 10)
 	var second_axis = board.get_line_from_center(cell, (cur_direction + 1) % 6, 10)
@@ -136,6 +141,8 @@ func update_cur_rotate():
 	for potential_rotate in cur_rotate: 
 		old_selected_rotate_tile_ids.append(board.get_cell_source_id(potential_rotate))
 		board.set_cell(potential_rotate, Tiles.SNOW_FLAKE, Vector2i(0,0))
+
+	board.update_cur_rotate_board(cur_rotate)
 
 
 func handle_move_input_event(event: InputEvent):

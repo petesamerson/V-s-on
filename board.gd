@@ -361,6 +361,7 @@ func update_core_power():
 				else:
 					line.default_color = get_player_color(true)
 				p.powered = true
+				p.update_piece_color()
 				add_child(line)
 				see_count += 1
 			else:
@@ -370,6 +371,20 @@ func update_core_power():
 
 	if(see_count == 0):
 		display_winner(determine_winner())
+
+func update_cur_rotate_board(cur_rotate: Array[Vector2i] = []):
+	for child in get_children():
+		if child is Sprite2D:
+			child.queue_free()
+	for rotate_cell in cur_rotate:
+		var source_id := get_cell_source_id(rotate_cell)
+		var source := tile_set.get_source(source_id) as TileSetAtlasSource
+		var sprite := Sprite2D.new()
+		sprite.texture = source.get_texture()
+		var world_position := map_to_local(rotate_cell)
+		sprite.position = world_position
+		sprite.z_index = 3
+		add_child(sprite)
 		
 
 
@@ -396,6 +411,7 @@ func clear_board():
 	print("clear")
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
+	update_cur_rotate_board()
 
 
 func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
