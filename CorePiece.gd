@@ -48,7 +48,8 @@ func on_clicked() -> void:
 		for move in raw_moves:
 			if board.cell_in_board(move) and move != cell:
 				if(!board.friendlyPieceExistsAtCell(owned_player,move)):
-					cur_moves.append(move)
+					if(calculate_move_core_power(move) != 0):
+						cur_moves.append(move)
 
 	for potential_move in cur_moves:
 		old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
@@ -60,3 +61,14 @@ func on_clicked() -> void:
 	board.update_core_power()
 	board.deselect_all_pieces([self])
 	update_capture_on_board()
+
+
+func calculate_move_core_power(potential_move: Vector2i = get_cur_pos()):
+	#Pieces that can see Core
+	var see_count = 0
+	for p in board.player_pieces[(owned_player + 1)%2]:
+		if(!(p is CorePiece)):
+			if (p.cur_vision.has(potential_move)):
+				see_count += 1
+
+	return see_count

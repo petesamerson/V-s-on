@@ -24,10 +24,28 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	
 var cur_direction = 5
 var cur_rotate: Array[Vector2i] = []
+var rotate_map: Dictionary = {
+	"pivot1": Vector2i(-1,0),
+	"pivot2": Vector2i(-1,0)
+}
 var old_selected_rotate_tile_ids: Array[int]= []
+var old_rotate_tile_ids: Dictionary = {
+	"pivot1": -1,
+	"pivot2": -1
+}
 
 func update_sprite_rotation():
 	sprite.rotation_degrees = (cur_direction + 1)*60 - 30
+
+func clear_rotate_maps():
+	rotate_map= {
+		"pivot1": Vector2i(-1,0),
+		"pivot2": Vector2i(-1,0)
+	}
+	old_rotate_tile_ids= {
+		"pivot1": -1,
+		"pivot2": -1
+	}
 
 func draw_vision_change():
 	var cur_pos = board.local_to_map(position)
@@ -52,6 +70,15 @@ func draw_vision_change():
 	if(selected):
 		select_piece()
 
+func get_potential_vision(new_pos: Vector2i, direction: int = cur_direction) -> Array[Vector2i]:
+	var cur_pos = board.local_to_map(position)
+	var raw_vision = board.get_triangle_tiles_from_center(new_pos, 5, direction)
+	var new_vision: Array[Vector2i] = []
+	
+	for cell in raw_vision:
+		if(board.cell_in_board(cell)):
+			new_vision.append(cell)
+	return new_vision
 
 #use to reselect
 func select_piece():
@@ -72,11 +99,12 @@ func on_clicked():
 	cur_rotate = []
 	old_selected_tile_ids = []
 	old_selected_rotate_tile_ids = []
+	clear_rotate_maps()
 	if(selected):
 		selected = false
 		update_piece_color()
 		board.deselect_all_pieces([self])
-		board.update_cur_rotate_board()
+		board.update_rotate_map_board()
 	else:
 		update_cur_rotate()
 		highlight_vision_range()
@@ -107,15 +135,9 @@ func update_cur_rotate():
 	for i in range(first_axis.size()):
 		if(i%2 == 0):
 			var connect_line = board.hex_line(first_axis[i], second_axis[i])
-
-			# if(i == 2):
-			# 	for hex in connect_line: 
-			# 		board.set_cell(hex, Tiles.DARK_GREY, Vector2i(0,0))
 			var potential_new_move = connect_line[(connect_line.size())/2]
-			if(board.cell_in_board(potential_new_move) && cell != potential_new_move):
-				if(board.hasCellInVision(owned_player, potential_new_move)):
-					if(!board.friendlyPieceExistsAtCell(owned_player,potential_new_move)):
-						cur_moves.append(potential_new_move)
+			if(board.move_visible_and_unoccupied(potential_new_move, cell, self)):
+				cur_moves.append(potential_new_move)
 
 	first_axis = board.get_line_from_center(cell, cur_direction, 10)
 	var second_direction = cur_direction
@@ -129,7 +151,9 @@ func update_cur_rotate():
 		var connect_line = board.hex_line(first_axis[2], second_axis[2])
 		var potential_new_move = connect_line[(connect_line.size())/2]
 		if(board.cell_in_board(potential_new_move)):
-			cur_rotate.append(potential_new_move)
+			if !board.does_rotate_unpower_core(self, true):
+				# cur_rotate.append(potential_new_move)
+				rotate_map["pivot1"] = potential_new_move
 
 		first_axis = board.get_line_from_center(cell, (cur_direction + 1) % 6, 10)
 		second_axis = board.get_line_from_center(cell, (cur_direction + 2) % 6, 10)
@@ -137,13 +161,18 @@ func update_cur_rotate():
 			connect_line = board.hex_line(first_axis[2], second_axis[2])
 			potential_new_move = connect_line[(connect_line.size())/2]
 			if(board.cell_in_board(potential_new_move)):
-				cur_rotate.append(potential_new_move)
+				if !board.does_rotate_unpower_core(self, false):
+					# cur_rotate.append(potential_new_move)
+					rotate_map["pivot2"] = potential_new_move
 	draw_vision_change()
-	for potential_rotate in cur_rotate: 
-		old_selected_rotate_tile_ids.append(board.get_cell_source_id(potential_rotate))
-		board.set_cell(potential_rotate, Tiles.SNOW_FLAKE, Vector2i(0,0))
+	# for potential_rotate in cur_rotate: 
+	# 	old_selected_rotate_tile_ids.append(board.get_cell_source_id(potential_rotate))
+	# 	board.set_cell(potential_rotate, Tiles.SNOW_FLAKE, Vector2i(0,0))
+	for key in rotate_map.keys(): 
+		old_rotate_tile_ids[key] = board.get_cell_source_id(rotate_map[key])
+		board.set_cell(rotate_map[key], Tiles.SNOW_FLAKE, Vector2i(0,0))
 
-	board.update_cur_rotate_board(cur_rotate)
+	board.update_rotate_map_board(rotate_map)
 
 
 func handle_move_input_event(event: InputEvent):
@@ -152,10 +181,11 @@ func handle_move_input_event(event: InputEvent):
 		var local_mouse = board.to_local(global_mouse)
 		var cell = board.local_to_map(local_mouse)
 		var found = false
-		for i in range(cur_rotate.size()):
-			if(cell == cur_rotate[i]):
+
+		for key in rotate_map.keys():
+			if(cell == rotate_map[key]):
 				found = true
-				if(i == 0):
+				if(key == "pivot1"):
 					if cur_direction == 0:
 						cur_direction = 5
 					else:
@@ -163,22 +193,39 @@ func handle_move_input_event(event: InputEvent):
 				else:
 					cur_direction = (cur_direction + 1) % 6
 				sprite.rotation_degrees = (cur_direction + 1)*60 - 30
+
+		# for i in range(cur_rotate.size()):
+		# 	if(cell == cur_rotate[i]):
+		# 		found = true
+		# 		if(i == 0):
+		# 			if cur_direction == 0:
+		# 				cur_direction = 5
+		# 			else:
+		# 				cur_direction = cur_direction - 1
+		# 		else:
+		# 			cur_direction = (cur_direction + 1) % 6
+		# 		sprite.rotation_degrees = (cur_direction + 1)*60 - 30
 		if found:
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]
 				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
-			for i in range(cur_rotate.size()):
-				var old_move = cur_rotate[i]
-				board.set_cell(old_move, old_selected_rotate_tile_ids[i], Vector2i(0,0))
+			# for i in range(cur_rotate.size()):
+			for key in rotate_map.keys():
+				var old_move = rotate_map[key]#cur_rotate[i]
+				board.set_cell(old_move, old_rotate_tile_ids[key], Vector2i(0,0))
 			old_selected_tile_ids = []
 			old_selected_rotate_tile_ids = []
 			cur_moves = []
 			cur_rotate = []
 			draw_vision_change()
 		else:
-			for i in range(cur_rotate.size()):
-				var old_move = cur_rotate[i]
-				board.set_cell(old_move, old_selected_rotate_tile_ids[i], Vector2i(0,0))
+			# for i in range(cur_rotate.size()):
+			# 	var old_move = cur_rotate[i]
+			# 	board.set_cell(old_move, old_selected_rotate_tile_ids[i], Vector2i(0,0))
+			for key in rotate_map.keys():
+				var old_move = rotate_map[key]#cur_rotate[i]
+				board.set_cell(old_move, old_rotate_tile_ids[key], Vector2i(0,0))
+			clear_rotate_maps()
 			cur_rotate = []
 			old_selected_rotate_tile_ids = []
 			super.handle_move_input_event(event)

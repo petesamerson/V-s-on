@@ -364,14 +364,57 @@ func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
 			return true
 	return false
 
-func update_core_power():
-	for child in get_children():
-		if child is Line2D:
-			child.queue_free()
+func get_current_core() -> CorePiece:
 	var current_core: CorePiece = null
 	for c in player_pieces[current_player-1]:
 		if(c is CorePiece and c.owned_player == current_player):
 			current_core = c
+	return current_core
+
+func does_move_unpower_core(moved_piece: Piece, new_move: Vector2i) -> bool:
+	var core = get_current_core()
+	if(moved_piece.cur_vision.has(core.get_cur_pos())):
+		if(core.power_count == 1):
+			if(!moved_piece.get_potential_vision(new_move).has(core.get_cur_pos())):
+				return true
+	return false
+
+func does_rotate_unpower_core(piece: TowerRotatePiece, first_rotate: bool) -> bool:
+	var core = get_current_core()
+	var new_direction = piece.cur_direction
+	if(first_rotate):
+		if new_direction == 0:
+			new_direction = 5
+		else:
+			new_direction = new_direction - 1
+	else:
+		new_direction = (new_direction + 1) % 6
+
+	if(piece.cur_vision.has(core.get_cur_pos())):
+		if(core.power_count == 1):
+			if(!piece.get_potential_vision(piece.get_cur_pos(), new_direction).has(core.get_cur_pos())):
+				return true
+	return false
+				
+			
+func move_visible_and_unoccupied(
+	move: Vector2i,
+	currentCell: Vector2i,
+	piece: Piece
+) -> bool:
+	if(cell_in_board(move) && move != currentCell):
+		if(hasCellInVision(current_player, move)):
+			if(!friendlyPieceExistsAtCell(current_player,move)):
+				if(!does_move_unpower_core(piece, move)):
+					return true
+	return false
+
+
+func update_core_power():
+	for child in get_children():
+		if child is Line2D:
+			child.queue_free()
+	var current_core: = get_current_core()
 
 	if current_core == null:
 		return
@@ -408,18 +451,20 @@ func update_core_power():
 
 var rotate_sprites: Node2D
 
-func update_cur_rotate_board(cur_rotate: Array[Vector2i] = []):
+func update_rotate_map_board(rotate_map: Dictionary = {}):
 	for child in rotate_sprites.get_children():
 		child.queue_free()
-	for rotate_cell in cur_rotate:
-		var source_id := get_cell_source_id(rotate_cell)
-		var source := tile_set.get_source(source_id) as TileSetAtlasSource
-		var sprite := Sprite2D.new()
-		sprite.texture = source.get_texture()
-		var world_position := map_to_local(rotate_cell)
-		sprite.position = world_position
-		# add_child(sprite)
-		rotate_sprites.add_child(sprite)
+	if(rotate_map.size() != 0):
+		for key in rotate_map.keys():
+			var rotate_cell = rotate_map[key]
+			var source_id := get_cell_source_id(rotate_cell)
+			var source := tile_set.get_source(source_id) as TileSetAtlasSource
+			var sprite := Sprite2D.new()
+			sprite.texture = source.get_texture()
+			var world_position := map_to_local(rotate_cell)
+			sprite.position = world_position
+			# add_child(sprite)
+			rotate_sprites.add_child(sprite)
 		
 
 
@@ -446,7 +491,7 @@ func clear_board():
 	print("clear")
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
-	update_cur_rotate_board()
+	update_rotate_map_board()
 
 
 func deselect_all_pieces(excluded_pieces: Array[Piece] = []):

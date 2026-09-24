@@ -81,6 +81,16 @@ func draw_vision_change():
 		else:
 			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 
+func get_potential_vision(new_pos: Vector2i) -> Array[Vector2i]:
+	var cur_pos = board.local_to_map(position)
+	var raw_vision = board.get_hexagon_tiles(new_pos, vision_range)
+	var new_vision: Array[Vector2i] = []
+	
+	for cell in raw_vision:
+		if(board.cell_in_board(cell)):
+			new_vision.append(cell)
+	return new_vision
+
 func end_turn():
 	board.end_turn(self)
 
@@ -132,10 +142,8 @@ func on_clicked() -> void:
 		for i in range(6):
 			var raw_moves = board.get_line_from_center(cell, i, 6)
 			for move in raw_moves:
-				if(board.cell_in_board(move) && move != cell):
-					if(board.hasCellInVision(owned_player, cell)):
-						if(!board.friendlyPieceExistsAtCell(owned_player,cell)):
-							cur_moves.append(move)
+				if(board.move_visible_and_unoccupied(move, cell, self)):
+					cur_moves.append(move)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):
@@ -151,7 +159,6 @@ func on_clicked() -> void:
 func update_capture_on_board():
 	for move in cur_moves:
 		var enemy_player = 2 if owned_player == 1 else 1
-		print("reached move" )
 		if(board.get_enemy_piece_at_cell(move, enemy_player) != null):
 			board.set_take_piece_sprite(move)
 

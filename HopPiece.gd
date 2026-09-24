@@ -13,6 +13,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	super.setup(inital_pos, b)
 
 	sprite.texture = preload("res://sprites/Hop1.png")
+	vision_range = 2
 
 
 func draw_vision_change(): 
@@ -58,9 +59,8 @@ func on_clicked() -> void:
 		for i in range(6):
 			var raw_moves = board.get_line_from_center(cell, i, 2)
 			var move = raw_moves[raw_moves.size() - 1]
-			if(board.cell_in_board(move)):
-				if(!board.friendlyPieceExistsAtCell(owned_player,move)):
-					cur_moves.append(raw_moves[raw_moves.size() - 1])
+			if board.move_visible_and_unoccupied(move,cell,self):
+				cur_moves.append(move)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):

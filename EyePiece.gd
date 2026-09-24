@@ -35,12 +35,10 @@ func on_clicked() -> void:
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
 	for direction in range(6):
-		var raw_moves = board.get_line_from_center(cell, direction, 6)
+		var raw_moves = board.get_line_from_center(cell, direction, 10)
 		for move in raw_moves:
-			if board.cell_in_board(move) and move != cell:
-				if(board.hasCellInVision(owned_player, move)):
-					if(!board.friendlyPieceExistsAtCell(owned_player,move)):
-						cur_moves.append(move)
+			if board.move_visible_and_unoccupied(move,cell,self):
+				cur_moves.append(move)
 
 	for potential_move in cur_moves:
 		old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
