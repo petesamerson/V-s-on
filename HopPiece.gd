@@ -71,3 +71,4 @@ func on_clicked() -> void:
 
 		board.deselect_all_pieces([self])
 		update_piece_color()
+		update_capture_on_board()

@@ -145,8 +145,15 @@ func on_clicked() -> void:
 
 		selected = true
 		update_piece_color()
-		
 		board.deselect_all_pieces([self])
+		update_capture_on_board()
+
+func update_capture_on_board():
+	for move in cur_moves:
+		var enemy_player = 2 if owned_player == 1 else 1
+		print("reached move" )
+		if(board.get_enemy_piece_at_cell(move, enemy_player) != null):
+			board.set_take_piece_sprite(move)
 
 func highlight_vision_range():
 	print("hightlight")

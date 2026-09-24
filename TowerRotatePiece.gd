@@ -92,6 +92,7 @@ func on_clicked():
 		selected = true
 		update_piece_color()
 		board.deselect_all_pieces([self])
+		update_capture_on_board()
 
 func update_cur_rotate():
 	if(board == null or position == null):

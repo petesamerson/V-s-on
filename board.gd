@@ -7,6 +7,8 @@ class_name Board
 @onready var core_label: RichTextLabel = $"../TurnLayer/CoreLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 
+@export var capture_texture: Texture2D
+
 var Tiles = preload("res://tiles.gd")
 const GameColors = preload("res://colors.gd")
 
@@ -28,8 +30,21 @@ func _ready() -> void:
 	call_deferred("spawn_all_pieces")
 
 	get_viewport().size_changed.connect(resize_text_overlay)
+
 	instantiate_turn_menu()
 	instantiate_core_menu()
+
+	intialize_drawn_sprite_nodes()
+
+
+func intialize_drawn_sprite_nodes():
+	rotate_sprites = Node2D.new()
+	rotate_sprites.z_index = 3
+	add_child(rotate_sprites)
+
+	capture_sprites = Node2D.new()
+	capture_sprites.z_index = 3
+	add_child(capture_sprites)
 
 
 
@@ -309,6 +324,7 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 					setEnemyPieceVisiblity(v, true)
 
 	update_core_power()
+
 					
 
 func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
@@ -323,6 +339,24 @@ func hasCellInVision(player: int, cell: Vector2i) -> bool:
 		if(p.cur_vision.has(cell)):
 			return true
 	return false
+
+var capture_sprites: Node2D
+func set_take_piece_sprite(enemy_loc: Vector2i):
+	# for child in capture_sprites.get_children():
+	# 	child.queue_free()
+	var sprite := Sprite2D.new()
+	sprite.texture = capture_texture
+	var world_position := map_to_local(enemy_loc)
+	sprite.position = world_position
+	# add_child(sprite)
+	capture_sprites.add_child(sprite)
+
+func clear_captures():
+	for child in capture_sprites.get_children():
+		child.queue_free()
+	
+
+	
 
 func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
 	for p in player_pieces[player-1]:
@@ -372,10 +406,11 @@ func update_core_power():
 	if(see_count == 0):
 		display_winner(determine_winner())
 
+var rotate_sprites: Node2D
+
 func update_cur_rotate_board(cur_rotate: Array[Vector2i] = []):
-	for child in get_children():
-		if child is Sprite2D:
-			child.queue_free()
+	for child in rotate_sprites.get_children():
+		child.queue_free()
 	for rotate_cell in cur_rotate:
 		var source_id := get_cell_source_id(rotate_cell)
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
@@ -383,8 +418,8 @@ func update_cur_rotate_board(cur_rotate: Array[Vector2i] = []):
 		sprite.texture = source.get_texture()
 		var world_position := map_to_local(rotate_cell)
 		sprite.position = world_position
-		sprite.z_index = 3
-		add_child(sprite)
+		# add_child(sprite)
+		rotate_sprites.add_child(sprite)
 		
 
 
@@ -421,9 +456,11 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 			p.selected = false
 		p.update_piece_color()
 	update_core_power()
+	clear_captures()
 
 func end_turn(movedPiece: Piece):
 	var core_found = false
+	clear_captures()
 	await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
 		for p in player_pieces[i - 1]:
