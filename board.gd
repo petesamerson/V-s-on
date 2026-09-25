@@ -49,7 +49,8 @@ func update_mobile_scale():
 	if is_mobile_browser:
 		SelectionPanel.scale = Vector2(2.0,2.0)
 	else:
-		SelectionPanel.scale = Vector2(3.0,3.0)
+		pass
+		# SelectionPanel.scale = Vector2(3.0,3.0)
 
 	# var touch_device := DisplayServer.is_touchscreen_available()
 
