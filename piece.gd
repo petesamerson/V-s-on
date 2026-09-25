@@ -169,6 +169,8 @@ func highlight_vision_range():
 			board.set_cell(cell, Tiles.DARK_BLUE_OUTLINE, Vector2i(0,0))
 		else:
 			board.set_cell(cell, Tiles.DARK_RED_OUTLINE, Vector2i(0,0))
+
+	board.update_selection_panel(self)
 	
 
 func update_piece_color():
@@ -256,3 +258,6 @@ func _equals(other) -> bool:
 
 func getTypeString() -> String:
 	return "Piece";
+
+func getTypedDescription() -> String:
+	return "This is the Piece that all Pieces are a clone of"

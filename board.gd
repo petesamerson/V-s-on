@@ -6,7 +6,7 @@ class_name Board
 @onready var turn_label: RichTextLabel = $"../TurnLayer/TurnLabel"
 @onready var core_label: RichTextLabel = $"../TurnLayer/CoreLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
-@onready var SelectionPanel= $"../TurnLayer/SelectionPanel"
+@onready var selection_panel= $"../TurnLayer/SelectionPanel"
 
 @export var capture_texture: Texture2D
 
@@ -47,7 +47,7 @@ func update_mobile_scale():
 	)
 	
 	if is_mobile_browser:
-		SelectionPanel.scale = Vector2(2.0,2.0)
+		selection_panel.scale = Vector2(2.0,2.0)
 	else:
 		pass
 		# SelectionPanel.scale = Vector2(3.0,3.0)
@@ -129,6 +129,30 @@ func display_winner(winner):
 
 	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y = (viewport_size.y - turn_label.size.y) / 2 
+
+func update_selection_panel(selectedPiece: Piece):
+	var margin_container = selection_panel.get_child(0) as MarginContainer
+	var v_box_root = margin_container.get_child(0) as VBoxContainer
+	var h_box = v_box_root.get_child(0) as HBoxContainer
+	for child in h_box.get_children():
+		if child is PanelContainer:
+			var tr = child.get_child(0) as TextureRect
+			tr.texture = selectedPiece.sprite.texture
+		if child is VBoxContainer:
+			for label in child.get_children():
+				if(label is Label):
+					match label.name:
+						"PieceName":
+							label.text = selectedPiece.getTypeString()
+						"Description":
+							label.text = selectedPiece.getTypedDescription()
+						"MoveRange":
+							label.text = "MoveRange: " + str(selectedPiece.vision_range)
+						"VisionRange":
+							label.text = "VisionRange: " + str(selectedPiece.vision_range)
+			
+
+
 
 func determine_winner() -> int:
 	var winner = 0

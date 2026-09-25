@@ -1,4 +1,4 @@
-[gd_scene load_steps=50 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=52 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -138,6 +138,15 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0, 0.9426603, 0.65268576, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ixihg"]
+bg_color = Color(0, 0, 0, 0.43137255)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_6ow2y"]
+
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
 
@@ -254,7 +263,7 @@ Current Player
 "
 
 [node name="SelectionPanel" type="Panel" parent="TurnLayer"]
-custom_minimum_size = Vector2(300, 200)
+custom_minimum_size = Vector2(350, 200)
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -273,10 +282,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
 [node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer"]
 layout_mode = 2
@@ -293,7 +302,7 @@ theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 25
 text = "Type: Core"
 
-[node name="Label" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="Description" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
@@ -312,12 +321,17 @@ theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 16
 text = "Vision Range = 4"
 
-[node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(150, 150)
+[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ixihg")
+
+[node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+theme = SubResource("Theme_6ow2y")
 texture = ExtResource("31_ixihg")
-expand_mode = 1
-stretch_mode = 3
+stretch_mode = 5
 
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]

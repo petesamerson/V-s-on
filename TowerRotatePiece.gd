@@ -229,3 +229,9 @@ func handle_move_input_event(event: InputEvent):
 			cur_rotate = []
 			old_selected_rotate_tile_ids = []
 			super.handle_move_input_event(event)
+
+func getTypeString() -> String:
+	return "RotateTower";
+
+func getTypedDescription() -> String:
+	return "This piece is the only piece that can rotate, rotation does not cost a turn!"
