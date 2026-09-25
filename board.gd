@@ -29,12 +29,26 @@ func _ready() -> void:
 
 	call_deferred("spawn_all_pieces")
 
+	update_mobile_scale()
 	get_viewport().size_changed.connect(resize_text_overlay)
 
 	instantiate_turn_menu()
 	instantiate_core_menu()
 
 	intialize_drawn_sprite_nodes()
+
+var is_mobile_browser: bool = false
+
+func update_mobile_scale():
+	is_mobile_browser = (
+		OS.has_feature("web_android")
+		or OS.has_feature("web_ios")
+	)
+	
+	if is_mobile_browser:
+		turn_menu.scale = 2.0
+	
+	# var touch_device := DisplayServer.is_touchscreen_available()
 
 
 func intialize_drawn_sprite_nodes():
