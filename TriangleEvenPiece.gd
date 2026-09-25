@@ -14,6 +14,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer) -> void:
 	super.setup(inital_pos, b)
 	sprite.texture = preload("res://sprites/triangle_piece.png")
 
+
 func on_clicked() -> void:
 	if(owned_player != board.current_player):
 		return
@@ -31,7 +32,7 @@ func on_clicked() -> void:
 	else:
 		highlight_vision_range()
 		for i in range(3):
-			var raw_moves = board.get_line_from_center(cell, 1 + i*2, 6)
+			var raw_moves = board.get_line_from_center(cell, 1 + i*2, move_range)
 			for move in raw_moves:
 				if board.move_visible_and_unoccupied(move,cell,self):
 					cur_moves.append(move)
@@ -46,3 +47,10 @@ func on_clicked() -> void:
 		update_piece_color()
 		board.deselect_all_pieces([self])
 		update_capture_on_board()
+
+
+func getTypeString() -> String:
+	return "Trihex";
+
+func getTypedDescription() -> String:
+	return "This piece can move in the 3 directions its triangle points to"

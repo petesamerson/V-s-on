@@ -47,7 +47,7 @@ func update_mobile_scale():
 	)
 	
 	if is_mobile_browser:
-		selection_panel.scale = Vector2(2.0,2.0)
+		selection_panel.scale = Vector2(2.5,2.5)
 	else:
 		pass
 		# SelectionPanel.scale = Vector2(3.0,3.0)
@@ -76,11 +76,11 @@ func instantiate_turn_menu():
 	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	var viewport_size = get_viewport().get_visible_rect().size
-	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
+	turn_label.position.x = 5 # (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y =  5
 
 	var raw_message = "Player 1's Turn \nCapture Core To Win! \n(You are Invisible to Player 2)"
-	turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	turn_label.text = "[outline_size=30][outline_color=black][font_size=30][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 
 	turn_menu.hide()
 
@@ -94,23 +94,25 @@ func instantiate_core_menu():
 	core_label.bbcode_enabled = true
 	core_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	core_label.fit_content = true
-	core_label.size = Vector2(1000, 100)
+	core_label.size = Vector2(400, 100)
 	core_label.set_anchors_preset(Control.PRESET_CENTER)
 	core_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	var viewport_size = get_viewport().get_visible_rect().size
-	core_label.position.x = (viewport_size.x - core_label.size.x) / 2
-	core_label.position.y = viewport_size.y - core_label.size.y
+	core_label.position.x = viewport_size.x - core_label.size.x - 5
+	core_label.position.y = 5
 
 	var raw_message = "Core Seen By 6 Pieces"
-	core_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=white]%s[/color][/b][/font_size]" % raw_message
+	core_label.text = "[outline_size=30][outline_color=black][font_size=30][b][color=white]%s[/color][/b][/font_size]" % raw_message
 
 	# core_menu.hide()
 
 
 func update_turn_text():
 	var viewport_size = get_viewport().get_visible_rect().size
-	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
+	# turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
+	# turn_label.position.y =  5
+	turn_label.position.x = 5 # (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y =  5
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
@@ -147,7 +149,7 @@ func update_selection_panel(selectedPiece: Piece):
 						"Description":
 							label.text = selectedPiece.getTypedDescription()
 						"MoveRange":
-							label.text = "MoveRange: " + str(selectedPiece.vision_range)
+							label.text = "MoveRange: " + str(selectedPiece.move_range)
 						"VisionRange":
 							label.text = "VisionRange: " + str(selectedPiece.vision_range)
 			
@@ -179,8 +181,8 @@ func determine_winner() -> int:
 
 func update_core_text(numberCanSeeCore : int = -1):
 	var viewport_size = get_viewport().get_visible_rect().size
-	core_label.position.x = (viewport_size.x - core_label.size.x) / 2
-	core_label.position.y = viewport_size.y - (core_label.size.y) / 2 
+	core_label.position.x = viewport_size.x - core_label.size.x - 5
+	core_label.position.y = 5
 
 	if(numberCanSeeCore != -1):
 		var raw_message = "Core Seen By " +  str(numberCanSeeCore) +  " Pieces"
@@ -225,11 +227,14 @@ func spawn_all_pieces():
 
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
+
 	var core_piece := core_piece_scene.instantiate() as CorePiece
 	core_piece.owned_player = player
 	player_pieces[player - 1].append(core_piece)
 	pieces_container.add_child(core_piece)
 	core_piece.setup(center, self)
+	update_selection_panel(core_piece)
+	
 
 	var positions = [
 		Vector2i(center.x-1,center.y),
@@ -1183,9 +1188,11 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 	return results
 
 func move_camera_to_core():
-	for p in pieces_container.get_children():
-		if(p is CorePiece and p.owned_player == current_player):
-			camera.zoom_to_global_position(p.position,1.5)
+	var core  =get_current_core()
+	camera.zoom_to_global_position(core.position,1.5)
+	# for p in pieces_container.get_children():
+	# 	if(p is CorePiece and p.owned_player == current_player):
+	update_selection_panel(core)
 
 func _on_next_pressed() -> void:
 	var enemy_eye = false
@@ -1201,6 +1208,7 @@ func _on_next_pressed() -> void:
 		await update_move_camera(
 			player_last_moves[current_player - 1]
 		)
+	
 
 
 func _on_stay_button_pressed() -> void:

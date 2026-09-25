@@ -8,6 +8,7 @@ const GameColors = preload("res://colors.gd")
 var board: Board
 var owned_player: int = 1
 var vision_range: int = 3
+var move_range: = 6
 var powered: bool = false
 
 @onready var area: Area2D = $Area2D
@@ -140,7 +141,7 @@ func on_clicked() -> void:
 	else:
 		highlight_vision_range()
 		for i in range(6):
-			var raw_moves = board.get_line_from_center(cell, i, 6)
+			var raw_moves = board.get_line_from_center(cell, i, move_range)
 			for move in raw_moves:
 				if(board.move_visible_and_unoccupied(move, cell, self)):
 					cur_moves.append(move)

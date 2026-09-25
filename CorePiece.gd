@@ -14,6 +14,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	sprite.texture = preload("res://sprites/core_piece.png")
 	vision_range = 0
+	move_range = 2
 	z_index = 0
 	powered = true
 
@@ -22,7 +23,6 @@ func draw_vision_change():
 	pass
 
 var power_count = 8
-var move_range = 2
 
 func on_clicked() -> void:
 	if board == null or position == null:
@@ -58,6 +58,7 @@ func on_clicked() -> void:
 
 	selected = true
 	update_piece_color()
+	board.update_selection_panel(self) #different for core 
 	board.update_core_power()
 	board.deselect_all_pieces([self])
 	update_capture_on_board()
@@ -72,3 +73,10 @@ func calculate_move_core_power(potential_move: Vector2i = get_cur_pos()):
 				see_count += 1
 
 	return see_count
+
+
+func getTypeString() -> String:
+	return "Core";
+
+func getTypedDescription() -> String:
+	return "This is the core. The most important piece in the game. If you loose sight of or lose this piece you lose the game!"

@@ -34,7 +34,7 @@ func on_clicked() -> void:
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
 	for direction in range(3):
-		var raw_moves = board.get_line_from_center(cell, direction * 2, 6)
+		var raw_moves = board.get_line_from_center(cell, direction * 2, move_range)
 		for move in raw_moves:
 			if board.move_visible_and_unoccupied(move,cell,self):
 				cur_moves.append(move)
@@ -48,3 +48,9 @@ func on_clicked() -> void:
 	update_piece_color()
 	board.deselect_all_pieces([self])
 	update_capture_on_board()
+
+func getTypeString() -> String:
+	return "Trihex";
+
+func getTypedDescription() -> String:
+	return "This piece can move in the 3 directions its triangle points to"

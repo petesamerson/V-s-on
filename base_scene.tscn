@@ -294,6 +294,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 
 [node name="PieceName" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
@@ -306,7 +307,7 @@ text = "Type: Core"
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 14
 text = "This is the core losing this will lose the game. You will lose if you lose sight of this piece"
 autowrap_mode = 3
 
@@ -327,7 +328,7 @@ layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_ixihg")
 
 [node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer"]
-custom_minimum_size = Vector2(80, 80)
+custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 theme = SubResource("Theme_6ow2y")
 texture = ExtResource("31_ixihg")

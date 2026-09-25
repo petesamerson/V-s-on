@@ -14,6 +14,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	sprite.texture = preload("res://sprites/Hop1.png")
 	vision_range = 2
+	move_range = 2
 
 
 func draw_vision_change(): 
@@ -57,7 +58,7 @@ func on_clicked() -> void:
 	else:
 		highlight_vision_range()
 		for i in range(6):
-			var raw_moves = board.get_line_from_center(cell, i, 2)
+			var raw_moves = board.get_line_from_center(cell, i, move_range)
 			var move = raw_moves[raw_moves.size() - 1]
 			if board.move_visible_and_unoccupied(move,cell,self):
 				cur_moves.append(move)
@@ -72,3 +73,9 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 		update_piece_color()
 		update_capture_on_board()
+
+func getTypeString() -> String:
+	return "Skirmisher";
+
+func getTypedDescription() -> String:
+	return "This piece can move in the 6 directions but can only move 2 spaces away"

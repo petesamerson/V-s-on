@@ -12,7 +12,8 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	super.setup(inital_pos, b)
 
 	sprite.texture = preload("res://sprites/eye_piece.png")
-	vision_range = 3
+	vision_range = 4
+	move_range = 20
 
 
 func on_clicked() -> void:
@@ -35,7 +36,7 @@ func on_clicked() -> void:
 	cur_moves.clear()
 	old_selected_tile_ids.clear()
 	for direction in range(6):
-		var raw_moves = board.get_line_from_center(cell, direction, 10)
+		var raw_moves = board.get_line_from_center(cell, direction, move_range)
 		for move in raw_moves:
 			if board.move_visible_and_unoccupied(move,cell,self):
 				cur_moves.append(move)
@@ -53,3 +54,7 @@ func on_clicked() -> void:
 func getTypeString() -> String:
 	return "Eye";
 	
+
+
+func getTypedDescription() -> String:
+	return "This is the most powerful piece in the game. It can move in any direction most distances"
