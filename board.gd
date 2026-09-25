@@ -6,6 +6,7 @@ class_name Board
 @onready var turn_label: RichTextLabel = $"../TurnLayer/TurnLabel"
 @onready var core_label: RichTextLabel = $"../TurnLayer/CoreLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
+@onready var SelectionPanel= $"../TurnLayer/SelectionPanel"
 
 @export var capture_texture: Texture2D
 
@@ -46,8 +47,10 @@ func update_mobile_scale():
 	)
 	
 	if is_mobile_browser:
-		turn_menu.scale = 2.0
-	
+		SelectionPanel.scale = Vector2(2.0,2.0)
+	else:
+		SelectionPanel.scale = Vector2(3.0,3.0)
+
 	# var touch_device := DisplayServer.is_touchscreen_available()
 
 

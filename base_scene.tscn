@@ -253,7 +253,7 @@ text = "Add Turn to
 Current Player
 "
 
-[node name="Selection Panel" type="Panel" parent="TurnLayer"]
+[node name="SelectionPanel" type="Panel" parent="TurnLayer"]
 custom_minimum_size = Vector2(300, 200)
 anchors_preset = 3
 anchor_left = 1.0
@@ -264,8 +264,9 @@ offset_left = -300.0
 offset_top = -200.0
 grow_horizontal = 0
 grow_vertical = 0
+pivot_offset = Vector2(300, 200)
 
-[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/Selection Panel"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -277,22 +278,22 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/Selection Panel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer"]
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="PieceName" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="PieceName" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 25
 text = "Type: Core"
 
-[node name="Label" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
@@ -300,18 +301,18 @@ theme_override_font_sizes/font_size = 12
 text = "This is the core losing this will lose the game. You will lose if you lose sight of this piece"
 autowrap_mode = 3
 
-[node name="MoveRange" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="MoveRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 text = "Move Range = 10"
 
-[node name="VisionRange" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="VisionRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 16
 text = "Vision Range = 4"
 
-[node name="TextureRect" type="TextureRect" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(150, 150)
 layout_mode = 2
 texture = ExtResource("31_ixihg")
