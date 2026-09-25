@@ -17,6 +17,11 @@ boot_splash/image="uid://bb56cxu85pn2k"
 config/icon="res://icon.svg"
 boot_splash/minimum_display_time=2000
 
+[display]
+
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
