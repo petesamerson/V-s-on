@@ -1,4 +1,4 @@
-[gd_scene load_steps=48 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=50 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -29,6 +29,8 @@
 [ext_resource type="Script" uid="uid://yyorinitem65" path="res://TriangleEvenPiece.gd" id="21_h480d"]
 [ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://EyePiece.gd" id="22_ddjlp"]
 [ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://CorePiece.gd" id="26_u1i3c"]
+[ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="30_ov3nv"]
+[ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -186,14 +188,19 @@ board = NodePath("../Board")
 [node name="TurnLabel" type="RichTextLabel" parent="TurnLayer"]
 offset_right = 40.0
 offset_bottom = 23.0
+theme_override_fonts/normal_font = ExtResource("30_ov3nv")
+theme_override_fonts/bold_font = ExtResource("30_ov3nv")
 fit_content = true
 scroll_active = false
 
 [node name="CoreLabel" type="RichTextLabel" parent="TurnLayer"]
 offset_right = 40.0
 offset_bottom = 40.0
+theme_override_fonts/normal_font = ExtResource("30_ov3nv")
+theme_override_fonts/bold_font = ExtResource("30_ov3nv")
 
 [node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -246,9 +253,65 @@ text = "Add Turn to
 Current Player
 "
 
-[node name="Panel" type="Panel" parent="."]
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="Selection Panel" type="Panel" parent="TurnLayer"]
+custom_minimum_size = Vector2(300, 200)
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 50.0
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/Selection Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/Selection Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="PieceName" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 25
+text = "Type: Core"
+
+[node name="Label" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 12
+text = "This is the core losing this will lose the game. You will lose if you lose sight of this piece"
+autowrap_mode = 3
+
+[node name="MoveRange" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+text = "Move Range = 10"
+
+[node name="VisionRange" type="Label" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 16
+text = "Vision Range = 4"
+
+[node name="TextureRect" type="TextureRect" parent="TurnLayer/Selection Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(150, 150)
+layout_mode = 2
+texture = ExtResource("31_ixihg")
+expand_mode = 1
+stretch_mode = 3
 
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]

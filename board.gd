@@ -61,7 +61,7 @@ func instantiate_turn_menu():
 	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y =  5
 
-	var raw_message = "Player 1's Turn \nCapture Eye To Win! \n(You are Invisible to Player 2)"
+	var raw_message = "Player 1's Turn \nCapture Core To Win! \n(You are Invisible to Player 2)"
 	turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 
 	turn_menu.hide()
