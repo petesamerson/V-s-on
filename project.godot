@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="V!s!on"
-run/main_scene="uid://br3rtq2rlri2y"
+run/main_scene="uid://b8rp2ul3q0ef7"
 config/features=PackedStringArray("4.5", "Forward Plus")
 boot_splash/image="uid://bb56cxu85pn2k"
 config/icon="res://icon.svg"

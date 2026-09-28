@@ -15,12 +15,9 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	super.setup(inital_pos, b)
 
 	sprite.texture = preload("res://sprites/tower1.png")
-	print([
-		"towersprite", sprite, 
-		"board", board, 
-		"area",area
-	])
-	print("reached tower setup")
+
+	vision_range = 5
+	move_range = 10
 	
 var cur_direction = 5
 var cur_rotate: Array[Vector2i] = []
@@ -49,7 +46,7 @@ func clear_rotate_maps():
 
 func draw_vision_change():
 	var cur_pos = board.local_to_map(position)
-	var raw_vision = board.get_triangle_tiles_from_center(cur_pos, 5, cur_direction)
+	var raw_vision = board.get_triangle_tiles_from_center(cur_pos, vision_range, cur_direction)
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:
@@ -72,7 +69,7 @@ func draw_vision_change():
 
 func get_potential_vision(new_pos: Vector2i, direction: int = cur_direction) -> Array[Vector2i]:
 	var cur_pos = board.local_to_map(position)
-	var raw_vision = board.get_triangle_tiles_from_center(new_pos, 5, direction)
+	var raw_vision = board.get_triangle_tiles_from_center(new_pos, vision_range, direction)
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:
@@ -231,7 +228,7 @@ func handle_move_input_event(event: InputEvent):
 			super.handle_move_input_event(event)
 
 func getTypeString() -> String:
-	return "RotateTower";
+	return "Sentry";
 
 func getTypedDescription() -> String:
 	return "This piece is the only piece that can rotate, rotation does not cost a turn!"

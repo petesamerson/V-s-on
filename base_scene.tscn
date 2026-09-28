@@ -195,6 +195,7 @@ board = NodePath("../Board")
 [node name="TurnLayer" type="CanvasLayer" parent="."]
 
 [node name="TurnLabel" type="RichTextLabel" parent="TurnLayer"]
+custom_minimum_size = Vector2(200, 0)
 offset_right = 40.0
 offset_bottom = 23.0
 theme_override_fonts/normal_font = ExtResource("30_ov3nv")

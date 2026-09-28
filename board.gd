@@ -48,6 +48,7 @@ func update_mobile_scale():
 	
 	if is_mobile_browser:
 		selection_panel.scale = Vector2(2.5,2.5)
+		selection_panel.pivot_offset = selection_panel.size
 	else:
 		pass
 		# SelectionPanel.scale = Vector2(3.0,3.0)
@@ -71,16 +72,16 @@ func instantiate_turn_menu():
 	turn_label.bbcode_enabled = true
 	turn_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	turn_label.fit_content = true
-	turn_label.size = Vector2(1000, 100)
-	turn_label.set_anchors_preset(Control.PRESET_CENTER)
-	turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# turn_label.size = Vector2(1000, 100)
+	# turn_label.set_anchors_preset(Control.PRESET_CENTER)
+	# turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	var viewport_size = get_viewport().get_visible_rect().size
 	turn_label.position.x = 5 # (viewport_size.x - turn_label.size.x) / 2
 	turn_label.position.y =  5
 
 	var raw_message = "Player 1's Turn \nCapture Core To Win! \n(You are Invisible to Player 2)"
-	turn_label.text = "[outline_size=30][outline_color=black][font_size=30][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	turn_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 
 	turn_menu.hide()
 
@@ -103,7 +104,7 @@ func instantiate_core_menu():
 	core_label.position.y = 5
 
 	var raw_message = "Core Seen By 6 Pieces"
-	core_label.text = "[outline_size=30][outline_color=black][font_size=30][b][color=white]%s[/color][/b][/font_size]" % raw_message
+	core_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
 
 	# core_menu.hide()
 
@@ -116,10 +117,10 @@ func update_turn_text():
 	turn_label.position.y =  5
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 	else:
 		var raw_message = "Player 2's Turn"
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=red]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
 func display_winner(winner):
 	var raw_message = "Player "+str(winner)+" WINS!"
