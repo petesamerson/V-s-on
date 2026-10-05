@@ -4,6 +4,8 @@ class_name CPUPlayer
 @export var player_number: int = 2
 
 var board: Board
+var recent_piece_ids: Array[int] = []
+
 
 func setup(game_board: Board) -> void:
     board = game_board
@@ -35,22 +37,24 @@ func take_turn() -> void:
         print("CPU has no legal moves")
         return
 
-    # Keep the highest-scoring actions, then choose randomly among ties.
     var best_score: float = -INF
-    var best_actions: Array[Dictionary] = []
-
     for action in actions:
-        var score: float = action["score"]
-        if score > best_score:
-            best_score = score
-            best_actions.clear()
-            best_actions.append(action)
-        elif score == best_score:
-            best_actions.append(action)
+        best_score = maxf(best_score, action["score"])
 
-    var choice: Dictionary = best_actions.pick_random()
+    # Choose randomly among strong options, so one piece doesn't dominate
+    # every turn when several moves are nearly as good.
+    var shortlist: Array[Dictionary] = []
+    for action in actions:
+        if action["score"] >= best_score - 10.0:
+            shortlist.append(action)
+
+    var choice: Dictionary = shortlist.pick_random()
     var chosen_piece := choice["piece"] as Piece
     var destination: Vector2i = choice["destination"]
+
+    recent_piece_ids.push_front(chosen_piece.get_instance_id())
+    if recent_piece_ids.size() > 2:
+        recent_piece_ids.pop_back()
 
     chosen_piece.make_cpu_move(destination)
 
@@ -58,14 +62,16 @@ func take_turn() -> void:
 func score_move(piece: Piece, destination: Vector2i) -> float:
     var enemy_player := 1 if player_number == 2 else 2
     var own_core := find_core(player_number)
-    var enemy_core := find_core(enemy_player)
 
-    if own_core == null or enemy_core == null:
+    if own_core == null:
         return 0.0
 
-    var captured := board.get_enemy_piece_at_cell(destination, enemy_player)
+    # Candidate destinations should be in the CPU's vision. Only inspect
+    # an enemy occupying a destination the CPU can currently see.
+    var captured: Piece = null
+    if board.hasCellInVision(player_number, destination):
+        captured = board.get_enemy_piece_at_cell(destination, enemy_player)
 
-    # Taking the enemy core wins immediately.
     if captured is CorePiece:
         return 100000.0
 
@@ -75,61 +81,77 @@ func score_move(piece: Piece, destination: Vector2i) -> float:
         piece,
         destination
     )
-    var enemy_support_before := count_core_support(
-        enemy_player,
-        enemy_core.get_cur_pos()
-    )
-    var enemy_support_after := count_core_support(
-        enemy_player,
-        enemy_core.get_cur_pos(),
-        null,
-        Vector2i.ZERO,
-        captured
-    )
 
     var score: float = 0.0
 
-    # Captures are useful; capturing a defender is especially valuable.
     if captured != null:
-        score += 150.0
-        if captured.cur_vision.has(enemy_core.get_cur_pos()):
-            score += 100.0
+        score += 55.0
 
-    # Removing the enemy's last core defender should be a top priority.
-    score += float(enemy_support_before - enemy_support_after) * 140.0
-    if enemy_support_after == 0:
-        score += 20000.0
+    # Only use the enemy core's location when it is visible to the CPU.
+    var visible_enemy_core := find_visible_core(enemy_player)
+    if visible_enemy_core != null:
+        var enemy_core_position := visible_enemy_core.get_cur_pos()
 
-    # Preserve safety, but only strongly penalize a move that leaves our
-    # core with its last supporting piece.
+        if captured != null and captured.cur_vision.has(enemy_core_position):
+            score += 30.0
+
+        var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
+        if (
+            new_vision.has(enemy_core_position)
+            and not piece.cur_vision.has(enemy_core_position)
+        ):
+            score += 18.0
+
+        var old_distance := hex_distance(
+            piece.get_cur_pos(),
+            enemy_core_position
+        )
+        var new_distance := hex_distance(
+            destination,
+            enemy_core_position
+        )
+        score += float(old_distance - new_distance) * 2.5
+
+    # The core must keep support. Avoid overvaluing extra defenders once
+    # the core is already safe.
     if own_support_after == 0:
         score -= 100000.0
     elif own_support_after == 1:
-        score -= 250.0
+        score -= 100.0
 
-    # Move pieces into positions where they can see and pursue the enemy core.
-    var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
-    if new_vision.has(enemy_core.get_cur_pos()):
-        score += 100.0
-
-    # Progress toward the enemy core is useful, but secondary to captures
-    # and creating a direct attack.
-    var old_distance := hex_distance(
-        piece.get_cur_pos(),
-        enemy_core.get_cur_pos()
-    )
-    var new_distance := hex_distance(destination, enemy_core.get_cur_pos())
-    score += float(old_distance - new_distance) * 10.0
-
-    # Keep an eye on danger without making the CPU refuse every risky move.
+    # Account only for enemy pieces whose locations are visible.
     for node in board.player_pieces[enemy_player - 1]:
         var enemy_piece := node as Piece
         if enemy_piece == null or enemy_piece == captured:
             continue
+        if not board.hasCellInVision(player_number, enemy_piece.get_cur_pos()):
+            continue
         if enemy_piece.cur_vision.has(destination):
-            score -= 6.0
+            score -= 8.0
+
+    # Encourage rotating through pieces when choices are close in value.
+    if recent_piece_ids.has(piece.get_instance_id()):
+        score -= 14.0
 
     return score
+
+
+func find_core(player_id: int) -> CorePiece:
+    for node in board.player_pieces[player_id - 1]:
+        if node is CorePiece:
+            return node as CorePiece
+    return null
+
+
+func find_visible_core(player_id: int) -> CorePiece:
+    var core := find_core(player_id)
+    if core == null:
+        return null
+
+    if board.hasCellInVision(player_number, core.get_cur_pos()):
+        return core
+    return null
+
 
 func count_core_support(
     player_id: int,
@@ -155,13 +177,6 @@ func count_core_support(
             count += 1
 
     return count
-
-
-func find_core(player_id: int) -> CorePiece:
-    for node in board.player_pieces[player_id - 1]:
-        if node is CorePiece:
-            return node as CorePiece
-    return null
 
 
 func hex_distance(a: Vector2i, b: Vector2i) -> int:

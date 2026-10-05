@@ -20,6 +20,7 @@ var board_tiles: Array[Vector2i] = []
 
 var turn = 1
 var current_player: int = 1
+var play_vs_cpu: bool = false
 
 
 # Called when the node enters the scene tree for the first time.
@@ -39,7 +40,9 @@ func _ready() -> void:
 
 	intialize_drawn_sprite_nodes()
 
-	intialize_cpu_player(2)
+	play_vs_cpu = get_tree().root.get_meta("play_vs_cpu", false)
+	if play_vs_cpu:
+		intialize_cpu_player(2)
 
 var is_mobile_browser: bool = false
 
@@ -352,16 +355,17 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 		for p in player_pieces[1]:
 			p.visible = false
 	else:
-		for p in player_pieces[1]:
-			if(!excluded_pieces.has(p)):
-				print("updating vision for player 2")
-				print(p.getTypeString())
-				p.draw_current_vision()
-				p.update_piece_color()
-		for p in player_pieces[0]:
-			p.visible = false
-		for p in player_pieces[1]:
-			p.visible = true
+		if(cpu_player == null):
+			for p in player_pieces[1]:
+				if(!excluded_pieces.has(p)):
+					print("updating vision for player 2")
+					print(p.getTypeString())
+					p.draw_current_vision()
+					p.update_piece_color()
+			for p in player_pieces[0]:
+				p.visible = false
+			for p in player_pieces[1]:
+				p.visible = true
 
 	for i in player_pieces.size():
 		for j in player_pieces[i].size():
@@ -370,7 +374,8 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 				if (hasEnemyPieceInVision(current_player, v)):
 					setEnemyPieceVisiblity(v, true)
 
-	update_core_power()
+	if(cpu_player == null || current_player == 1):
+		update_core_power()
 
 					
 
@@ -553,7 +558,8 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 func end_turn(movedPiece: Piece):
 	var core_found = false
 	clear_captures()
-	await update_move_camera(movedPiece)
+	if(cpu_player == null or current_player != cpu_player.player_number):
+		await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
 		for p in player_pieces[i - 1]:
 			if(p is CorePiece):
@@ -561,11 +567,29 @@ func end_turn(movedPiece: Piece):
 	if(core_found):
 		var potential_winner = determine_winner()
 		if(potential_winner == 0):
-			turn_menu.show()
+			if(cpu_player != null):
+				end_turn_vs_cpu()
+			else:
+				turn_menu.show()
 		else:
 			display_winner(potential_winner)
 	else:
 		display_winner(current_player)
+
+func end_turn_vs_cpu():
+	current_player = 2 if current_player == 1 else 1
+	if current_player == cpu_player.player_number:
+		cpu_player.take_turn()
+	else:
+		update_turn_text()
+		update_all_piece_vision()
+		# move_camera_to_core()
+		turn_menu.hide()
+		if(player_last_moves.size() == player_pieces.size()):
+			await update_move_camera(
+				player_last_moves[1]
+			)
+
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
@@ -1189,7 +1213,7 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 
 func move_camera_to_core():
 	var core  =get_current_core()
-	camera.zoom_to_global_position(core.position,1.5)
+	camera.zoom_to_global_position(core.position,1.0)
 	# for p in pieces_container.get_children():
 	# 	if(p is CorePiece and p.owned_player == current_player):
 	update_selection_panel(core)
@@ -1208,9 +1232,6 @@ func _on_next_pressed() -> void:
 		await update_move_camera(
 			player_last_moves[current_player - 1]
 		)
-
-	if current_player == cpu_player.player_number:
-		cpu_player.take_turn()
 
 
 func _on_stay_button_pressed() -> void:

@@ -61,11 +61,17 @@ theme_override_font_sizes/font_size = 80
 text = "V!S!ON"
 horizontal_alignment = 1
 
-[node name="NewGame" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="CpuPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
-text = "New Game"
+text = "Play vs Cpu"
+
+[node name="PassAndPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+text = "Pass & Play (2 Player)"
 
 [node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -85,6 +91,7 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/NewGame" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/CpuPlay" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/PassAndPlay" to="." method="_on_pass_and_play_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
