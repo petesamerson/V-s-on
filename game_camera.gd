@@ -3,11 +3,18 @@ extends Camera2D
 
 @export var board: TileMapLayer
 @onready var turn_label: RichTextLabel = $"../CanvasLayer/TurnLabel"
-# Called when the node enters the scene tree for the first time.
+
+var is_mobile_browser: bool
+
 func _ready() -> void:
+	is_mobile_browser = (
+		OS.has_feature("web_android")
+		or OS.has_feature("web_ios")
+	)
 	position = board.map_to_local(
 		board.board_center
 	)
+
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -34,7 +41,7 @@ var test_previous_distance := 0.0
 
 func _unhandled_input(event):
 	# Mouse Controls
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton and is_mobile_browser == false:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_to_mouse(1.1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -56,14 +63,14 @@ func _unhandled_input(event):
 		# 	else:
 		# 		dragging = false
 
-	elif event is InputEventMouseMotion and dragging:
+	elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
 		var current_mouse = get_global_mouse_position()
 		print(["move", current_mouse, drag_start_mouse, drag_start_position])
 		var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
 		position = position.lerp(drag_target, 0.5)
 
 	#-----More Test Touch Pinch
-	elif event is InputEventMouseMotion:
+	elif event is InputEventMouseMotion and is_mobile_browser == false:
 		if test_pinch:
 			var finger1 = event.position
 			var finger2 = event.position + Vector2(

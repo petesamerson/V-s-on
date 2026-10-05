@@ -585,10 +585,10 @@ func end_turn_vs_cpu():
 		update_all_piece_vision()
 		# move_camera_to_core()
 		turn_menu.hide()
-		if(player_last_moves.size() == player_pieces.size()):
-			await update_move_camera(
-				player_last_moves[1]
-			)
+		# if(player_last_moves.size() == player_pieces.size()):
+		# 	await update_move_camera(
+		# 		player_last_moves[1]
+			# )
 
 
 func update_move_camera(movedPiece: Piece):

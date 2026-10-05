@@ -19,7 +19,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	vision_range = 5
 	move_range = 10
 	
-var cur_direction = 5
+var cur_direction: int = 5
 var cur_rotate: Array[Vector2i] = []
 var rotate_map: Dictionary = {
 	"pivot1": Vector2i(-1,0),

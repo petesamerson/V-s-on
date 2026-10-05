@@ -15,6 +15,8 @@ func take_turn() -> void:
     if board == null or board.current_player != player_number:
         return
 
+    rotate_towers_for_turn()
+
     var actions: Array[Dictionary] = []
 
     for node in board.player_pieces[player_number - 1]:
@@ -187,3 +189,91 @@ func hex_distance(a: Vector2i, b: Vector2i) -> int:
         maxi(abs(cube_a.x - cube_b.x), abs(cube_a.y - cube_b.y)),
         abs(cube_a.z - cube_b.z)
     )
+
+
+func rotate_towers_for_turn() -> void:
+    var enemy_player := 1 if player_number == 2 else 2
+
+    for node in board.player_pieces[player_number - 1]:
+        var tower := node as TowerRotatePiece
+        if tower == null:
+            continue
+
+        # This fills rotate_map with the legal one-step rotations.
+        tower.clear_rotate_maps()
+        tower.generate_possible_moves(tower.get_cur_pos())
+
+        var best_key := ""
+        var best_score: float = 0.0
+
+        for key in ["pivot1", "pivot2"]:
+            var pivot: Vector2i = tower.rotate_map[key]
+            if not board.cell_in_board(pivot):
+                continue
+
+            var new_direction := tower.cur_direction
+            if key == "pivot1":
+                new_direction = posmod(tower.cur_direction - 1, 6)
+            else:
+                new_direction = posmod(tower.cur_direction + 1, 6)
+
+            var new_vision := tower.get_potential_vision(
+                tower.get_cur_pos(),
+                new_direction
+            )
+            var score := score_tower_rotation(tower, new_vision, enemy_player)
+
+            if score > best_score:
+                best_score = score
+                best_key = key
+
+        # A positive score means this rotation is useful.
+        # A score of zero or less leaves the tower where it is.
+        if best_key != "":
+            if best_key == "pivot1":
+                tower.cur_direction = posmod(tower.cur_direction - 1, 6)
+            else:
+                tower.cur_direction = posmod(tower.cur_direction + 1, 6)
+
+            tower.update_sprite_rotation()
+            tower.draw_vision_change()
+
+
+func score_tower_rotation(
+    tower: TowerRotatePiece,
+    new_vision: Array[Vector2i],
+    enemy_player: int
+) -> float:
+    var other_vision := {}
+
+    # Count vision provided by the CPU's other pieces, so a tower doesn't
+    # get credit for tiles those pieces already cover.
+    for node in board.player_pieces[player_number - 1]:
+        var piece := node as Piece
+        if piece == null or piece == tower:
+            continue
+
+        for cell in piece.cur_vision:
+            other_vision[cell] = true
+
+    var old_unique_count := 0
+    for cell in tower.cur_vision:
+        if not other_vision.has(cell):
+            old_unique_count += 1
+
+    var new_unique_count := 0
+    for cell in new_vision:
+        if not other_vision.has(cell):
+            new_unique_count += 1
+
+    var score := float(new_unique_count - old_unique_count)
+
+    # Give a small bonus for seeing an enemy core whose location is
+    # already known to the CPU.
+    var known_enemy_core := find_visible_core(enemy_player)
+    if known_enemy_core != null:
+        var core_cell := known_enemy_core.get_cur_pos()
+        if new_vision.has(core_cell) and not tower.cur_vision.has(core_cell):
+            score += 8.0
+
+    return score
