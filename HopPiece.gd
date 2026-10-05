@@ -49,7 +49,6 @@ func on_clicked() -> void:
 	# print(["Current cell:", cell , "selected", selected])
 	print("CLICKED:", self, "ID:", get_instance_id(), "selected:", selected)
 
-	cur_moves = []
 	old_selected_tile_ids = []
 	if(selected):
 		selected = false
@@ -57,11 +56,12 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 	else:
 		highlight_vision_range()
-		for i in range(6):
-			var raw_moves = board.get_line_from_center(cell, i, move_range)
-			var move = raw_moves[raw_moves.size() - 1]
-			if board.move_visible_and_unoccupied(move,cell,self):
-				cur_moves.append(move)
+		generate_possible_moves(cell)
+		# for i in range(6):
+		# 	var raw_moves = board.get_line_from_center(cell, i, move_range)
+		# 	var move = raw_moves[raw_moves.size() - 1]
+		# 	if board.move_visible_and_unoccupied(move,cell,self):
+		# 		cur_moves.append(move)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):
@@ -73,6 +73,15 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 		update_piece_color()
 		update_capture_on_board()
+
+func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
+	cur_moves = []
+	for i in range(6):
+		var raw_moves = board.get_line_from_center(cur_location, i, move_range)
+		var move = raw_moves[raw_moves.size() - 1]
+		if board.move_visible_and_unoccupied(move,cur_location,self):
+			cur_moves.append(move)
+	return cur_moves
 
 func getTypeString() -> String:
 	return "Skirmisher";

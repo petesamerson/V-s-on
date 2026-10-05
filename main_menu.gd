@@ -1,6 +1,7 @@
 extends Control
 class_name MainMenu
 
+@onready var start_panel_container = $MainScreen/CenterContainer/StartPanelContainer
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -11,6 +12,19 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	pass
 
+var is_mobile_browser = false
+
+func update_mobile_scale():
+	is_mobile_browser = (
+		OS.has_feature("web_android")
+		or OS.has_feature("web_ios")
+	)
+	
+	if is_mobile_browser:
+		start_panel_container.scale = Vector2(2.5,2.5)
+		# selection_panel.pivot_offset = selection_panel.size
+	else:
+		pass
 
 func _on_new_game_pressed() -> void:
 	get_tree().change_scene_to_file("res://base_scene.tscn")

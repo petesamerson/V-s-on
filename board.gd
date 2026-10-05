@@ -3,8 +3,9 @@ class_name Board
 
 @export var camera: Camera2D
 @onready var tilemap = $TileMap
-@onready var turn_label: RichTextLabel = $"../TurnLayer/TurnLabel"
-@onready var core_label: RichTextLabel = $"../TurnLayer/CoreLabel"
+@onready var turn_label: RichTextLabel = $"../TurnLayer/StatMargin/StatContainer/TurnLabel"
+@onready var core_label: RichTextLabel = $"../TurnLayer/StatMargin/StatContainer/CoreLabel"
+@onready var win_label: Label = $"../TurnLayer/WinLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 @onready var selection_panel= $"../TurnLayer/SelectionPanel"
 
@@ -38,6 +39,8 @@ func _ready() -> void:
 
 	intialize_drawn_sprite_nodes()
 
+	intialize_cpu_player(2)
+
 var is_mobile_browser: bool = false
 
 func update_mobile_scale():
@@ -50,6 +53,8 @@ func update_mobile_scale():
 		selection_panel.scale = Vector2(2.5,2.5)
 		selection_panel.pivot_offset = selection_panel.size
 	else:
+		selection_panel.scale = Vector2(0.8,0.8)
+		selection_panel.pivot_offset = selection_panel.size
 		pass
 		# SelectionPanel.scale = Vector2(3.0,3.0)
 
@@ -72,18 +77,23 @@ func instantiate_turn_menu():
 	turn_label.bbcode_enabled = true
 	turn_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	turn_label.fit_content = true
-	# turn_label.size = Vector2(1000, 100)
-	# turn_label.set_anchors_preset(Control.PRESET_CENTER)
-	# turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var viewport_size = get_viewport().get_visible_rect().size
-	turn_label.position.x = 5 # (viewport_size.x - turn_label.size.x) / 2
-	turn_label.position.y =  5
-
-	var raw_message = "Player 1's Turn \nCapture Core To Win! \n(You are Invisible to Player 2)"
-	turn_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	var raw_message = "Player 1's Turn"
+	turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 
 	turn_menu.hide()
+
+var cpu_player: CPUPlayer
+
+func intialize_cpu_player(player_number: int):
+	if player_number == 1:
+		print("CPU Player 1")
+	elif player_number == 2:
+		print("CPU Player 2")
+	cpu_player = CPUPlayer.new()
+	cpu_player.player_number = 2
+	add_child(cpu_player)
+	cpu_player.setup(self)
 
 func resize_text_overlay():
 	update_turn_text()
@@ -96,42 +106,31 @@ func instantiate_core_menu():
 	core_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	core_label.fit_content = true
 	core_label.size = Vector2(400, 100)
-	core_label.set_anchors_preset(Control.PRESET_CENTER)
-	core_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var viewport_size = get_viewport().get_visible_rect().size
-	core_label.position.x = viewport_size.x - core_label.size.x - 5
-	core_label.position.y = 5
 
 	var raw_message = "Core Seen By 6 Pieces"
-	core_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
+	core_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
 
 	# core_menu.hide()
 
 
 func update_turn_text():
-	var viewport_size = get_viewport().get_visible_rect().size
-	# turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
-	# turn_label.position.y =  5
-	turn_label.position.x = 5 # (viewport_size.x - turn_label.size.x) / 2
-	turn_label.position.y =  5
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
 	else:
 		var raw_message = "Player 2's Turn"
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=20][b][color=red]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=red]%s[/color][/b][/font_size]" % raw_message
 
 func display_winner(winner):
 	var raw_message = "Player "+str(winner)+" WINS!"
 	if winner == 1:
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=200][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+		win_label.text = raw_message
+		win_label.modulate = GameColors.PLAYER_BLUE
 	else:
-		turn_label.text = "[outline_size=30][outline_color=black][font_size=200][b][color=red]%s[/color][/b][/font_size]" % raw_message
-	var viewport_size = get_viewport().get_visible_rect().size
-
-	turn_label.position.x = (viewport_size.x - turn_label.size.x) / 2
-	turn_label.position.y = (viewport_size.y - turn_label.size.y) / 2 
+		win_label.text = raw_message#"[outline_size=10][outline_color=black][font_size=200][b][color=red]%s[/color][/b][/font_size]" % raw_message
+		win_label.modulate = GameColors.PLAYER_BLUE
+	win_label.visible = true
 
 func update_selection_panel(selectedPiece: Piece):
 	var margin_container = selection_panel.get_child(0) as MarginContainer
@@ -181,13 +180,13 @@ func determine_winner() -> int:
 	return winner
 
 func update_core_text(numberCanSeeCore : int = -1):
-	var viewport_size = get_viewport().get_visible_rect().size
-	core_label.position.x = viewport_size.x - core_label.size.x - 5
-	core_label.position.y = 5
+	# var viewport_size = get_viewport().get_visible_rect().size
+	# core_label.position.x  5
+	# core_label.position.y = 5
 
 	if(numberCanSeeCore != -1):
 		var raw_message = "Core Seen By " +  str(numberCanSeeCore) +  " Pieces"
-		core_label.text = "[outline_size=30][outline_color=black][font_size=40][b][color=white]%s[/color][/b][/font_size]" % raw_message
+		core_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -1209,7 +1208,9 @@ func _on_next_pressed() -> void:
 		await update_move_camera(
 			player_last_moves[current_player - 1]
 		)
-	
+
+	if current_player == cpu_player.player_number:
+		cpu_player.take_turn()
 
 
 func _on_stay_button_pressed() -> void:

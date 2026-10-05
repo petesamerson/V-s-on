@@ -23,7 +23,6 @@ func on_clicked() -> void:
 	if(board.current_player != owned_player):
 		return
 	var cell = board.local_to_map(position)  # current tile cell
-	cur_moves = []
 	old_selected_tile_ids = []
 	if(selected):
 		selected = false
@@ -31,11 +30,7 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 	else:
 		highlight_vision_range()
-		for i in range(3):
-			var raw_moves = board.get_line_from_center(cell, 1 + i*2, move_range)
-			for move in raw_moves:
-				if board.move_visible_and_unoccupied(move,cell,self):
-					cur_moves.append(move)
+		generate_possible_moves(cell)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):
@@ -48,6 +43,14 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 		update_capture_on_board()
 
+func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
+	cur_moves = []
+	for i in range(3):
+		var raw_moves = board.get_line_from_center(cur_location, 1 + i*2, move_range)
+		for move in raw_moves:
+			if board.move_visible_and_unoccupied(move,cur_location,self):
+				cur_moves.append(move)
+	return cur_moves
 
 func getTypeString() -> String:
 	return "Trihex";

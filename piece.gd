@@ -132,7 +132,6 @@ func on_clicked() -> void:
 
 	var cell = board.local_to_map(position)  # current tile cell
 	print("Current cell:", cell , "selected", selected)
-	cur_moves = []
 	old_selected_tile_ids = []
 	if(selected):
 		selected = false
@@ -140,11 +139,7 @@ func on_clicked() -> void:
 		board.deselect_all_pieces([self])
 	else:
 		highlight_vision_range()
-		for i in range(6):
-			var raw_moves = board.get_line_from_center(cell, i, move_range)
-			for move in raw_moves:
-				if(board.move_visible_and_unoccupied(move, cell, self)):
-					cur_moves.append(move)
+		generate_possible_moves(cell)
 		for potential_move in cur_moves: 
 			old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
 			if(owned_player == 2):
@@ -156,6 +151,15 @@ func on_clicked() -> void:
 		update_piece_color()
 		board.deselect_all_pieces([self])
 		update_capture_on_board()
+
+func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
+	cur_moves = []
+	for i in range(6):
+		var raw_moves = board.get_line_from_center(cur_location, i, move_range)
+		for move in raw_moves:
+			if(board.move_visible_and_unoccupied(move, cur_location, self)):
+				cur_moves.append(move)
+	return cur_moves
 
 func update_capture_on_board():
 	for move in cur_moves:
@@ -209,25 +213,7 @@ func handle_move_input_event(event):
 		var moved = false
 
 		if cell in cur_moves:
-			moving = true
-			position = board.map_to_local(cell)
-
-			var enemy_player = 1
-			if(board.current_player == 1):
-				enemy_player = 2
-			var enemy_piece = board.get_enemy_piece_at_cell(cell, enemy_player)
-			if enemy_piece != null:
-				board.remove_piece(enemy_piece)
-
-			for i in range(cur_moves.size()):
-				var old_move = cur_moves[i]
-				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
-
-
-			cur_moves = []
-			old_selected_tile_ids = []
-			selected = false
-			moving = false
+			move_piece(cell)
 			moved = true
 		else:
 			for i in range(cur_moves.size()):
@@ -241,6 +227,7 @@ func handle_move_input_event(event):
 			cur_moves = []
 
 		draw_vision_change()
+
 		if(moved):
 			end_turn()
 
@@ -249,6 +236,33 @@ func handle_move_input_event(event):
 		# for i in range(0,6):
 		# 	print(["line", i, 8 + i, "center", cell])
 		# 	board.draw_line_from_center(cell, i, 13, 9)
+
+func move_piece(move: Vector2i):
+	moving = true
+	position = board.map_to_local(move)
+
+	var enemy_player = 1
+	if(board.current_player == 1):
+		enemy_player = 2
+	var enemy_piece = board.get_enemy_piece_at_cell(move, enemy_player)
+	if enemy_piece != null:
+		board.remove_piece(enemy_piece)
+
+	if(old_selected_tile_ids.size() > 0):
+		for i in range(cur_moves.size()):
+			var old_move = cur_moves[i]
+			board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+
+	cur_moves = []
+	old_selected_tile_ids = []
+	selected = false
+	moving = false
+
+func make_cpu_move(move: Vector2i):
+	move_piece(move)
+	draw_vision_change()
+	end_turn()
+
 
 
 func _equals(other) -> bool:

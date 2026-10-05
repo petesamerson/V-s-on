@@ -31,13 +31,8 @@ func on_clicked() -> void:
 		update_piece_color()
 		return
 
-	cur_moves.clear()
 	old_selected_tile_ids.clear()
-	for direction in range(3):
-		var raw_moves = board.get_line_from_center(cell, direction * 2, move_range)
-		for move in raw_moves:
-			if board.move_visible_and_unoccupied(move,cell,self):
-				cur_moves.append(move)
+	generate_possible_moves(cell)
 
 	for potential_move in cur_moves:
 		old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
@@ -48,6 +43,15 @@ func on_clicked() -> void:
 	update_piece_color()
 	board.deselect_all_pieces([self])
 	update_capture_on_board()
+
+func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
+	cur_moves.clear()
+	for direction in range(3):
+		var raw_moves = board.get_line_from_center(cur_location, direction * 2, move_range)
+		for move in raw_moves:
+			if board.move_visible_and_unoccupied(move,cur_location,self):
+				cur_moves.append(move)
+	return cur_moves
 
 func getTypeString() -> String:
 	return "Trihex";

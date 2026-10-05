@@ -92,8 +92,6 @@ func on_clicked():
 	if owned_player != board.current_player:
 		return
 	var cell = board.local_to_map(position)
-	cur_moves = []
-	cur_rotate = []
 	old_selected_tile_ids = []
 	old_selected_rotate_tile_ids = []
 	clear_rotate_maps()
@@ -103,7 +101,12 @@ func on_clicked():
 		board.deselect_all_pieces([self])
 		board.update_rotate_map_board()
 	else:
-		update_cur_rotate()
+		generate_possible_moves(cell)
+		draw_vision_change()
+		for key in rotate_map.keys(): 
+			old_rotate_tile_ids[key] = board.get_cell_source_id(rotate_map[key])
+			board.set_cell(rotate_map[key], Tiles.SNOW_FLAKE, Vector2i(0,0))
+
 		highlight_vision_range()
 		print("on_tower_clicked " + str(cur_moves.size()))
 		old_selected_tile_ids = []
@@ -117,32 +120,34 @@ func on_clicked():
 		selected = true
 		update_piece_color()
 		board.deselect_all_pieces([self])
+		board.update_rotate_map_board(rotate_map)
 		update_capture_on_board()
 
-func update_cur_rotate():
+func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
+	cur_moves = []
+	cur_rotate = []
 	if(board == null or position == null):
-		return
+		return []
 	if owned_player != board.current_player:
-		return
-	var cell = board.local_to_map(position)
-	var first_axis = board.get_line_from_center(cell, cur_direction, 10)
-	var second_axis = board.get_line_from_center(cell, (cur_direction + 1) % 6, 10)
+		return []
+	var first_axis = board.get_line_from_center(cur_location, cur_direction, 10)
+	var second_axis = board.get_line_from_center(cur_location, (cur_direction + 1) % 6, 10)
 	
 
 	for i in range(first_axis.size()):
 		if(i%2 == 0):
 			var connect_line = board.hex_line(first_axis[i], second_axis[i])
 			var potential_new_move = connect_line[(connect_line.size())/2]
-			if(board.move_visible_and_unoccupied(potential_new_move, cell, self)):
+			if(board.move_visible_and_unoccupied(potential_new_move, cur_location, self)):
 				cur_moves.append(potential_new_move)
 
-	first_axis = board.get_line_from_center(cell, cur_direction, 10)
+	first_axis = board.get_line_from_center(cur_location, cur_direction, 10)
 	var second_direction = cur_direction
 	if(second_direction == 0):
 		second_direction = 5
 	else:
 		second_direction = (cur_direction - 1) % 6
-	second_axis = board.get_line_from_center(cell, second_direction, 10)
+	second_axis = board.get_line_from_center(cur_location, second_direction, 10)
 	print("axis" + str([first_axis, second_axis]))
 	if(first_axis != null and second_axis != null):
 		var connect_line = board.hex_line(first_axis[2], second_axis[2])
@@ -152,8 +157,8 @@ func update_cur_rotate():
 				# cur_rotate.append(potential_new_move)
 				rotate_map["pivot1"] = potential_new_move
 
-		first_axis = board.get_line_from_center(cell, (cur_direction + 1) % 6, 10)
-		second_axis = board.get_line_from_center(cell, (cur_direction + 2) % 6, 10)
+		first_axis = board.get_line_from_center(cur_location, (cur_direction + 1) % 6, 10)
+		second_axis = board.get_line_from_center(cur_location, (cur_direction + 2) % 6, 10)
 		if(first_axis != null and second_axis != null):
 			connect_line = board.hex_line(first_axis[2], second_axis[2])
 			potential_new_move = connect_line[(connect_line.size())/2]
@@ -161,16 +166,7 @@ func update_cur_rotate():
 				if !board.does_rotate_unpower_core(self, false):
 					# cur_rotate.append(potential_new_move)
 					rotate_map["pivot2"] = potential_new_move
-	draw_vision_change()
-	# for potential_rotate in cur_rotate: 
-	# 	old_selected_rotate_tile_ids.append(board.get_cell_source_id(potential_rotate))
-	# 	board.set_cell(potential_rotate, Tiles.SNOW_FLAKE, Vector2i(0,0))
-	for key in rotate_map.keys(): 
-		old_rotate_tile_ids[key] = board.get_cell_source_id(rotate_map[key])
-		board.set_cell(rotate_map[key], Tiles.SNOW_FLAKE, Vector2i(0,0))
-
-	board.update_rotate_map_board(rotate_map)
-
+	return cur_moves
 
 func handle_move_input_event(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

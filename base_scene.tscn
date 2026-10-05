@@ -120,6 +120,15 @@ sources/6 = SubResource("TileSetAtlasSource_17fj0")
 sources/2 = SubResource("TileSetAtlasSource_ua0oy")
 sources/13 = SubResource("TileSetAtlasSource_u1i3c")
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ixihg"]
+bg_color = Color(0, 0, 0, 0.43137255)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_6ow2y"]
+
 [sub_resource type="Theme" id="Theme_ddjlp"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ddjlp"]
@@ -137,15 +146,6 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0, 0.9426603, 0.65268576, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ixihg"]
-bg_color = Color(0, 0, 0, 0.43137255)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-
-[sub_resource type="Theme" id="Theme_6ow2y"]
 
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
@@ -194,74 +194,51 @@ board = NodePath("../Board")
 
 [node name="TurnLayer" type="CanvasLayer" parent="."]
 
-[node name="TurnLabel" type="RichTextLabel" parent="TurnLayer"]
-custom_minimum_size = Vector2(200, 0)
-offset_right = 40.0
-offset_bottom = 23.0
-theme_override_fonts/normal_font = ExtResource("30_ov3nv")
-theme_override_fonts/bold_font = ExtResource("30_ov3nv")
-fit_content = true
-scroll_active = false
-
-[node name="CoreLabel" type="RichTextLabel" parent="TurnLayer"]
-offset_right = 40.0
-offset_bottom = 40.0
-theme_override_fonts/normal_font = ExtResource("30_ov3nv")
-theme_override_fonts/bold_font = ExtResource("30_ov3nv")
-
-[node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+[node name="WinLabel" type="Label" parent="TurnLayer"]
 visible = false
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ColorRect" type="ColorRect" parent="TurnLayer/PlayerSwitchOverlay"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.11119685, 0.11119684, 0.11119684, 1)
-
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay"]
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -355.0
-offset_top = -229.0
-offset_right = 355.0
-offset_bottom = 229.0
+offset_left = -60.5
+offset_top = -11.5
+offset_right = 60.5
+offset_bottom = 11.5
 grow_horizontal = 2
 grow_vertical = 2
-theme = SubResource("Theme_ddjlp")
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 30
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 80
+text = "PLAYER 1 WINS!"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
-theme_override_colors/icon_normal_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 100
-theme_override_styles/normal = SubResource("StyleBoxFlat_ddjlp")
-text = "Next Player
-(Normal Turn)"
+[node name="StatMargin" type="MarginContainer" parent="TurnLayer"]
+offset_left = 947.0
+offset_right = 1152.0
+offset_bottom = 5.0
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
 
-[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+[node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin"]
 layout_mode = 2
 
-[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+[node name="TurnLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
-theme_override_font_sizes/font_size = 100
-theme_override_styles/normal = SubResource("StyleBoxFlat_17fj0")
-text = "Add Turn to 
-Current Player
-"
+theme_override_fonts/normal_font = ExtResource("30_ov3nv")
+theme_override_fonts/bold_font = ExtResource("30_ov3nv")
+fit_content = true
+scroll_active = false
+horizontal_alignment = 2
+
+[node name="CoreLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer"]
+layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("30_ov3nv")
+theme_override_fonts/bold_font = ExtResource("30_ov3nv")
+horizontal_alignment = 2
 
 [node name="SelectionPanel" type="Panel" parent="TurnLayer"]
 custom_minimum_size = Vector2(350, 200)
@@ -270,7 +247,7 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -300.0
+offset_left = -350.0
 offset_top = -200.0
 grow_horizontal = 0
 grow_vertical = 0
@@ -334,6 +311,64 @@ layout_mode = 2
 theme = SubResource("Theme_6ow2y")
 texture = ExtResource("31_ixihg")
 stretch_mode = 5
+
+[node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="TurnLayer/PlayerSwitchOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.11119685, 0.11119684, 0.11119684, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -355.0
+offset_top = -229.0
+offset_right = 355.0
+offset_bottom = 229.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_ddjlp")
+
+[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_colors/icon_normal_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 100
+theme_override_styles/normal = SubResource("StyleBoxFlat_ddjlp")
+text = "Next Player
+(Normal Turn)"
+
+[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+layout_mode = 2
+
+[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_font_sizes/font_size = 100
+theme_override_styles/normal = SubResource("StyleBoxFlat_17fj0")
+text = "Add Turn to 
+Current Player
+"
+
+[node name="Button" type="Button" parent="."]
+offset_right = 8.0
+offset_bottom = 8.0
 
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]

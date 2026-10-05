@@ -40,41 +40,41 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="MainScreen/CenterContainer"]
+[node name="StartPanelContainer" type="PanelContainer" parent="MainScreen/CenterContainer"]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="MainScreen/CenterContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MainScreen/CenterContainer/StartPanelContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MainScreen/CenterContainer/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="GameTitle" type="Label" parent="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="GameTitle" type="Label" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 80
 text = "V!S!ON"
 horizontal_alignment = 1
 
-[node name="NewGame" type="Button" parent="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="NewGame" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
 text = "New Game"
 
-[node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
 text = "Settings
 "
 
-[node name="QuitButton" type="Button" parent="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuitButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
@@ -85,6 +85,6 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[connection signal="pressed" from="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/NewGame" to="." method="_on_new_game_pressed"]
-[connection signal="pressed" from="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
-[connection signal="pressed" from="MainScreen/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/NewGame" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
+[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]

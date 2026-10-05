@@ -33,13 +33,8 @@ func on_clicked() -> void:
 
 	highlight_vision_range()
 
-	cur_moves.clear()
+	generate_possible_moves(cell)
 	old_selected_tile_ids.clear()
-	for direction in range(6):
-		var raw_moves = board.get_line_from_center(cell, direction, move_range)
-		for move in raw_moves:
-			if board.move_visible_and_unoccupied(move,cell,self):
-				cur_moves.append(move)
 
 	for potential_move in cur_moves:
 		old_selected_tile_ids.append(board.get_cell_source_id(potential_move))
@@ -51,10 +46,17 @@ func on_clicked() -> void:
 	board.deselect_all_pieces([self])
 	update_capture_on_board()
 
+func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
+	cur_moves.clear()
+	for direction in range(6):
+		var raw_moves = board.get_line_from_center(cur_location, direction, move_range)
+		for move in raw_moves:
+			if board.move_visible_and_unoccupied(move,cur_location,self):
+				cur_moves.append(move)
+	return cur_moves
+
 func getTypeString() -> String:
 	return "Eye";
-	
-
 
 func getTypedDescription() -> String:
 	return "This is the most powerful piece in the game. It can move in any direction most distances"
