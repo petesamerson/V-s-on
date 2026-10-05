@@ -1212,8 +1212,8 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 	return results
 
 func move_camera_to_core():
-	var core  =get_current_core()
-	camera.zoom_to_global_position(core.position,1.0)
+	var core = get_current_core()
+	camera.zoom_to_global_position(core.position,0.6)
 	# for p in pieces_container.get_children():
 	# 	if(p is CorePiece and p.owned_player == current_player):
 	update_selection_panel(core)

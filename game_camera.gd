@@ -40,8 +40,10 @@ var test_previous_distance := 0.0
 #---------
 
 func _unhandled_input(event):
+	if event is InputEventMagnifyGesture:
+		_zoom_to_point(event.factor, event.position)
 	# Mouse Controls
-	if event is InputEventMouseButton and is_mobile_browser == false:
+	elif event is InputEventMouseButton and is_mobile_browser == false:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_to_mouse(1.1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -142,12 +144,14 @@ func _unhandled_input(event):
 # Zoom around mouse
 # =====================================
 
-func _zoom_to_mouse(factor: float):
+# func _zoom_to_mouse(factor: float):
 
-	var mouse_screen = get_global_mouse_position()
+# 	var mouse_screen = get_global_mouse_position()
 
-	_zoom_to_point(factor, mouse_screen)
+# 	_zoom_to_point(factor, mouse_screen)
 
+func _zoom_to_mouse(factor: float) -> void:
+	_zoom_to_point(factor, get_viewport().get_mouse_position())
 
 # =====================================
 # Zoom around screen point
