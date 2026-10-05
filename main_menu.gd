@@ -5,7 +5,7 @@ class_name MainMenu
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	update_mobile_scale()
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -21,7 +21,7 @@ func update_mobile_scale():
 	)
 	
 	if is_mobile_browser:
-		start_panel_container.scale = Vector2(4,4)
+		start_panel_container.scale = Vector2(2,2)
 		# selection_panel.pivot_offset = selection_panel.size
 	else:
 		pass
