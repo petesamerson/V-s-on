@@ -41,7 +41,7 @@ var test_previous_distance := 0.0
 
 func _unhandled_input(event):
 	if event is InputEventMagnifyGesture:
-		_zoom_to_point(event.factor, event.position)
+		_zoom_to_point(event.factor/2, event.position)
 	# Mouse Controls
 	elif event is InputEventMouseButton and is_mobile_browser == false:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -107,6 +107,9 @@ func _unhandled_input(event):
 				previous_pinch_distance = positions[0].distance_to(positions[1])
 		else:
 			touches.erase(event.index)
+			if touches.size() < 2:
+				wasPinched = false
+				previous_pinch_distance = 0.0
 	# Touch Drag/Pinch
 	elif event is InputEventScreenDrag:
 		touches[event.index] = event.position

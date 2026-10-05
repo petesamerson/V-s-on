@@ -199,7 +199,12 @@ func update_piece_color():
 
 
 func _input(event):
-	if(selected):
+	if(
+		selected
+		and event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
 		handle_move_input_event(event)
 		var viewport = get_viewport()
 		if(viewport != null):
