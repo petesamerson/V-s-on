@@ -17,6 +17,13 @@ func take_turn() -> void:
 
     rotate_towers_for_turn()
 
+    var own_core := find_core(player_number)
+    var core_under_attack := (
+        own_core != null
+        and has_visible_attacker(own_core)
+        and board.is_piece_under_attack(own_core)
+    )
+
     var actions: Array[Dictionary] = []
 
     for node in board.player_pieces[player_number - 1]:
@@ -32,7 +39,7 @@ func take_turn() -> void:
             actions.append({
                 "piece": piece,
                 "destination": destination,
-                "score": score_move(piece, destination)
+                "score": score_move(piece, destination, core_under_attack)
             })
 
     if actions.is_empty():
@@ -61,7 +68,7 @@ func take_turn() -> void:
     chosen_piece.make_cpu_move(destination)
 
 
-func score_move(piece: Piece, destination: Vector2i) -> float:
+func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) -> float:
     var enemy_player := 1 if player_number == 2 else 2
     var own_core := find_core(player_number)
 
@@ -85,6 +92,9 @@ func score_move(piece: Piece, destination: Vector2i) -> float:
     )
 
     var score: float = 0.0
+
+    if core_under_attack and piece is CorePiece:
+        score += 1000.0
 
     if captured != null:
         score += 55.0
@@ -277,3 +287,21 @@ func score_tower_rotation(
             score += 8.0
 
     return score
+
+
+func has_visible_attacker(piece: Piece) -> bool:
+    var enemy_player := 1 if player_number == 2 else 2
+    var target_cell := piece.get_cur_pos()
+
+    for node in board.player_pieces[enemy_player - 1]:
+        var enemy_piece := node as Piece
+        if enemy_piece == null:
+            continue
+
+        if not board.hasCellInVision(player_number, enemy_piece.get_cur_pos()):
+            continue
+
+        if enemy_piece.cur_vision.has(target_cell):
+            return true
+
+    return false

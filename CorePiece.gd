@@ -64,7 +64,8 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 			if board.cell_in_board(move) and move != cur_location:
 				if(!board.friendlyPieceExistsAtCell(owned_player,move)):
 					if(calculate_move_core_power(move) != 0):
-						cur_moves.append(move)
+						if(!board.is_move_threatened(move, owned_player)):
+							cur_moves.append(move)
 	return cur_moves
 
 func calculate_move_core_power(potential_move: Vector2i = get_cur_pos()):

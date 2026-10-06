@@ -354,6 +354,7 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 			p.visible = true
 		for p in player_pieces[1]:
 			p.visible = false
+			print("update hide all")
 	else:
 		if(cpu_player == null):
 			for p in player_pieces[1]:
@@ -364,6 +365,7 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 					p.update_piece_color()
 			for p in player_pieces[0]:
 				p.visible = false
+				print("update hide all")
 			for p in player_pieces[1]:
 				p.visible = true
 
@@ -447,7 +449,38 @@ func does_rotate_unpower_core(piece: TowerRotatePiece, first_rotate: bool) -> bo
 			if(!piece.get_potential_vision(piece.get_cur_pos(), new_direction).has(core.get_cur_pos())):
 				return true
 	return false
+
+func is_piece_under_attack(piece: Piece) -> bool:
+	var is_core = piece is CorePiece
+	var enemy_player = 2 if piece.owned_player == 1 else 1
+	for p in player_pieces[enemy_player - 1]:
+		if(p.cur_vision.has(piece.get_cur_pos())):
+			# p.visible = true
+			if is_core:
+				p.update_piece_color()
+				p.visible = true
+				print("is_core visible check" + str(p.visible))
+				print(
+					"piece=", p.name,
+					" local_visible=", p.visible,
+					" visible_in_tree=", p.is_visible_in_tree(),
+					" sprite_visible=", p.sprite.visible,
+					" sprite_modulate=", p.sprite.modulate,
+					" global_position=", p.global_position,
+					" z_index=", p.z_index,
+					"cell=", p.get_cur_pos(),
+					" sprite_texture=", p.sprite.texture,
+					# " global_z=", p.sprite.get_canvas_item().get_index()
+				)
+			return true
+	return false
 				
+func is_move_threatened(move: Vector2i, player: int) -> bool:
+	var enemy_player = 2 if player == 1 else 1
+	for p in player_pieces[enemy_player - 1]:
+		if p.cur_vision.has(move):
+			return true
+	return false
 			
 func move_visible_and_unoccupied(
 	move: Vector2i,
@@ -461,6 +494,8 @@ func move_visible_and_unoccupied(
 					return true
 	return false
 
+
+var displayed_warning_text = false
 
 func update_core_power():
 	for child in get_children():
@@ -501,6 +536,23 @@ func update_core_power():
 	if(see_count == 0):
 		display_winner(determine_winner())
 
+	if(is_piece_under_attack(current_core) and !displayed_warning_text):
+		print("core under attack")
+		var text_timer := Timer.new()
+		text_timer.wait_time = 1.5
+		text_timer.one_shot = true
+		text_timer.timeout.connect(_on_core_attack_timer_timeout)
+		win_label.text = "Core Under Attack!"
+		# win_label.modulate = Color.RED
+		add_child(text_timer)
+		win_label.visible = true
+		displayed_warning_text = true
+		text_timer.start()
+	
+func _on_core_attack_timer_timeout():
+	win_label.text = ""
+	win_label.visible = false
+	
 var rotate_sprites: Node2D
 
 func update_rotate_map_board(rotate_map: Dictionary = {}):
@@ -537,6 +589,7 @@ func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
 	for p in player_pieces[enemy_player - 1]:
 		if(cell == p.get_cur_pos()):
 			p.visible = visible
+			print("set enemy piece visibility")
 	return
 
 func clear_board():
@@ -558,6 +611,7 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 func end_turn(movedPiece: Piece):
 	var core_found = false
 	clear_captures()
+	displayed_warning_text = false
 	if(cpu_player == null or current_player != cpu_player.player_number):
 		await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
@@ -606,10 +660,8 @@ func update_move_camera(movedPiece: Piece):
 			)
 
 	if(player_last_moves.size() < 2):
-		print("zoomAppend")
 		player_last_moves.append(movedPiece)
 	else:
-		print("moved")
 		player_last_moves[current_player - 1] = movedPiece
 
 
@@ -618,7 +670,7 @@ func get_enemy_player_numbers():
 	for i in range(player_pieces.size()) :
 		if(i+1) != current_player:
 			enemy_players.append((i + 1))
-	print(enemy_players)
+	# print(enemy_players)
 	return enemy_players
 
 
@@ -633,7 +685,7 @@ func animate_board():
 		cur_range = 2
 	for i in range(cur_range):
 		set_cell(Vector2i(cur_ani_x - ani_offset,cur_ani_y), 12, Vector2i(0,0))
-		print(["curAni xy", cur_ani_x, cur_ani_y, "index|offset", ani_index, ani_offset])
+		# print(["curAni xy", cur_ani_x, cur_ani_y, "index|offset", ani_index, ani_offset])
 		if(cur_ani_y % 2 == 1):
 			ani_offset += 1
 		cur_ani_y += 1
@@ -651,10 +703,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			camera.get_global_mouse_position() - position
 		)
 		var cell = local_to_map(local)
-		print(["unhandle board", cell])
+		# print(["unhandle board", cell])
 
 		var tile_pos = map_to_local(Vector2i(3, 4))
-		print(tile_pos)
+		# print(tile_pos)
 
 
 
@@ -666,7 +718,7 @@ func draw_hex_around(center: Vector2i) :
 		curTile = 9
 	
 	if(center.y % 2 ==  0): 
-		print("even")
+		# print("even")
 		set_cell(
 			Vector2i(center.x - 1, center.y), 
 			curTile,
@@ -698,7 +750,7 @@ func draw_hex_around(center: Vector2i) :
 			Vector2i(0,0)
 		)
 	else:
-		print("odd")
+		# print("odd")
 		set_cell(
 			Vector2i(center.x - 1, center.y - 1), 
 			curTile,
@@ -775,7 +827,7 @@ func get_line_from_center(center: Vector2i, direction: int, length: int):
 				if(length % 2 == 0):
 					offset = offset - 1
 			offset = offset + length / 2 
-			print(["offset", offset, center_even])
+			# print(["offset", offset, center_even])
 			return hex_line(center, Vector2i(center.x + offset, center.y - length))	
 		1: 
 			return hex_line(center, Vector2i(center.x + length, center.y))
@@ -864,7 +916,7 @@ func draw_back_dia_line(center: Vector2i):
 		offset_neg = 0
 
 	for i in range(1,6):
-		print(["offset", offset_pos,"i", i, center])
+		# print(["offset", offset_pos,"i", i, center])
 		set_cell(Vector2i(center.x + offset_pos, center.y + i), line_color_id, Vector2i(0,0))
 		set_cell(Vector2i(center.x - offset_neg, center.y - i), line_color_id, Vector2i(0,0))
 		if (center.y + i) % 2 == 0:
@@ -883,7 +935,7 @@ func draw_forward_dia_line(center: Vector2i):
 		offset_neg = 0
 
 	for i in range(1,6):
-		print(["offset", offset_pos,"i", i, center])
+		# print(["offset", offset_pos,"i", i, center])
 		set_cell(Vector2i(center.x - offset_neg, center.y + i), line_color_id, Vector2i(0,0))
 		set_cell(Vector2i(center.x + offset_pos, center.y - i), line_color_id, Vector2i(0,0))
 		if (center.y + i) % 2 == 0:
@@ -905,7 +957,7 @@ func draw_vision_range(center: Vector2i, vision_range: int, color: int):
 	var minXBottom= 10
 
 	for i in range(1,vision_range + 1):
-		print(["offset", offset_pos,"i", i, center])
+		# print(["offset", offset_pos,"i", i, center])
 
 		# set_cell(Vector2i(center.x - offset_neg, center.y + i), 6, Vector2i(0,0))
 		# set_cell(Vector2i(center.x + offset_pos, center.y + i), 6, Vector2i(0,0))
@@ -947,27 +999,8 @@ func draw_vision_range(center: Vector2i, vision_range: int, color: int):
 			temp_color
 		)
 
-		# draw_hex_tile_line(
-		# 	Vector2i(center.x - offset_neg, center.y + i), 
-		# 	Vector2i(center.x - i, center.y),
-		# 	temp_color
-		# )
-
 		set_cell(Vector2i(center.x + i, center.y), hex_color_id, Vector2i(0,0))
 		set_cell(Vector2i(center.x - i, center.y), hex_color_id, Vector2i(0,0))
-
-		# if(i == vision_range):
-		# 	# center.y + i 
-		# 	for x in range(center.x - offset_neg, center.x + offset_pos):
-		# 		set_cell(Vector2i(x, center.y + i), hex_color_id, Vector2i(0,0))
-
-		# 	#center.y - i
-		# 	for x in range(center.x - offset_neg, center.x + offset_pos):
-		# 		set_cell(Vector2i(x, center.y - i), hex_color_id, Vector2i(0,0))
-
-			# center.y
-			# draw_line( Vector2i(center.x - i,  center.y),Vector2i(center.x - offset_neg),hex_color_id , 2.0)
-			# draw_hex_tile_line(Vector2i(center.x - i, center.y),Vector2i(center.x - offset_neg, center.y - i), hex_color_id)
 
 		if (center.y + i) % 2 == 0:
 			offset_pos += 1
@@ -1125,7 +1158,7 @@ func get_hexagon_tiles(center: Vector2i, hex_radius: int):
 
 func draw_hex_tile_line(a: Vector2i, b: Vector2i, tile_id: int) -> void:
 	var cells = hex_line(a, b)
-	print(["hexline", cells])
+	# print(["hexline", cells])
 	for pos in cells:
 		set_cell(pos, tile_id, Vector2i(0,0))
 
