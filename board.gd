@@ -217,8 +217,16 @@ var player_last_moves: Array[Piece] = []
 var player_vision_tiles: Array[Array] = [[],[]]
 
 func spawn_all_pieces():
-	var spawn1 = get_line_from_center(Vector2i(10,10), 0, 5)
-	var spawn2 = get_line_from_center(Vector2i(10,10), 3, 5)
+	var num1 := randi_range(0, 5)
+	var num2 := randi_range(0, 5)
+
+	while (num2 == num1 || abs(num2 - num1) == 1):
+		num2 = randi_range(0, 5)
+
+	# num1 = 0
+	# num2 = 3
+	var spawn1 = get_line_from_center(Vector2i(10,10), num1, 6)
+	var spawn2 = get_line_from_center(Vector2i(10,10), num2, 6)
 
 	
 	spawn_player_location(spawn1.get(spawn1.size() - 1), 1)
@@ -268,7 +276,9 @@ func spawn_player_location(center: Vector2i, player: int):
 
 	var tri_odd_piece_locations: Array[Vector2i] = []
 	for i in range(3):
-		tri_odd_piece_locations.append(get_line_end_from_center(center, i*2, 2))
+		# tri_odd_piece_locations.append(get_line_end_from_center(center, i*2, 2))
+		var line = get_line_from_center(center, i*2, 2)
+		tri_odd_piece_locations.append(line[2])
 	for i in range(3):
 		var tri_odd_piece := triangle_odd_piece_scene.instantiate() as TriangleOddPiece
 		tri_odd_piece.owned_player = player
@@ -282,7 +292,8 @@ func spawn_player_location(center: Vector2i, player: int):
 	var tri_even_piece_locations: Array[Vector2i] = []
 	for i in range(3):
 		var line = get_line_from_center(center, 1 + i*2, 2)
-		tri_even_piece_locations.append(line[line.size() - 1])
+		tri_even_piece_locations.append(line[2])
+		# tri_even_piece_locations.append(get_line_end_from_center(center, 1 + i*2, 2))
 	for i in range(3):
 		var tri_even_piece := triangle_even_piece_scene.instantiate() as TriangleEvenPiece
 		tri_even_piece.owned_player = player
@@ -450,35 +461,66 @@ func does_rotate_unpower_core(piece: TowerRotatePiece, first_rotate: bool) -> bo
 				return true
 	return false
 
+# func is_piece_under_attack(piece: Piece) -> bool:
+# 	var is_core = piece is CorePiece
+# 	var enemy_player = 2 if piece.owned_player == 1 else 1
+# 	for p in player_pieces[enemy_player - 1]:
+# 		var moves = p.generate_possible_moves(p.get_cur_pos())
+# 		if(moves.has(piece.get_cur_pos())):
+# 			# p.visible = true
+# 			if is_core:
+# 				p.update_piece_color()
+# 				p.visible = true
+# 				print("is_core visible check" + str(p.visible))
+# 				print(
+# 					"piece=", p.name,
+# 					" local_visible=", p.visible,
+# 					" visible_in_tree=", p.is_visible_in_tree(),
+# 					" sprite_visible=", p.sprite.visible,
+# 					" sprite_modulate=", p.sprite.modulate,
+# 					" global_position=", p.global_position,
+# 					" z_index=", p.z_index,
+# 					"cell=", p.get_cur_pos(),
+# 					" sprite_texture=", p.sprite.texture,
+# 					# " global_z=", p.sprite.get_canvas_item().get_index()
+# 				)
+# 			return true
+# 	return false
+
 func is_piece_under_attack(piece: Piece) -> bool:
-	var is_core = piece is CorePiece
-	var enemy_player = 2 if piece.owned_player == 1 else 1
-	for p in player_pieces[enemy_player - 1]:
-		if(p.cur_vision.has(piece.get_cur_pos())):
-			# p.visible = true
-			if is_core:
-				p.update_piece_color()
-				p.visible = true
-				print("is_core visible check" + str(p.visible))
-				print(
-					"piece=", p.name,
-					" local_visible=", p.visible,
-					" visible_in_tree=", p.is_visible_in_tree(),
-					" sprite_visible=", p.sprite.visible,
-					" sprite_modulate=", p.sprite.modulate,
-					" global_position=", p.global_position,
-					" z_index=", p.z_index,
-					"cell=", p.get_cur_pos(),
-					" sprite_texture=", p.sprite.texture,
-					# " global_z=", p.sprite.get_canvas_item().get_index()
-				)
-			return true
-	return false
+	var attacker_player := 2 if piece.owned_player == 1 else 1
+
+	# current_player = attacker_player
+	regenerate_all_piece_moves(attacker_player)
+
+	var target_cell := piece.get_cur_pos()
+	print("piece cell: " + str(target_cell) + " owned by player " + str(piece.owned_player))
+	var attacked := false
+
+	for attacker in player_pieces[attacker_player - 1]:
+		for move in attacker.cur_moves:
+			print("attacker: " + str(attacker) + " move: " + str(move))
+		if attacker.cur_moves.has(target_cell):
+			attacked = true
+			if piece is CorePiece:
+				attacker.visible = true
+			break
+
+	# current_player = previous_current_player
+	return attacked
+
+# is_enemy is to stop recursion stackoverflow
+func regenerate_all_piece_moves(player: int, is_enemy: bool = false):
+	for p in player_pieces[player - 1]:
+		if(p is CorePiece):
+			p.generate_possible_moves(p.get_cur_pos(), is_enemy)
+		else:
+			p.generate_possible_moves(p.get_cur_pos())
 				
 func is_move_threatened(move: Vector2i, player: int) -> bool:
 	var enemy_player = 2 if player == 1 else 1
 	for p in player_pieces[enemy_player - 1]:
-		if p.cur_vision.has(move):
+		if p.cur_moves.has(move):
 			return true
 	return false
 			
@@ -488,8 +530,8 @@ func move_visible_and_unoccupied(
 	piece: Piece
 ) -> bool:
 	if(cell_in_board(move) && move != currentCell):
-		if(hasCellInVision(current_player, move)):
-			if(!friendlyPieceExistsAtCell(current_player,move)):
+		if(hasCellInVision(piece.owned_player, move)):
+			if(!friendlyPieceExistsAtCell(piece.owned_player,move)):
 				if(!does_move_unpower_core(piece, move)):
 					return true
 	return false
@@ -537,17 +579,20 @@ func update_core_power():
 		display_winner(determine_winner())
 
 	if(is_piece_under_attack(current_core) and !displayed_warning_text):
-		print("core under attack")
-		var text_timer := Timer.new()
-		text_timer.wait_time = 1.5
-		text_timer.one_shot = true
-		text_timer.timeout.connect(_on_core_attack_timer_timeout)
-		win_label.text = "Core Under Attack!"
-		# win_label.modulate = Color.RED
-		add_child(text_timer)
-		win_label.visible = true
-		displayed_warning_text = true
-		text_timer.start()
+		display_core_attack()
+
+func display_core_attack():
+	print("core under attack")
+	var text_timer := Timer.new()
+	text_timer.wait_time = 1.5
+	text_timer.one_shot = true
+	text_timer.timeout.connect(_on_core_attack_timer_timeout)
+	win_label.text = "Core Under Attack!"
+	# win_label.modulate = Color.RED
+	add_child(text_timer)
+	win_label.visible = true
+	displayed_warning_text = true
+	text_timer.start()
 	
 func _on_core_attack_timer_timeout():
 	win_label.text = ""

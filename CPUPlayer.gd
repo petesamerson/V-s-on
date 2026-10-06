@@ -145,6 +145,8 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
     if recent_piece_ids.has(piece.get_instance_id()):
         score -= 14.0
 
+    score -= float(piece.piece_value) * 5.0
+
     return score
 
 

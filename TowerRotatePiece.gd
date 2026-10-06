@@ -18,6 +18,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	vision_range = 5
 	move_range = 10
+	piece_value = 3
 	
 var cur_direction: int = 5
 var cur_rotate: Array[Vector2i] = []
@@ -128,8 +129,8 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 	cur_rotate = []
 	if(board == null or position == null):
 		return []
-	if owned_player != board.current_player:
-		return []
+	# if owned_player != board.current_player:
+	# 	return []
 	var first_axis = board.get_line_from_center(cur_location, cur_direction, 10)
 	var second_axis = board.get_line_from_center(cur_location, (cur_direction + 1) % 6, 10)
 	

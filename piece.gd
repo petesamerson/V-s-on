@@ -9,6 +9,7 @@ var board: Board
 var owned_player: int = 1
 var vision_range: int = 3
 var move_range: = 6
+var piece_value = 0
 var powered: bool = false
 
 @onready var area: Area2D = $Area2D
@@ -223,7 +224,8 @@ func handle_move_input_event(event):
 		else:
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]
-				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+				if(old_selected_tile_ids.size() > i):
+					board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
 
 			selected = false
 			board.deselect_all_pieces([self])
@@ -252,11 +254,10 @@ func move_piece(move: Vector2i):
 	var enemy_piece = board.get_enemy_piece_at_cell(move, enemy_player)
 	if enemy_piece != null:
 		board.remove_piece(enemy_piece)
-
-	if(old_selected_tile_ids.size() > 0):
 		for i in range(cur_moves.size()):
 			var old_move = cur_moves[i]
-			board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+			if(old_selected_tile_ids.size() > i):
+				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
 
 	cur_moves = []
 	old_selected_tile_ids = []

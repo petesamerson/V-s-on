@@ -15,6 +15,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	sprite.texture = preload("res://sprites/Hop1.png")
 	vision_range = 2
 	move_range = 2
+	piece_value = 1
 
 
 func draw_vision_change(): 

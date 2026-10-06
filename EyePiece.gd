@@ -14,6 +14,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	sprite.texture = preload("res://sprites/eye_piece.png")
 	vision_range = 4
 	move_range = 20
+	piece_value = 10
 
 
 func on_clicked() -> void:
