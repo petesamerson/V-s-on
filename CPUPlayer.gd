@@ -2,6 +2,7 @@ extends Node
 class_name CPUPlayer
 
 @export var player_number: int = 2
+@export_range(1,5) var difficulty: int = 5
 
 var board: Board
 var recent_piece_ids: Array[int] = []
@@ -54,7 +55,10 @@ func take_turn() -> void:
     # every turn when several moves are nearly as good.
     var shortlist: Array[Dictionary] = []
     for action in actions:
-        if action["score"] >= best_score - 10.0:
+        var tolerance_by_difficulty := [120.0, 45.0, 10.0, 2.0, 0.0]
+        var tolerance : float = tolerance_by_difficulty[clampi(difficulty - 1, 0, 4)]
+
+        if action["score"] >= best_score - tolerance:
             shortlist.append(action)
 
     var choice: Dictionary = shortlist.pick_random()

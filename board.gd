@@ -8,6 +8,7 @@ class_name Board
 @onready var win_label: Label = $"../TurnLayer/WinLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 @onready var selection_panel= $"../TurnLayer/SelectionPanel"
+@onready var settings_cover= $"../TurnLayer/SettingsCover"
 
 @export var capture_texture: Texture2D
 
@@ -95,6 +96,7 @@ func intialize_cpu_player(player_number: int):
 		print("CPU Player 2")
 	cpu_player = CPUPlayer.new()
 	cpu_player.player_number = 2
+	cpu_player.difficulty = int(get_tree().root.get_meta("cpu_difficulty", 5))
 	add_child(cpu_player)
 	cpu_player.setup(self)
 
@@ -1316,3 +1318,19 @@ func _on_stay_button_pressed() -> void:
 	update_turn_text()
 	update_all_piece_vision()
 	turn_menu.hide()
+
+@onready var music_player: AudioStreamPlayer2D = $"../AudioStreamPlayer2D"
+
+
+func _on_pause_pressed() -> void:
+	settings_cover.visible = true
+
+
+func _on_continue_pressed() -> void:
+	settings_cover.visible = false
+
+func _on_check_button_toggled(toggled_on: bool) -> void:
+	if toggled_on:
+		music_player.play()
+	else:
+		music_player.stop()

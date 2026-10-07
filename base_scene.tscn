@@ -1,4 +1,4 @@
-[gd_scene load_steps=52 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=55 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -31,6 +31,7 @@
 [ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://CorePiece.gd" id="26_u1i3c"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="30_ov3nv"]
 [ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
+[ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -147,6 +148,21 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0, 0.9426603, 0.65268576, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ow2y"]
+bg_color = Color(0, 0.11372549, 0.18431373, 0.17254902)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uukvf"]
+bg_color = Color(0.047019966, 0.14009342, 0.26304728, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0, 0.9112158, 0.92614794, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
 
@@ -216,11 +232,16 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="StatMargin" type="MarginContainer" parent="TurnLayer"]
-offset_left = 947.0
-offset_right = 1152.0
-offset_bottom = 5.0
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_bottom = 24.0
+grow_horizontal = 0
+theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin"]
 layout_mode = 2
@@ -366,9 +387,115 @@ text = "Add Turn to
 Current Player
 "
 
-[node name="Button" type="Button" parent="."]
-offset_right = 8.0
-offset_bottom = 8.0
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer"]
+offset_right = 55.0
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/MarginContainer"]
+layout_mode = 2
+
+[node name="Pause" type="Button" parent="TurnLayer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 30
+text = "Pause"
+
+[node name="SettingsCover" type="Panel" parent="TurnLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_6ow2y")
+
+[node name="PausePanel" type="Panel" parent="TurnLayer/SettingsCover"]
+custom_minimum_size = Vector2(300, 400)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -200.0
+offset_right = 150.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel"]
+custom_minimum_size = Vector2(300, 400)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 70
+text = "PAUSED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Panel" type="Panel" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(100, 200)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uukvf")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Settings" type="Label" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 40
+text = "Settings"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CheckButton" type="CheckButton" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/outline_size = 10
+theme_override_constants/h_separation = 1
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 30
+button_pressed = true
+text = "Music
+"
+alignment = 1
+
+[node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.54870695, 1, 0.49903375, 1)
+theme_override_font_sizes/font_size = 30
+text = "Continue"
+
+[node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.844336, 0, 0.17060888, 1)
+theme_override_font_sizes/font_size = 30
+text = "Quit"
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("32_6ow2y")
+volume_db = 1.5
+autoplay = true
 
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
+[connection signal="pressed" from="TurnLayer/MarginContainer/VBoxContainer/Pause" to="Board" method="_on_pause_pressed"]
+[connection signal="toggled" from="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel/VBoxContainer/CheckButton" to="Board" method="_on_check_button_toggled"]
+[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Continue" to="Board" method="_on_continue_pressed"]
