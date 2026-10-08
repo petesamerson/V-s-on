@@ -57,8 +57,8 @@ func update_mobile_scale():
 	
 	if is_mobile_browser:
 		# selection_panel.scale = Vector2(2.5,2.5)
-		# selection_panel.pivot_offset = selection_panel.size
-		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+		scale_text_tree(get_tree().current_scene, 1.5 if is_mobile_browser else 1.0)
+		selection_panel.pivot_offset = selection_panel.size
 	else:
 		selection_panel.scale = Vector2(0.8,0.8)
 		selection_panel.pivot_offset = selection_panel.size
@@ -152,6 +152,9 @@ func update_turn_text():
 	if(cpu_player == null):
 		display_turn_message()
 
+	update_mobile_scale()
+
+
 func display_turn_message():
 	var text_timer := Timer.new()
 	text_timer.wait_time = 1.0
@@ -232,6 +235,8 @@ func update_core_text(numberCanSeeCore : int = -1):
 	if(numberCanSeeCore != -1):
 		var raw_message = "Core Seen By " +  str(numberCanSeeCore) +  " Pieces"
 		core_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
+
+	update_mobile_scale()
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
