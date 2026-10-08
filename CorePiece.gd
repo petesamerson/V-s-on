@@ -58,23 +58,65 @@ func on_clicked() -> void:
 	update_capture_on_board()
 
 # is_enemy is to stop recursion stackoverflow
-func generate_possible_moves(cur_location: Vector2i, is_enemy: bool = false) -> Array[Vector2i]:
-	var enemy_player = 2 if owned_player == 1 else 1
-	if(!is_enemy):
+func generate_possible_moves(
+	cur_location: Vector2i,
+	is_enemy: bool = false
+) -> Array[Vector2i]:
+	var enemy_player := 2 if owned_player == 1 else 1
+
+	if not is_enemy:
 		board.regenerate_all_piece_moves(enemy_player, true)
+
 	cur_moves.clear()
+
 	for direction in range(6):
-		var raw_moves = board.get_line_from_center(cur_location, direction, move_range)
+		var raw_moves: Array[Vector2i] = board.get_line_from_center(
+			cur_location,
+			direction,
+			move_range
+		)
+
 		for move in raw_moves:
-			if board.cell_in_board(move) and move != cur_location:
-				if(!board.friendlyPieceExistsAtCell(owned_player,move)):
-					if(calculate_move_core_power(move) != 0):
-						if(is_enemy):
-							cur_moves.append(move)
-						else:
-							if(!board.is_move_threatened(move, owned_player)):
-								cur_moves.append(move)
+			if not board.cell_in_board(move) or move == cur_location:
+				continue
+
+			if board.friendlyPieceExistsAtCell(owned_player, move):
+				continue
+
+			var target := board.get_enemy_piece_at_cell(move, enemy_player)
+
+			# Don't capture a guarded piece. A core capture still wins.
+			if target != null \
+			and not target is CorePiece \
+			and board.is_guarded(target):
+				continue
+
+			if calculate_move_core_power(move) == 0:
+				continue
+
+			if is_enemy:
+				cur_moves.append(move)
+			elif not board.is_move_threatened(move, owned_player):
+				cur_moves.append(move)
+
 	return cur_moves
+# func generate_possible_moves(cur_location: Vector2i, is_enemy: bool = false) -> Array[Vector2i]:
+# 	var enemy_player = 2 if owned_player == 1 else 1
+# 	if(!is_enemy):
+# 		board.regenerate_all_piece_moves(enemy_player, true)
+# 	cur_moves.clear()
+# 	for direction in range(6):
+# 		var raw_moves = board.get_line_from_center(cur_location, direction, move_range)
+# 		for move in raw_moves:
+# 			if board.cell_in_board(move) and move != cur_location:
+# 				if(!board.friendlyPieceExistsAtCell(owned_player,move)):
+# 					if(calculate_move_core_power(move) != 0):
+# 						if(is_enemy):
+# 							cur_moves.append(move)
+# 						else:
+# 							if(!board.is_move_threatened(move, owned_player)):
+# 								cur_moves.append(move)
+# 	return cur_moves
 
 func calculate_move_core_power(potential_move: Vector2i = get_cur_pos()):
 	#Pieces that can see Core

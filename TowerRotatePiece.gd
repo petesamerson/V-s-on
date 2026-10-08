@@ -32,6 +32,8 @@ var old_rotate_tile_ids: Dictionary = {
 	"pivot2": -1
 }
 
+var cur_possible_rotate_moves: Array[Vector2i] = []
+
 func update_sprite_rotation():
 	sprite.rotation_degrees = (cur_direction + 1)*60 - 30
 
@@ -168,6 +170,27 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 					# cur_rotate.append(potential_new_move)
 					rotate_map["pivot2"] = potential_new_move
 	return cur_moves
+
+func generate_all_possible_moves_with_rotation(
+	cur_location: Vector2i
+) -> Array[Vector2i]:
+	var all_moves: Array[Vector2i] = []
+
+	var original_direction := cur_direction
+	var original_moves: Array[Vector2i] = cur_moves.duplicate()
+
+	for direction in range(5):
+		cur_direction = direction#posmod(original_direction + direction_offset, 6)
+
+		for move in generate_possible_moves(cur_location):
+			if not all_moves.has(move):
+				all_moves.append(move)
+
+	cur_direction = original_direction
+	cur_possible_rotate_moves  = all_moves
+	cur_moves = original_moves
+
+	return all_moves
 
 func handle_move_input_event(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

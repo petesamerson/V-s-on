@@ -491,7 +491,7 @@ text = "Quit"
 
 [node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("32_6ow2y")
-volume_db = 1.5
+volume_db = 8.0
 autoplay = true
 
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]

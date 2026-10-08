@@ -96,7 +96,7 @@ func intialize_cpu_player(player_number: int):
 		print("CPU Player 2")
 	cpu_player = CPUPlayer.new()
 	cpu_player.player_number = 2
-	cpu_player.difficulty = int(get_tree().root.get_meta("cpu_difficulty", 5))
+	cpu_player.difficulty = int(get_tree().root.get_meta("cpu_difficulty", 3))
 	add_child(cpu_player)
 	cpu_player.setup(self)
 
@@ -493,7 +493,7 @@ func is_piece_under_attack(piece: Piece) -> bool:
 	var attacker_player := 2 if piece.owned_player == 1 else 1
 
 	# current_player = attacker_player
-	regenerate_all_piece_moves(attacker_player)
+	regenerate_all_piece_moves(attacker_player, true)
 
 	var target_cell := piece.get_cur_pos()
 	print("piece cell: " + str(target_cell) + " owned by player " + str(piece.owned_player))
@@ -516,12 +516,18 @@ func regenerate_all_piece_moves(player: int, is_enemy: bool = false):
 	for p in player_pieces[player - 1]:
 		if(p is CorePiece):
 			p.generate_possible_moves(p.get_cur_pos(), is_enemy)
+		elif(p is TowerRotatePiece):
+			p.generate_all_possible_moves_with_rotation(p.get_cur_pos())
+			p.generate_possible_moves(p.get_cur_pos())
 		else:
 			p.generate_possible_moves(p.get_cur_pos())
 				
 func is_move_threatened(move: Vector2i, player: int) -> bool:
 	var enemy_player = 2 if player == 1 else 1
 	for p in player_pieces[enemy_player - 1]:
+		if(p is TowerRotatePiece):
+			if p.cur_possible_rotate_moves.has(move):
+				return true
 		if p.cur_moves.has(move):
 			return true
 	return false
@@ -537,6 +543,35 @@ func move_visible_and_unoccupied(
 				if(!does_move_unpower_core(piece, move)):
 					return true
 	return false
+
+func get_guarders(target: Piece) -> Array[Piece]:
+	var guarders: Array[Piece] = []
+	if target == null:
+		return guarders
+
+	var player := target.owned_player
+	var enemy_player := 2 if player == 1 else 1
+
+	for enemy_node in player_pieces[enemy_player - 1]:
+		var enemy := enemy_node as Piece
+		if enemy == null or not enemy.cur_moves.has(target.get_cur_pos()):
+			continue
+
+		# This enemy can legally attack the target.
+		for ally_node in player_pieces[player - 1]:
+			var ally := ally_node as Piece
+			if ally == null or ally == target:
+				continue
+
+			# This ally can legally capture the attacker.
+			if ally.cur_moves.has(enemy.get_cur_pos()) and not guarders.has(ally):
+				guarders.append(ally)
+
+	return guarders
+
+
+func is_guarded(target: Piece) -> bool:
+	return not get_guarders(target).is_empty()
 
 
 var displayed_warning_text = false

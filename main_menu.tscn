@@ -1,8 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=5 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://main_menu.gd" id="1_fu7sn"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="3_jix8l"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu7sn"]
+bg_color = Color(0, 0, 0, 0.81960785)
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -87,11 +90,115 @@ theme_override_font_sizes/font_size = 30
 text = "Quit"
 
 [node name="SettingsScreen" type="Control" parent="."]
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="SettingsScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="CpuSettingsScreen" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 100
+
+[node name="Panel" type="Panel" parent="CpuSettingsScreen/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fu7sn")
+
+[node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen/MarginContainer/Panel"]
+layout_mode = 0
+offset_right = 952.0
+offset_bottom = 448.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 50
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 60
+text = "Game Settings"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+text = "CPU Difficulty:"
+
+[node name="Difficulty Slider" type="HSlider" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(400, 30)
+layout_mode = 2
+min_value = 1.0
+max_value = 5.0
+value = 1.0
+
+[node name="CurrentDiff" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+text = "Very Easy"
+
+[node name="StartCpuGame" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -43.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+action_mode = 0
+text = "Start Game"
 
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/CpuPlay" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/PassAndPlay" to="." method="_on_pass_and_play_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+[connection signal="drag_ended" from="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/Difficulty Slider" to="." method="_on_difficulty_slider_drag_ended"]
+[connection signal="value_changed" from="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/Difficulty Slider" to="." method="_on_difficulty_slider_value_changed"]
+[connection signal="pressed" from="CpuSettingsScreen/MarginContainer/Panel/StartCpuGame" to="." method="_on_start_cpu_game_pressed"]
