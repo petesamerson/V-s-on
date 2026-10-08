@@ -23,6 +23,7 @@ var turn = 1
 var current_player: int = 1
 var play_vs_cpu: bool = false
 
+var game_setup_complete := false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -131,10 +132,10 @@ func display_winner(winner):
 	var raw_message = "Player "+str(winner)+" WINS!"
 	if winner == 1:
 		win_label.text = raw_message
-		win_label.modulate = GameColors.PLAYER_BLUE
+		win_label.modulate = GameColors.PLAYER_BLUE_POWER
 	else:
 		win_label.text = raw_message#"[outline_size=10][outline_color=black][font_size=200][b][color=red]%s[/color][/b][/font_size]" % raw_message
-		win_label.modulate = GameColors.PLAYER_BLUE
+		win_label.modulate = GameColors.PLAYER_RED_POWER
 	win_label.visible = true
 
 func update_selection_panel(selectedPiece: Piece):
@@ -236,6 +237,7 @@ func spawn_all_pieces():
 
 	update_all_piece_vision()
 	move_camera_to_core()
+	game_setup_complete = true
 	update_core_power()
 
 func spawn_player_location(center: Vector2i, player: int):
@@ -574,6 +576,85 @@ func is_guarded(target: Piece) -> bool:
 	return not get_guarders(target).is_empty()
 
 
+func can_enemy_recapture_after_move(
+	moving_piece: Piece,
+	destination: Vector2i,
+	captured_piece: Piece
+) -> bool:
+	if moving_piece == null or captured_piece == null:
+		return false
+
+	var moving_player := moving_piece.owned_player
+	var enemy_player := 2 if moving_player == 1 else 1
+
+	# Only use enemy locations the moving player currently knows about.
+	var visible_enemies: Array[Piece] = []
+	for node in player_pieces[enemy_player - 1]:
+		var enemy := node as Piece
+		if enemy == null or enemy == captured_piece:
+			continue
+		if hasCellInVision(moving_player, enemy.get_cur_pos()):
+			visible_enemies.append(enemy)
+
+	# Save enemy move-generation state, which regeneration will overwrite.
+	var saved_states: Array[Dictionary] = []
+	for node in player_pieces[enemy_player - 1]:
+		var enemy := node as Piece
+		if enemy == null:
+			continue
+
+		var state: Dictionary = {
+			"piece": enemy,
+			"moves": enemy.cur_moves.duplicate()
+		}
+
+		if enemy is TowerRotatePiece:
+			var tower := enemy as TowerRotatePiece
+			state["direction"] = tower.cur_direction
+			state["rotate_moves"] = tower.cur_possible_rotate_moves.duplicate()
+			state["cur_rotate"] = tower.cur_rotate.duplicate()
+			state["rotate_map"] = tower.rotate_map.duplicate(true)
+
+		saved_states.append(state)
+
+	var original_position := moving_piece.position
+	var original_player := current_player
+	var captured_index : int = player_pieces[enemy_player - 1].find(captured_piece)
+
+	# Simulate the capture without calling move_piece() or changing visuals.
+	if captured_index >= 0:
+		player_pieces[enemy_player - 1].remove_at(captured_index)
+
+	moving_piece.position = map_to_local(destination)
+	current_player = enemy_player
+	regenerate_all_piece_moves(enemy_player, true)
+
+	var can_recapture := false
+	for enemy in visible_enemies:
+		if enemy.cur_moves.has(destination):
+			can_recapture = true
+			break
+
+	# Restore the board and move lists before returning.
+	current_player = original_player
+	moving_piece.position = original_position
+
+	if captured_index >= 0:
+		player_pieces[enemy_player - 1].insert(captured_index, captured_piece)
+
+	for state in saved_states:
+		var enemy := state["piece"] as Piece
+		enemy.cur_moves = state["moves"]
+
+		if enemy is TowerRotatePiece:
+			var tower := enemy as TowerRotatePiece
+			tower.cur_direction = state["direction"]
+			tower.cur_possible_rotate_moves = state["rotate_moves"]
+			tower.cur_rotate = state["cur_rotate"]
+			tower.rotate_map = state["rotate_map"]
+
+	return can_recapture
+
 var displayed_warning_text = false
 
 func update_core_power():
@@ -584,6 +665,8 @@ func update_core_power():
 
 	if current_core == null:
 		return
+
+	update_all_core_power_counts()
 
 	#Pieces that can see Core
 	var see_count = 0
@@ -612,11 +695,96 @@ func update_core_power():
 	update_core_text(see_count)
 	current_core.power_count = see_count
 
-	if(see_count == 0):
-		display_winner(determine_winner())
+	update_visible_enemy_core_highlights()
+
+	if(game_setup_complete):
+		var winner := determine_winner()
+		if winner != 0:
+			display_winner(winner)
+			return
+
+	# if(see_count == 0):
+	# 	display_winner(determine_winner())
 
 	if(is_piece_under_attack(current_core) and !displayed_warning_text):
 		display_core_attack()
+
+func update_all_core_power_counts() -> void:
+	for player_id in [1, 2]:
+		var core: CorePiece = null
+
+		for node in player_pieces[player_id - 1]:
+			if node is CorePiece:
+				core = node as CorePiece
+				break
+
+		if core == null:
+			continue
+
+		var support_count := 0
+		for node in player_pieces[player_id - 1]:
+			var supporter := node as Piece
+			if supporter == null or supporter == core:
+				continue
+			if supporter.cur_vision.has(core.get_cur_pos()):
+				support_count += 1
+
+		core.power_count = support_count
+
+func update_visible_enemy_core_highlights() -> void:
+	var enemy_player := 2 if current_player == 1 else 1
+	var enemy_core: CorePiece = null
+
+	for node in player_pieces[enemy_player - 1]:
+		if node is CorePiece:
+			enemy_core = node as CorePiece
+			break
+
+	if enemy_core == null:
+		return
+
+	var core_cell := enemy_core.get_cur_pos()
+
+	# Don't reveal the opponent's core or its support unless the core is visible.
+	if not hasCellInVision(current_player, core_cell):
+		return
+
+	var visible_support_count := 0
+
+	for node in player_pieces[enemy_player - 1]:
+		var supporter := node as Piece
+		if supporter == null or supporter is CorePiece:
+			continue
+
+		# Only show information about opposing pieces the current player can see.
+		if not hasCellInVision(current_player, supporter.get_cur_pos()):
+			continue
+
+		var supports_core := supporter.cur_vision.has(core_cell)
+		supporter.powered = supports_core
+		supporter.update_piece_color()
+
+		if not supports_core:
+			continue
+
+		var line := Line2D.new()
+		line.points = PackedVector2Array([
+			Vector2(enemy_core.position.x, enemy_core.position.y),
+			Vector2(supporter.position.x, supporter.position.y)
+		])
+		line.width = 3.0
+		line.z_index = 1
+		line.default_color = (
+			GameColors.PLAYER_BLUE_POWER
+			if enemy_player == 1
+			else GameColors.PLAYER_RED_POWER
+		)
+		add_child(line)
+		visible_support_count += 1
+
+	# Tint the visible enemy core based only on the support the player can see.
+	enemy_core.powered = visible_support_count > 0
+	enemy_core.update_piece_color()
 
 func display_core_attack():
 	print("core under attack")

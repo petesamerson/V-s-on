@@ -170,13 +170,14 @@ custom_minimum_size = Vector2(400, 30)
 layout_mode = 2
 min_value = 1.0
 max_value = 5.0
-value = 1.0
+value = 3.0
+tick_count = 5
 
 [node name="CurrentDiff" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
-text = "Very Easy"
+text = "Normal"
 
 [node name="StartCpuGame" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel"]
 layout_mode = 1

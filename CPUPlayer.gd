@@ -25,7 +25,7 @@ func take_turn() -> void:
 	var own_core := find_core(player_number)
 	var core_under_attack := (
 		own_core != null
-		and has_visible_attacker(own_core)
+		# and has_visible_attacker(own_core)
 		and board.is_piece_under_attack(own_core)
 	)
 
@@ -114,9 +114,12 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 	# if captured != null:
 	# 	score += 90.0
 	if captured != null:
-		score += 140.0
+		score += float(captured.piece_value) * 50.0
 
-		# Extra reward for removing an enemy that can currently capture an ally.
+		if board.can_enemy_recapture_after_move(piece, destination, captured):
+			score -= float(piece.piece_value) * 50.0
+
+		# Keep your existing bonus for capturing an enemy threatening an ally.
 		for ally_node in board.player_pieces[player_number - 1]:
 			var ally := ally_node as Piece
 			if ally == null or ally == piece:
@@ -124,6 +127,7 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 			if captured.cur_moves.has(ally.get_cur_pos()):
 				score += 45.0
 				break
+	
 
 	# Only use the enemy core's location when it is visible to the CPU.
 	var visible_enemy_core := find_visible_core(enemy_player)
@@ -175,7 +179,8 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		if not board.hasCellInVision(player_number, cell):
 			newly_seen_cells += 1
 
-	score += float(newly_seen_cells) * 0.75
+	var scouting_factor := 1.0 / (1.0 + float(piece.piece_value) * 0.15)
+	score += float(newly_seen_cells) * 0.75 * scouting_factor
 
 	# Extra reward when this move reveals a previously hidden enemy.
 	for node in board.player_pieces[enemy_player - 1]:
@@ -188,7 +193,7 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 			not board.hasCellInVision(player_number, enemy_cell)
 			and new_vision.has(enemy_cell)
 		):
-			score += 35.0
+			score += 35.0 * scouting_factor
 
 	for node in board.player_pieces[player_number - 1]:
 		var ally := node as Piece
@@ -239,7 +244,8 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		if not board.hasCellInVision(player_number, enemy_piece.get_cur_pos()):
 			continue
 		if enemy_piece.cur_moves.has(destination):
-			score -= 18.0
+			var loss_penalty := 300.0 + float(piece.piece_value) * 60.0
+			score -= loss_penalty
 
 	# Encourage rotating through pieces when choices are close in value.
 	if recent_piece_ids.has(piece.get_instance_id()):
@@ -407,3 +413,4 @@ func has_visible_attacker(piece: Piece) -> bool:
 			return true
 
 	return false
+

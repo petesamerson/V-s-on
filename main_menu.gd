@@ -23,12 +23,11 @@ func update_mobile_scale():
 		OS.has_feature("web_android")
 		or OS.has_feature("web_ios")
 	)
-	
 	if is_mobile_browser:
+		ThemeDB.fallback_base_scale = 2.0
 		start_panel_container.scale = Vector2(2,2)
-		# selection_panel.pivot_offset = selection_panel.size
 	else:
-		pass
+		ThemeDB.fallback_base_scale = 1.0
 
 func _on_new_game_pressed() -> void:
 	# get_tree().root.set_meta("play_vs_cpu", true)
