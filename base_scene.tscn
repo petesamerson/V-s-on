@@ -281,7 +281,6 @@ theme_override_fonts/bold_font = ExtResource("30_ov3nv")
 horizontal_alignment = 2
 
 [node name="SelectionPanel" type="Panel" parent="TurnLayer"]
-custom_minimum_size = Vector2(350, 200)
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
