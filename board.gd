@@ -35,13 +35,13 @@ func _ready() -> void:
 
 	call_deferred("spawn_all_pieces")
 
-	update_mobile_scale()
 	get_viewport().size_changed.connect(resize_text_overlay)
 
 	instantiate_turn_menu()
 	instantiate_core_menu()
 
 	intialize_drawn_sprite_nodes()
+	update_mobile_scale()
 
 	play_vs_cpu = get_tree().root.get_meta("play_vs_cpu", false)
 	if play_vs_cpu:
@@ -56,8 +56,8 @@ func update_mobile_scale():
 	)
 	
 	if is_mobile_browser:
-		selection_panel.scale = Vector2(2.5,2.5)
-		selection_panel.pivot_offset = selection_panel.size
+		# selection_panel.scale = Vector2(2.5,2.5)
+		# selection_panel.pivot_offset = selection_panel.size
 		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 	else:
 		selection_panel.scale = Vector2(0.8,0.8)

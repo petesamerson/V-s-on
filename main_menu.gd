@@ -24,10 +24,7 @@ func update_mobile_scale():
 		or OS.has_feature("web_ios")
 	)
 	if is_mobile_browser:
-		ThemeDB.fallback_base_scale = 2.0
-		start_panel_container.scale = Vector2(2,2)
-	else:
-		ThemeDB.fallback_base_scale = 1.0
+		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 
 func _on_new_game_pressed() -> void:
 	# get_tree().root.set_meta("play_vs_cpu", true)
@@ -58,3 +55,21 @@ func _on_difficulty_slider_value_changed(value: float) -> void:
 func _on_start_cpu_game_pressed() -> void:
 	get_tree().root.set_meta("play_vs_cpu", true)
 	get_tree().change_scene_to_file("res://base_scene.tscn")
+
+
+func scale_text_tree(node: Node, factor: float) -> void:
+	if node is Control:
+		var control := node as Control
+		if control is Label or control is RichTextLabel or control is Button \
+		or control is LineEdit or control is TextEdit:
+			if not control.has_meta("base_font_size"):
+				control.set_meta("base_font_size", control.get_theme_font_size("font_size"))
+
+			var base_size: int = control.get_meta("base_font_size")
+			control.add_theme_font_size_override(
+				"font_size",
+				roundi(base_size * factor)
+			)
+
+	for child in node.get_children():
+		scale_text_tree(child, factor)
