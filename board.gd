@@ -6,6 +6,7 @@ class_name Board
 @onready var turn_label: RichTextLabel = $"../TurnLayer/StatMargin/StatContainer/TurnLabel"
 @onready var core_label: RichTextLabel = $"../TurnLayer/StatMargin/StatContainer/CoreLabel"
 @onready var win_label: Label = $"../TurnLayer/WinLabel"
+@onready var your_turn_label: Label = $"../TurnLayer/YourTurnLabel"
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 @onready var selection_panel= $"../TurnLayer/SelectionPanel"
 @onready var settings_cover= $"../TurnLayer/SettingsCover"
@@ -57,13 +58,31 @@ func update_mobile_scale():
 	if is_mobile_browser:
 		selection_panel.scale = Vector2(2.5,2.5)
 		selection_panel.pivot_offset = selection_panel.size
+		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 	else:
 		selection_panel.scale = Vector2(0.8,0.8)
 		selection_panel.pivot_offset = selection_panel.size
 		pass
+	
 		# SelectionPanel.scale = Vector2(3.0,3.0)
 
-	# var touch_device := DisplayServer.is_touchscreen_available()
+
+func scale_text_tree(node: Node, factor: float) -> void:
+	if node is Control:
+		var control := node as Control
+		if control is Label or control is RichTextLabel or control is Button \
+		or control is LineEdit or control is TextEdit:
+			if not control.has_meta("base_font_size"):
+				control.set_meta("base_font_size", control.get_theme_font_size("font_size"))
+
+			var base_size: int = control.get_meta("base_font_size")
+			control.add_theme_font_size_override(
+				"font_size",
+				roundi(base_size * factor)
+			)
+
+	for child in node.get_children():
+		scale_text_tree(child, factor)
 
 
 func intialize_drawn_sprite_nodes():
@@ -124,9 +143,29 @@ func update_turn_text():
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
 		turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+		if(cpu_player != null):
+			display_turn_message()
 	else:
 		var raw_message = "Player 2's Turn"
 		turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=red]%s[/color][/b][/font_size]" % raw_message
+
+	if(cpu_player == null):
+		display_turn_message()
+
+func display_turn_message():
+	var text_timer := Timer.new()
+	text_timer.wait_time = 1.0
+	text_timer.one_shot = true
+	text_timer.timeout.connect(_on_turn_message_timer_timeout)
+	your_turn_label.text = "Your Turn"
+	# your_turn_label.modulate = Color.RED
+	add_child(text_timer)
+	your_turn_label.visible = true
+	text_timer.start()
+
+func _on_turn_message_timer_timeout():
+	your_turn_label.text = ""
+	your_turn_label.visible = false
 
 func display_winner(winner):
 	var raw_message = "Player "+str(winner)+" WINS!"
@@ -223,7 +262,7 @@ func spawn_all_pieces():
 	var num1 := randi_range(0, 5)
 	var num2 := randi_range(0, 5)
 
-	while (num2 == num1 || abs(num2 - num1) == 1):
+	while (num2 == num1 || abs(num2 - num1) == 1 || abs(num2 - num1) == 5):
 		num2 = randi_range(0, 5)
 
 	# num1 = 0
@@ -802,7 +841,7 @@ func display_core_attack():
 func _on_core_attack_timer_timeout():
 	win_label.text = ""
 	win_label.visible = false
-	
+
 var rotate_sprites: Node2D
 
 func update_rotate_map_board(rotate_map: Dictionary = {}):
@@ -887,12 +926,7 @@ func end_turn_vs_cpu():
 	else:
 		update_turn_text()
 		update_all_piece_vision()
-		# move_camera_to_core()
 		turn_menu.hide()
-		# if(player_last_moves.size() == player_pieces.size()):
-		# 	await update_move_camera(
-		# 		player_last_moves[1]
-			# )
 
 
 func update_move_camera(movedPiece: Piece):

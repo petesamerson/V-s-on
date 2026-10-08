@@ -210,6 +210,25 @@ board = NodePath("../Board")
 
 [node name="TurnLayer" type="CanvasLayer" parent="."]
 
+[node name="YourTurnLabel" type="Label" parent="TurnLayer"]
+visible = false
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.358
+offset_left = -65.0
+offset_top = 355.763
+offset_right = 65.0
+offset_bottom = 195.263
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 30
+text = "YourTurn
+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="WinLabel" type="Label" parent="TurnLayer"]
 visible = false
 anchors_preset = 8

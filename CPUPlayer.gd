@@ -413,4 +413,3 @@ func has_visible_attacker(piece: Piece) -> bool:
 			return true
 
 	return false
-
