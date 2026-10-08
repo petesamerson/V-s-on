@@ -24,7 +24,7 @@ func update_mobile_scale():
 		or OS.has_feature("web_ios")
 	)
 	if is_mobile_browser:
-		scale_text_tree(get_tree().current_scene, 1.5 if is_mobile_browser else 1.0)
+		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 
 func _on_new_game_pressed() -> void:
 	# get_tree().root.set_meta("play_vs_cpu", true)

@@ -57,7 +57,7 @@ func update_mobile_scale():
 	
 	if is_mobile_browser:
 		# selection_panel.scale = Vector2(2.5,2.5)
-		scale_text_tree(get_tree().current_scene, 1.5 if is_mobile_browser else 1.0)
+		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 		selection_panel.pivot_offset = selection_panel.size
 	else:
 		selection_panel.scale = Vector2(0.8,0.8)
@@ -103,7 +103,7 @@ func instantiate_turn_menu():
 	turn_label.fit_content = true
 
 	var raw_message = "Player 1's Turn"
-	turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+	turn_label.text = "[outline_size=10][outline_color=black][b][color=cyan]%s[/color][/b]" % raw_message
 
 	turn_menu.hide()
 
@@ -134,7 +134,7 @@ func instantiate_core_menu():
 
 
 	var raw_message = "Core Seen By 6 Pieces"
-	core_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
+	core_label.text = "[outline_size=10][outline_color=black][b][color=white]%s[/color][/b]" % raw_message
 
 	# core_menu.hide()
 
@@ -142,12 +142,12 @@ func instantiate_core_menu():
 func update_turn_text():
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
-		turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=cyan]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=10][outline_color=black][b][color=cyan]%s[/color][/b]" % raw_message
 		if(cpu_player != null):
 			display_turn_message()
 	else:
 		var raw_message = "Player 2's Turn"
-		turn_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=red]%s[/color][/b][/font_size]" % raw_message
+		turn_label.text = "[outline_size=10][outline_color=black][b][color=red]%s[/color][/b]" % raw_message
 
 	if(cpu_player == null):
 		display_turn_message()
@@ -234,7 +234,7 @@ func update_core_text(numberCanSeeCore : int = -1):
 
 	if(numberCanSeeCore != -1):
 		var raw_message = "Core Seen By " +  str(numberCanSeeCore) +  " Pieces"
-		core_label.text = "[outline_size=10][outline_color=black][font_size=20][b][color=white]%s[/color][/b][/font_size]" % raw_message
+		core_label.text = "[outline_size=10][outline_color=black][b][color=white]%s[/color][/b]" % raw_message
 
 	update_mobile_scale()
 
