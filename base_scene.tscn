@@ -357,7 +357,6 @@ texture = ExtResource("31_ixihg")
 stretch_mode = 5
 
 [node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -372,39 +371,42 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.11119685, 0.11119684, 0.11119684, 1)
+color = Color(0.18000486, 0.18000486, 0.18000486, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay"]
+[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/PlayerSwitchOverlay"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -355.0
-offset_top = -229.0
-offset_right = 355.0
-offset_bottom = 229.0
+offset_left = -177.5
+offset_top = -157.5
+offset_right = 177.5
+offset_bottom = 157.5
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer"]
+layout_mode = 2
 theme = SubResource("Theme_ddjlp")
 
-[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
 theme_override_colors/icon_normal_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 100
+theme_override_font_sizes/font_size = 50
 theme_override_styles/normal = SubResource("StyleBoxFlat_ddjlp")
 text = "Next Player
 (Normal Turn)"
 
-[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/VBoxContainer"]
+[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
-theme_override_font_sizes/font_size = 100
+theme_override_font_sizes/font_size = 50
 theme_override_styles/normal = SubResource("StyleBoxFlat_17fj0")
 text = "Add Turn to 
 Current Player
@@ -435,8 +437,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_6ow2y")
 
-[node name="PausePanel" type="Panel" parent="TurnLayer/SettingsCover"]
-custom_minimum_size = Vector2(300, 400)
+[node name="PausePanel" type="PanelContainer" parent="TurnLayer/SettingsCover"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -444,23 +445,25 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -150.0
-offset_top = -200.0
+offset_top = -219.5
 offset_right = 150.0
-offset_bottom = 200.0
+offset_bottom = 219.5
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SettingsCover/PausePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer"]
 custom_minimum_size = Vector2(300, 400)
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+[node name="Label" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 70
@@ -468,12 +471,12 @@ text = "PAUSED"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Panel" type="Panel" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+[node name="Panel" type="Panel" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(100, 200)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_uukvf")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -481,7 +484,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Settings" type="Label" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel/VBoxContainer"]
+[node name="Settings" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 40
@@ -489,10 +492,11 @@ text = "Settings"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CheckButton" type="CheckButton" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel/VBoxContainer"]
+[node name="CheckButton" type="CheckButton" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/outline_size = 10
 theme_override_constants/h_separation = 1
+theme_override_constants/icon_max_width = 0
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 30
 button_pressed = true
@@ -500,13 +504,13 @@ text = "Music
 "
 alignment = 1
 
-[node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+[node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.54870695, 1, 0.49903375, 1)
 theme_override_font_sizes/font_size = 30
 text = "Continue"
 
-[node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/VBoxContainer"]
+[node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.844336, 0, 0.17060888, 1)
 theme_override_font_sizes/font_size = 30
@@ -517,8 +521,9 @@ stream = ExtResource("32_6ow2y")
 volume_db = 8.0
 autoplay = true
 
-[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
-[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
+[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
+[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
 [connection signal="pressed" from="TurnLayer/MarginContainer/VBoxContainer/Pause" to="Board" method="_on_pause_pressed"]
-[connection signal="toggled" from="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Panel/VBoxContainer/CheckButton" to="Board" method="_on_check_button_toggled"]
-[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/VBoxContainer/Continue" to="Board" method="_on_continue_pressed"]
+[connection signal="toggled" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer/CheckButton" to="Board" method="_on_check_button_toggled"]
+[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Continue" to="Board" method="_on_continue_pressed"]
+[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Quit" to="Board" method="_on_quit_pressed"]

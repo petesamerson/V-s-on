@@ -50,6 +50,7 @@ func _ready() -> void:
 		intialize_cpu_player(2)
 
 var is_mobile_browser: bool = false
+var ui_scale: float = 1.0
 
 func update_mobile_scale():
 	is_mobile_browser = (
@@ -66,9 +67,13 @@ func update_mobile_scale():
 		# selection_panel.scale = Vector2(0.8,0.8)
 		selection_panel.pivot_offset = selection_panel.size
 		resize_selection_image_to_text()
-		pass
+
+	ui_scale = 2.0 if (
+		OS.has_feature("web_android")
+		or OS.has_feature("web_ios")
+	) else 1.0
 	
-		# SelectionPanel.scale = Vector2(3.0,3.0)
+	
 
 
 func resize_selection_image_to_text() -> void:
@@ -439,7 +444,7 @@ func remove_piece(piece: Piece) -> void:
 func create_capture_hud() -> void:
 	var hud := VBoxContainer.new()
 	hud.name = "CapturedPiecesHUD"
-	hud.add_theme_constant_override("separation", 8)
+	hud.add_theme_constant_override("separation", round(8 * ui_scale))
 	stat_container.add_child(hud)
 
 	for player_id in range(1, 3):
@@ -450,10 +455,10 @@ func create_capture_hud() -> void:
 		hud.add_child(panel)
 
 		var margin := MarginContainer.new()
-		margin.add_theme_constant_override("margin_left", 8)
-		margin.add_theme_constant_override("margin_top", 8)
-		margin.add_theme_constant_override("margin_right", 8)
-		margin.add_theme_constant_override("margin_bottom", 8)
+		margin.add_theme_constant_override("margin_left", round(8 * ui_scale))
+		margin.add_theme_constant_override("margin_top",  round(8 * ui_scale))
+		margin.add_theme_constant_override("margin_right", round(8 * ui_scale))
+		margin.add_theme_constant_override("margin_bottom", round(8 * ui_scale))
 		panel.add_child(margin)
 
 		var column := VBoxContainer.new()
@@ -466,8 +471,8 @@ func create_capture_hud() -> void:
 
 		var row := HFlowContainer.new()
 		row.custom_minimum_size = Vector2(150, 0)
-		row.add_theme_constant_override("h_separation", 4)
-		row.add_theme_constant_override("v_separation", 4)
+		row.add_theme_constant_override("h_separation",  round(4 * ui_scale))
+		row.add_theme_constant_override("v_separation",  round(4 * ui_scale))
 		column.add_child(row)
 
 		capture_rows.append(row)
@@ -477,7 +482,9 @@ func add_captured_piece_icon(player_index: int, captured_piece: Piece) -> void:
 	var row := capture_rows[player_index]
 
 	var icon := TextureRect.new()
-	icon.custom_minimum_size = Vector2(32, 32)
+	var icon_side := 32.0 * (ui_scale)
+
+	icon.custom_minimum_size = Vector2(icon_side, icon_side)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture = captured_piece.sprite.texture
@@ -1046,6 +1053,7 @@ func end_turn(movedPiece: Piece):
 # 		turn_menu.hide()
 func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
+	update_turn_text()
 
 	if current_player == cpu_player.player_number:
 		update_turn_text()
@@ -1711,7 +1719,7 @@ func _on_next_pressed() -> void:
 	current_player = 2 if current_player == 1 else 1
 	update_all_piece_vision()
 	# move_camera_to_core()
-	# turn_menu.hide()
+	turn_menu.hide()
 	# if(player_last_moves.size() == player_pieces.size()):
 	# 	await update_move_camera(
 	# 		player_last_moves[current_player - 1]
@@ -1769,3 +1777,7 @@ func _on_check_button_toggled(toggled_on: bool) -> void:
 		music_player.play()
 	else:
 		music_player.stop()
+
+
+func _on_quit_pressed() -> void:
+	get_tree().change_scene_to_file("res://main_menu.tscn")
