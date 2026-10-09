@@ -155,18 +155,18 @@ theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 60
 text = "Game Settings"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 30
-
-[node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
 text = "CPU Difficulty:"
 
+[node name="HBoxContainer" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
 [node name="Difficulty Slider" type="HSlider" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(400, 30)
+custom_minimum_size = Vector2(350, 30)
 layout_mode = 2
 min_value = 1.0
 max_value = 5.0
@@ -192,7 +192,7 @@ grow_horizontal = 0
 grow_vertical = 0
 theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 50
+theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Start Game"
 

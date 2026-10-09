@@ -60,30 +60,58 @@ func update_mobile_scale():
 		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 		selection_panel.pivot_offset = selection_panel.size
 	else:
-		selection_panel.scale = Vector2(0.8,0.8)
+		# scale_text_tree(get_tree().current_scene, 2.0 if true else 1.0)
+		# selection_panel.scale = Vector2(0.8,0.8)
 		selection_panel.pivot_offset = selection_panel.size
 		pass
 	
 		# SelectionPanel.scale = Vector2(3.0,3.0)
 
 
-func scale_text_tree(node: Node, factor: float) -> void:
-	if node is Control:
-		var control := node as Control
-		if control is Label or control is RichTextLabel or control is Button \
-		or control is LineEdit or control is TextEdit:
-			if not control.has_meta("base_font_size"):
-				control.set_meta("base_font_size", control.get_theme_font_size("font_size"))
+func resize_selection_image_to_text() -> void:
+	var margin := selection_panel.get_child(0) as MarginContainer
+	var root := margin.get_child(0) as VBoxContainer
+	var row := root.get_child(0) as HBoxContainer
+	var text_column := row.get_node("VBoxContainer") as VBoxContainer
+	var image_panel := row.get_node("PanelContainer") as PanelContainer
 
-			var base_size: int = control.get_meta("base_font_size")
-			control.add_theme_font_size_override(
-				"font_size",
+	await get_tree().process_frame
+
+	var side := maxf(text_column.size.y, 120.0)
+	image_panel.custom_minimum_size = Vector2(side, side)
+
+func scale_text_tree(node: Node, factor: float) -> void:
+	if node is RichTextLabel:
+		var label := node as RichTextLabel
+
+		for size_name in ["normal_font_size", "bold_font_size"]:
+			var meta_name = "base_" + size_name
+			if not label.has_meta(meta_name):
+				label.set_meta(meta_name, label.get_theme_font_size(size_name))
+
+			var base_size: int = label.get_meta(meta_name)
+			label.add_theme_font_size_override(
+				size_name,
 				roundi(base_size * factor)
 			)
+	elif node is Label or node is Button or node is LineEdit or node is TextEdit:
+		var control := node as Control
+		if not control.has_meta("base_font_size"):
+			control.set_meta(
+				"base_font_size",
+				control.get_theme_font_size("font_size")
+			)
+
+		var base_size: int = control.get_meta("base_font_size")
+		control.add_theme_font_size_override(
+			"font_size",
+			roundi(base_size * factor)
+		)
 
 	for child in node.get_children():
 		scale_text_tree(child, factor)
 
+	resize_selection_image_to_text()
 
 func intialize_drawn_sprite_nodes():
 	rotate_sprites = Node2D.new()

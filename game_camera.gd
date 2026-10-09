@@ -29,7 +29,7 @@ var wasPinched := false
 #Touch
 var touches: Dictionary = {}
 var previous_pinch_distance := 0.0
-const MIN_ZOOM := 0.7
+const MIN_ZOOM := 0.4
 const MAX_ZOOM := 3.0
 
 #--------TEST Values Touch Pinch
@@ -41,13 +41,13 @@ var test_previous_distance := 0.0
 
 func _unhandled_input(event):
 	if event is InputEventMagnifyGesture:
-		_zoom_to_point(event.factor/2, event.position)
+		_zoom_to_point(event.factor/4, event.position)
 	# Mouse Controls
 	elif event is InputEventMouseButton and is_mobile_browser == false:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom_to_mouse(1.1)
+			_zoom_to_mouse(1.05)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom_to_mouse(0.9)
+			_zoom_to_mouse(0.95)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			#-----More Test Touch Pinch
 			if event.pressed:
@@ -107,7 +107,7 @@ func _unhandled_input(event):
 				previous_pinch_distance = positions[0].distance_to(positions[1])
 		else:
 			touches.erase(event.index)
-			if touches.size() < 2:
+			if touches.is_empty():
 				wasPinched = false
 				previous_pinch_distance = 0.0
 	# Touch Drag/Pinch
@@ -135,14 +135,16 @@ func _unhandled_input(event):
 
 			previous_pinch_distance = current_distance
 
-		# One finger = pan
-		elif touches.size() == 1:
-			if(wasPinched):
-				wasPinched = false
-			else:
-				var delta = event.relative
-				position -= delta / zoom.x
-
+		# # One finger = pan
+		# elif touches.size() == 1:
+		# 	if(wasPinched):
+		# 		wasPinched = false
+		# 	else:
+		# 		var delta = event.relative
+		# 		position -= delta / zoom.x
+		# One finger = pan, unless it is left over from a pinch
+		elif touches.size() == 1 and not wasPinched:
+			position -= event.relative / zoom.x
 # =====================================
 # Zoom around mouse
 # =====================================
