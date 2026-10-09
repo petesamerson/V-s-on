@@ -10,6 +10,7 @@ class_name Board
 @onready var turn_menu = $"../TurnLayer/PlayerSwitchOverlay"
 @onready var selection_panel= $"../TurnLayer/SelectionPanel"
 @onready var settings_cover= $"../TurnLayer/SettingsCover"
+@onready var stat_container: VBoxContainer = $"../TurnLayer/StatMargin/StatContainer"
 
 @export var capture_texture: Texture2D
 
@@ -39,6 +40,7 @@ func _ready() -> void:
 
 	instantiate_turn_menu()
 	instantiate_core_menu()
+	create_capture_hud()
 
 	intialize_drawn_sprite_nodes()
 	update_mobile_scale()
@@ -63,6 +65,7 @@ func update_mobile_scale():
 		# scale_text_tree(get_tree().current_scene, 2.0 if true else 1.0)
 		# selection_panel.scale = Vector2(0.8,0.8)
 		selection_panel.pivot_offset = selection_panel.size
+		resize_selection_image_to_text()
 		pass
 	
 		# SelectionPanel.scale = Vector2(3.0,3.0)
@@ -74,11 +77,13 @@ func resize_selection_image_to_text() -> void:
 	var row := root.get_child(0) as HBoxContainer
 	var text_column := row.get_node("VBoxContainer") as VBoxContainer
 	var image_panel := row.get_node("PanelContainer") as PanelContainer
+	var image_magin := image_panel.get_child(0) as MarginContainer
+	var image_rect := image_magin.get_child(0) as TextureRect
 
 	await get_tree().process_frame
 
 	var side := maxf(text_column.size.y, 120.0)
-	image_panel.custom_minimum_size = Vector2(side, side)
+	image_rect.custom_minimum_size = Vector2(side*2/3, side*2/3)
 
 func scale_text_tree(node: Node, factor: float) -> void:
 	if node is RichTextLabel:
@@ -214,7 +219,7 @@ func update_selection_panel(selectedPiece: Piece):
 	var h_box = v_box_root.get_child(0) as HBoxContainer
 	for child in h_box.get_children():
 		if child is PanelContainer:
-			var tr = child.get_child(0) as TextureRect
+			var tr = child.get_child(0).get_child(0) as TextureRect
 			tr.texture = selectedPiece.sprite.texture
 		if child is VBoxContainer:
 			for label in child.get_children():
@@ -290,6 +295,9 @@ func _process(delta: float) -> void:
 @onready var player_pieces = [[],[]]
 var player_last_moves: Array[Piece] = []
 var player_vision_tiles: Array[Array] = [[],[]]
+
+var player_captures: Array[Array] = [[], []]
+var capture_rows: Array[HFlowContainer] = []
 
 func spawn_all_pieces():
 	var num1 := randi_range(0, 5)
@@ -412,9 +420,71 @@ func spawn_player_location(center: Vector2i, player: int):
 		rotate_piece.draw_vision_change()
 
 
-func remove_piece(piece: Piece):
+# func remove_piece(piece: Piece):
+# 	player_pieces[piece.owned_player - 1].erase(piece)
+# 	pieces_container.remove_child(piece)
+func remove_piece(piece: Piece) -> void:
+	var capturer_index := current_player - 1
+
+	player_captures[capturer_index].append({
+		"texture": piece.sprite.texture,
+		"name": piece.getTypeString()
+	})
+	add_captured_piece_icon(capturer_index, piece)
+
 	player_pieces[piece.owned_player - 1].erase(piece)
 	pieces_container.remove_child(piece)
+	piece.queue_free()
+
+func create_capture_hud() -> void:
+	var hud := VBoxContainer.new()
+	hud.name = "CapturedPiecesHUD"
+	hud.add_theme_constant_override("separation", 8)
+	stat_container.add_child(hud)
+
+	for player_id in range(1, 3):
+
+		var panel := PanelContainer.new()
+		panel.name = "P%d" % player_id
+		panel.custom_minimum_size = Vector2(170, 0)
+		hud.add_child(panel)
+
+		var margin := MarginContainer.new()
+		margin.add_theme_constant_override("margin_left", 8)
+		margin.add_theme_constant_override("margin_top", 8)
+		margin.add_theme_constant_override("margin_right", 8)
+		margin.add_theme_constant_override("margin_bottom", 8)
+		panel.add_child(margin)
+
+		var column := VBoxContainer.new()
+		margin.add_child(column)
+
+		var title := Label.new()
+		title.text = "P%d" % player_id
+		title.modulate = GameColors.PLAYER_BLUE_POWER if player_id == 1 else GameColors.PLAYER_RED_POWER
+		column.add_child(title)
+
+		var row := HFlowContainer.new()
+		row.custom_minimum_size = Vector2(150, 0)
+		row.add_theme_constant_override("h_separation", 4)
+		row.add_theme_constant_override("v_separation", 4)
+		column.add_child(row)
+
+		capture_rows.append(row)
+
+
+func add_captured_piece_icon(player_index: int, captured_piece: Piece) -> void:
+	var row := capture_rows[player_index]
+
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(32, 32)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = captured_piece.sprite.texture
+	icon.modulate = captured_piece.sprite.modulate
+	icon.tooltip_text = captured_piece.getTypeString()
+
+	row.add_child(icon)
 
 func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
 	for node in pieces_container.get_children():
@@ -764,6 +834,7 @@ func update_core_power():
 				see_count += 1
 			else:
 				p.powered = false
+				p.update_piece_color()
 	update_core_text(see_count)
 	current_core.power_count = see_count
 
@@ -817,8 +888,17 @@ func update_visible_enemy_core_highlights() -> void:
 
 	var core_cell := enemy_core.get_cur_pos()
 
-	# Don't reveal the opponent's core or its support unless the core is visible.
 	if not hasCellInVision(current_player, core_cell):
+		for node in player_pieces[enemy_player - 1]:
+			var supporter := node as Piece
+			if supporter == null or supporter is CorePiece:
+				continue
+			if not hasCellInVision(current_player, supporter.get_cur_pos()):
+				continue
+
+			supporter.powered = false
+			supporter.update_piece_color()
+
 		return
 
 	var visible_support_count := 0
@@ -952,15 +1032,68 @@ func end_turn(movedPiece: Piece):
 	else:
 		display_winner(current_player)
 
-func end_turn_vs_cpu():
+# func end_turn_vs_cpu():
+# 	current_player = 2 if current_player == 1 else 1
+# 	if current_player == cpu_player.player_number:
+# 		cpu_player.take_turn()
+# 		if(player_last_moves.size() < 2):
+# 			player_last_moves.append(cpu_player.last_moved_piece)
+# 		else:
+# 			player_last_moves[1] = cpu_player.last_moved_piece
+# 	else:
+# 		update_turn_text()
+# 		update_all_piece_vision()
+# 		turn_menu.hide()
+func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
+
 	if current_player == cpu_player.player_number:
-		cpu_player.take_turn()
-	else:
 		update_turn_text()
+		cpu_player.take_turn()
+
+		if player_last_moves.size() < 2:
+			if(cpu_player.last_moved_piece != null):
+				player_last_moves.append(cpu_player.last_moved_piece)
+		else:
+			if(cpu_player.last_moved_piece != null):
+				player_last_moves[1] = cpu_player.last_moved_piece
+	else:
+		# # update_all_piece_vision()
+		# # turn_menu.hide()
+		# # if(cpu_player.last_moved_piece != null):
+		# # 	await update_move_camera(cpu_player.last_moved_piece)
+		# # 	await update_move_camera(player_last_moves[0])
+		# update_turn_text()
 		update_all_piece_vision()
 		turn_menu.hide()
 
+		# First show the CPU move, if it is visible.
+		var enemy_move: Piece = cpu_player.last_moved_piece
+		if (
+			enemy_move != null
+			and is_instance_valid(enemy_move)
+			and hasCellInVision(current_player, enemy_move.get_cur_pos())
+		):
+			await camera.zoom_to_global_position(
+				enemy_move.global_position,
+				camera.zoom.x
+			)
+
+		# Then show this player's last move, or their core.
+		var own_index := current_player - 1
+		if own_index < player_last_moves.size():
+			var own_move: Piece = player_last_moves[own_index]
+			if is_instance_valid(own_move):
+				await camera.zoom_to_global_position(
+					own_move.global_position,
+					camera.zoom.x
+				)
+			else:
+				await move_camera_to_core()
+		else:
+			await move_camera_to_core()
+
+		update_turn_text()
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
@@ -971,8 +1104,9 @@ func update_move_camera(movedPiece: Piece):
 		)
 	else:
 		if(player_last_moves.size() == player_pieces.size()):
+			var enemy_player = 2 if current_player == 1 else 1
 			await camera.zoom_to_global_position(
-				player_last_moves[current_player - 1].global_position,
+				player_last_moves[enemy_player - 1].global_position,
 				camera.zoom.x
 			)
 
@@ -1573,15 +1707,46 @@ func _on_next_pressed() -> void:
 	for p in pieces_container.get_children():
 		if(p is EyePiece and p.owned_player != current_player):
 			enemy_eye = true
+
 	current_player = 2 if current_player == 1 else 1
-	update_turn_text()
 	update_all_piece_vision()
-	move_camera_to_core()
-	turn_menu.hide()
-	if(player_last_moves.size() == player_pieces.size()):
-		await update_move_camera(
-			player_last_moves[current_player - 1]
-		)
+	# move_camera_to_core()
+	# turn_menu.hide()
+	# if(player_last_moves.size() == player_pieces.size()):
+	# 	await update_move_camera(
+	# 		player_last_moves[current_player - 1]
+	# 	)
+		# Show the enemy's last move, if it is visible to the incoming player.
+	
+	
+
+	if player_last_moves.size() > 1:
+		var enemy_index := 1 if current_player == 1 else 0
+		var enemy_move: Piece = player_last_moves[enemy_index]
+		if (
+			is_instance_valid(enemy_move)
+			and hasCellInVision(current_player, enemy_move.get_cur_pos())
+		):
+			await camera.zoom_to_global_position(
+				enemy_move.global_position,
+				camera.zoom.x
+			)
+
+	# Return to this player's last move, or their core if they have not moved yet.
+	var own_index := current_player - 1
+	if own_index < player_last_moves.size():
+		var own_move: Piece = player_last_moves[own_index]
+		if is_instance_valid(own_move):
+			await camera.zoom_to_global_position(
+				own_move.global_position,
+				camera.zoom.x
+			)
+		else:
+			await move_camera_to_core()
+	else:
+		await move_camera_to_core()
+
+	update_turn_text()
 
 
 func _on_stay_button_pressed() -> void:

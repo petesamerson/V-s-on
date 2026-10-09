@@ -5,11 +5,14 @@ class_name CPUPlayer
 @export_range(1,5) var difficulty: int = 5
 
 var board: Board
+var last_moved_piece: Piece
 var recent_piece_ids: Array[int] = []
+var rng := RandomNumberGenerator.new()
 
 
 func setup(game_board: Board) -> void:
 	print("cpu created with difficulty " + str(difficulty))
+	rng.randomize()
 	board = game_board
 
 
@@ -45,10 +48,17 @@ func take_turn() -> void:
 			destinations = piece.generate_possible_moves(piece.get_cur_pos())
 
 		for destination in destinations:
+			var randomness_by_difficulty := [40.0, 28.0, 18.0, 10.0, 5.0]
+			var randomness: float = randomness_by_difficulty[
+				clampi(difficulty - 1, 0, 4)
+			]
+			var move_score := score_move(piece, destination, core_under_attack)
+			move_score += rng.randf_range(-randomness, randomness)
+
 			actions.append({
 				"piece": piece,
 				"destination": destination,
-				"score": score_move(piece, destination, core_under_attack)
+				"score": move_score
 			})
 
 	if actions.is_empty():
@@ -77,6 +87,7 @@ func take_turn() -> void:
 	if recent_piece_ids.size() > 2:
 		recent_piece_ids.pop_back()
 
+	last_moved_piece = chosen_piece
 	chosen_piece.make_cpu_move(destination)
 
 
@@ -174,15 +185,16 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 			score += 16.0
 
 	# Reward revealing territory that our pieces cannot currently see.
+		# Reward scouting, with a stronger preference for low-value pieces.
 	var newly_seen_cells := 0
 	for cell in new_vision:
 		if not board.hasCellInVision(player_number, cell):
 			newly_seen_cells += 1
 
-	var scouting_factor := 1.0 / (1.0 + float(piece.piece_value) * 0.15)
-	score += float(newly_seen_cells) * 0.75 * scouting_factor
+	var scouting_factor := 1.0 / (1.0 + float(piece.piece_value) * 0.35)
+	score += float(newly_seen_cells) * 2.5 * scouting_factor
 
-	# Extra reward when this move reveals a previously hidden enemy.
+	# Strongly reward discovering an enemy that was outside our current vision.
 	for node in board.player_pieces[enemy_player - 1]:
 		var enemy := node as Piece
 		if enemy == null:
@@ -193,15 +205,7 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 			not board.hasCellInVision(player_number, enemy_cell)
 			and new_vision.has(enemy_cell)
 		):
-			score += 35.0 * scouting_factor
-
-	for node in board.player_pieces[player_number - 1]:
-		var ally := node as Piece
-		if ally == null or ally == piece:
-			continue
-
-		if not board.is_guarded(ally) and new_vision.has(ally.get_cur_pos()):
-			score += 12.0
+			score += 90.0 * scouting_factor
 	
 	# Keep non-core pieces near allies and encourage shared coverage.
 	if not piece is CorePiece:
@@ -236,16 +240,28 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 	elif own_support_after == 1:
 		score -= 100.0
 
-	# Account only for enemy pieces whose locations are visible.
+	# Prefer moving threatened pieces to safety.
+	var threatened_before := false
+	var threatened_after := false
+
 	for node in board.player_pieces[enemy_player - 1]:
 		var enemy_piece := node as Piece
 		if enemy_piece == null or enemy_piece == captured:
 			continue
 		if not board.hasCellInVision(player_number, enemy_piece.get_cur_pos()):
 			continue
+
+		if enemy_piece.cur_moves.has(old_position):
+			threatened_before = true
+
 		if enemy_piece.cur_moves.has(destination):
-			var loss_penalty := 300.0 + float(piece.piece_value) * 60.0
+			threatened_after = true
+			var value := float(piece.piece_value)
+			var loss_penalty := 300.0 + value * value * 40.0
 			score -= loss_penalty
+
+	if threatened_before and not threatened_after:
+		score += 250.0 + float(piece.piece_value) * 100.0
 
 	# Encourage rotating through pieces when choices are close in value.
 	if recent_piece_ids.has(piece.get_instance_id()):
