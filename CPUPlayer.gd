@@ -58,12 +58,24 @@ func take_turn() -> void:
 			actions.append({
 				"piece": piece,
 				"destination": destination,
-				"score": move_score
+				"score": move_score,
+				"risky_eye_move": (
+					piece is EyePiece
+					and is_move_threatened(destination)
+				)
 			})
 
 	if actions.is_empty():
 		print("CPU has no legal moves")
 		return
+	
+	var safer_actions: Array[Dictionary] = []
+	for action in actions:
+		if not action["risky_eye_move"]:
+			safer_actions.append(action)
+
+	if not safer_actions.is_empty():
+		actions = safer_actions
 
 	var best_score: float = -INF
 	for action in actions:
@@ -90,6 +102,23 @@ func take_turn() -> void:
 	last_moved_piece = chosen_piece
 	chosen_piece.make_cpu_move(destination)
 
+func is_move_threatened(destination: Vector2i) -> bool:
+	var enemy_player := 1 if player_number == 2 else 2
+	var captured: Piece = null
+
+	if board.hasCellInVision(player_number, destination):
+		captured = board.get_enemy_piece_at_cell(destination, enemy_player)
+
+	for node in board.player_pieces[enemy_player - 1]:
+		var enemy := node as Piece
+		if enemy == null or enemy == captured:
+			continue
+		if not board.hasCellInVision(player_number, enemy.get_cur_pos()):
+			continue
+		if enemy.cur_moves.has(destination):
+			return true
+
+	return false
 
 func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) -> float:
 	var enemy_player := 1 if player_number == 2 else 2
@@ -98,14 +127,32 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 	if own_core == null:
 		return 0.0
 
+
+	var total_captures := (
+		board.player_captures[0].size()
+		+ board.player_captures[1].size()
+	)
+	var protect_eyes_early := total_captures < 4
+
 	# Candidate destinations should be in the CPU's vision. Only inspect
 	# an enemy occupying a destination the CPU can currently see.
 	var captured: Piece = null
 	if board.hasCellInVision(player_number, destination):
 		captured = board.get_enemy_piece_at_cell(destination, enemy_player)
 
-	if captured is CorePiece:
-		return 100000.0
+	var score: float = 0.0
+
+	var captured_threatens_core := (
+		captured != null
+		and captured.cur_moves.has(own_core.get_cur_pos())
+	)
+	if core_under_attack and piece is CorePiece:
+		if captured_threatens_core:
+			score += 1600.0
+		else:
+			score += 100.0
+		# if captured is CorePiece:
+		# 	return 100000.0
 
 	var own_support_after := count_core_support(
 		player_number,
@@ -114,10 +161,28 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		destination
 	)
 
-	var score: float = 0.0
 
 	var old_position := piece.get_cur_pos()
+	if protect_eyes_early and piece is EyePiece:
+		var distance_from_core := hex_distance(
+			old_position,
+			own_core.get_cur_pos()
+		)
+		var destination_from_core := hex_distance(
+			destination,
+			own_core.get_cur_pos()
+		)
+
+		# Keep the Eyes in a three-hex ring around their core early on.
+		if destination_from_core > 3:
+			score -= float(destination_from_core - 3) * 40.0
+
+		# Discourage advancing an Eye toward the front early in the game.
+		if destination_from_core > distance_from_core:
+			score -= float(destination_from_core - distance_from_core) * 25.0
+
 	var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
+
 
 	if core_under_attack and piece is CorePiece:
 		score += 1000.0
@@ -136,7 +201,7 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 			if ally == null or ally == piece:
 				continue
 			if captured.cur_moves.has(ally.get_cur_pos()):
-				score += 45.0
+				score += 100.0 if ally is CorePiece else 55.0
 				break
 	
 
