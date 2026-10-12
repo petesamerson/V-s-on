@@ -9,6 +9,7 @@ var last_moved_piece: Piece
 var recent_piece_ids: Array[int] = []
 var rng := RandomNumberGenerator.new()
 
+var enemy_last_seen: Dictionary = {}
 
 func setup(game_board: Board) -> void:
 	print("cpu created with difficulty " + str(difficulty))
@@ -23,6 +24,12 @@ func take_turn() -> void:
 	rotate_towers_for_turn()
 
 	var enemy_player := 1 if player_number == 2 else 2
+
+	for node in board.player_pieces[enemy_player - 1]:
+		var enemy := node as Piece
+		if enemy != null and board.hasCellInVision(player_number, enemy.get_cur_pos()):
+			enemy_last_seen[enemy.get_instance_id()] = enemy.get_cur_pos()
+
 	board.regenerate_all_piece_moves(enemy_player, true)
 
 	var own_core := find_core(player_number)
@@ -181,29 +188,144 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		if destination_from_core > distance_from_core:
 			score -= float(destination_from_core - distance_from_core) * 25.0
 
+		var cover_before := count_possible_eye_cover(old_position)
+
+		var cover_after := count_possible_eye_cover(
+			destination,
+			piece,
+			destination
+		)
+
+		score += float(cover_after - cover_before) * 35.0
+
 	var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
 
+	if not (piece is EyePiece):
+		for spawn_cell in board.get_possible_spawn_locations():
+			if not board.hasCellInVision(player_number, spawn_cell):
+				var distance_before := hex_distance(old_position, spawn_cell)
+				var distance_after := hex_distance(destination, spawn_cell)
+				score += float(distance_before - distance_after) * 2.0
+	
+	for last_seen_position in enemy_last_seen.values():
+		if not board.hasCellInVision(player_number, last_seen_position):
+			var distance_before := hex_distance(old_position, last_seen_position)
+			var distance_after := hex_distance(destination, last_seen_position)
+			score += float(distance_before - distance_after) * 3.0
+
+
+	if (piece is TowerRotatePiece or HopPiece):
+		var vision_without_piece := {}
+
+		for node in board.player_pieces[player_number - 1]:
+			var ally := node as Piece
+			if ally == null or ally == piece:
+				continue
+
+			for cell in ally.cur_vision:
+				vision_without_piece[cell] = true
+
+		# Reward revealing enemies that are currently hidden from all friendly pieces.
+		for node in board.player_pieces[enemy_player - 1]:
+			var enemy := node as Piece
+			if enemy == null:
+				continue
+
+			var enemy_cell := enemy.get_cur_pos()
+			if (
+				new_vision.has(enemy_cell)
+				and not vision_without_piece.has(enemy_cell)
+			):
+				score += 80.0
+
+	if not (piece is CorePiece):
+		var cover_before := count_possible_eye_cover(old_position)
+		var cover_after := count_possible_eye_cover(
+			destination,
+			piece,
+			destination
+		)
+
+		score += float(cover_after - cover_before) * 35.0
+		score *= maxf(1.0, float(piece.piece_value))
 
 	if core_under_attack and piece is CorePiece:
 		score += 1000.0
 
 	# if captured != null:
 	# 	score += 90.0
+	# if captured != null:
+	# 	score += float(captured.piece_value) * 50.0
+
+	# 	if board.can_enemy_recapture_after_move(piece, destination, captured):
+	# 		var recapture_penalty := float(piece.piece_value) * 25.0
+	# 		score -= recapture_penalty#float(piece.piece_value) * 50.0
+
+	# 	# Keep your existing bonus for capturing an enemy threatening an ally.
+	# 	for ally_node in board.player_pieces[player_number - 1]:
+	# 		var ally := ally_node as Piece
+	# 		if ally == null or ally == piece:
+	# 			continue
+	# 		if captured.cur_moves.has(ally.get_cur_pos()):
+	# 			score += 100.0 if ally is CorePiece else 55.0
+	# 			break
+
 	if captured != null:
-		score += float(captured.piece_value) * 50.0
+
+		if piece is CorePiece and has_non_core_capture(captured):
+			score -= 1000.0
+
+		var capture_reward := 70.0 + float(captured.piece_value) * 35.0
+		score += capture_reward
+
+		if captured.piece_value >= piece.piece_value:
+			score += 80.0
 
 		if board.can_enemy_recapture_after_move(piece, destination, captured):
-			score -= float(piece.piece_value) * 50.0
+			var recapture_penalty := float(piece.piece_value) * 25.0
+			score -= recapture_penalty
 
-		# Keep your existing bonus for capturing an enemy threatening an ally.
+		if captured.piece_value <= 5:
+			for ally_node in board.player_pieces[player_number - 1]:
+				var ally := ally_node as Piece
+				if ally == null or ally == piece or ally is CorePiece:
+					continue
+
+				if ally.cur_moves.has(captured.get_cur_pos()):
+					score += 300.0
+					break
+		var has_more_valuable_capture := false
+
+		for node in board.player_pieces[enemy_player - 1]:
+			var enemy := node as Piece
+			if enemy == null or enemy == captured:
+				continue
+
+			if (
+				board.hasCellInVision(player_number, enemy.get_cur_pos())
+				and get_capture_moves(piece).has(enemy.get_cur_pos())
+				and enemy.piece_value > captured.piece_value
+			):
+				has_more_valuable_capture = true
+				break
+
+		if (
+			not has_more_valuable_capture
+			and piece.piece_value == captured.piece_value
+		):
+			score += 60.0
+
+	# Strongly prioritize recapturing an enemy that just took a friendly piece.
+	if captured != null and captured.piece_value <= 5:
 		for ally_node in board.player_pieces[player_number - 1]:
 			var ally := ally_node as Piece
-			if ally == null or ally == piece:
+			if ally == null or ally == piece or ally is CorePiece:
 				continue
-			if captured.cur_moves.has(ally.get_cur_pos()):
-				score += 100.0 if ally is CorePiece else 55.0
+
+			# The ally can capture the enemy piece on its next move.
+			if ally.cur_moves.has(captured.get_cur_pos()):
+				score += 300.0
 				break
-	
 
 	# Only use the enemy core's location when it is visible to the CPU.
 	var visible_enemy_core := find_visible_core(enemy_player)
@@ -379,6 +501,63 @@ func count_core_support(
 
 	return count
 
+func count_possible_eye_cover(
+	eye_position: Vector2i,
+	moving_piece: Piece = null,
+	moving_destination: Vector2i = Vector2i.ZERO
+) -> int:
+	var count := 0
+
+	for node in board.player_pieces[player_number - 1]:
+		var piece := node as Piece
+		if piece == null or piece is CorePiece or piece == moving_piece:
+			continue
+
+		if piece is TowerRotatePiece:
+			var tower := piece as TowerRotatePiece
+			for direction in range(6):
+				if tower.get_potential_vision(
+					tower.get_cur_pos(),
+					direction
+				).has(eye_position):
+					count += 1
+					break
+		else:
+			var vision: Array[Vector2i]
+			if piece == moving_piece:
+				vision = piece.get_potential_vision(moving_destination)
+			else:
+				vision = piece.cur_vision
+
+			if vision.has(eye_position):
+				count += 1
+
+	return count
+
+func get_capture_moves(piece: Piece) -> Array[Vector2i]:
+	if piece is TowerRotatePiece:
+		var tower := piece as TowerRotatePiece
+		return tower.generate_all_possible_moves_with_rotation(
+			tower.get_cur_pos()
+		)
+
+	return piece.cur_moves
+
+func has_non_core_capture(target: Piece) -> bool:
+	var enemy_cell := target.get_cur_pos()
+
+	for node in board.player_pieces[player_number - 1]:
+		var ally := node as Piece
+		if ally == null or ally is CorePiece:
+			continue
+
+		if (
+			board.hasCellInVision(player_number, enemy_cell)
+			and get_capture_moves(ally).has(enemy_cell)
+		):
+			return true
+
+	return false
 
 func hex_distance(a: Vector2i, b: Vector2i) -> int:
 	var cube_a := Board.offset_to_cube(a)

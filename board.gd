@@ -325,6 +325,16 @@ func spawn_all_pieces():
 	game_setup_complete = true
 	update_core_power()
 
+func get_possible_spawn_locations() -> Array[Vector2i]:
+	var locations: Array[Vector2i] = []
+
+	for direction in range(6):
+		var line: Array[Vector2i] = get_line_from_center(Vector2i(10, 10), direction, 6)
+		if not line.is_empty():
+			locations.append(line[line.size() - 1])
+
+	return locations
+
 func spawn_player_location(center: Vector2i, player: int):
 	print("WAHT player " + str(player))
 
