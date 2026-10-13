@@ -48,7 +48,6 @@ func on_clicked() -> void:
 		return
 	var cell = board.local_to_map(position)  # current tile cell
 	# print(["Current cell:", cell , "selected", selected])
-	print("CLICKED:", self, "ID:", get_instance_id(), "selected:", selected)
 
 	old_selected_tile_ids = []
 	if(selected):

@@ -32,7 +32,6 @@ func on_clicked() -> void:
 		return
 
 	var cell: Vector2i = board.local_to_map(position)
-	print("Current cell:", cell , "selected", selected)
 
 	if selected:
 		selected = false

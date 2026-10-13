@@ -67,7 +67,6 @@ func _unhandled_input(event):
 
 	elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
 		var current_mouse = get_global_mouse_position()
-		print(["move", current_mouse, drag_start_mouse, drag_start_position])
 		var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
 		position = position.lerp(drag_target, 0.5)
 
@@ -86,7 +85,6 @@ func _unhandled_input(event):
 				var difference = current_distance - test_previous_distance
 				var factor = 1.0 + difference * 0.005
 
-				print("Fake pinch: ", current_distance, " factor: ", factor)
 
 				_zoom_to_point(
 					factor,
@@ -117,7 +115,6 @@ func _unhandled_input(event):
 		# Two fingers = pinch zoom
 		if touches.size() == 2:
 			wasPinched = true
-			print("Pinch zoom")
 			var positions = touches.values()
 			var current_distance = positions[0].distance_to(
 				positions[1]
@@ -188,6 +185,7 @@ func zoom_to_global_position(
 	target_position: Vector2,
 	target_zoom: float
 ) -> void:
+	board.cpu_turn_in_progress = true
 	var tween := create_tween()
 
 	tween.set_parallel(true)
@@ -196,14 +194,15 @@ func zoom_to_global_position(
 		self,
 		"global_position",
 		target_position,
-		1.0
+		1.5
 	)
 
 	tween.tween_property(
 		self,
 		"zoom",
 		Vector2(target_zoom, target_zoom),
-		1.0
+		1.5
 	)
 	await tween.finished
+	board.cpu_turn_in_progress = false
 	

@@ -126,7 +126,7 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 func on_clicked() -> void:
 	if(owned_player != board.current_player):
 		return
-	if(position == null or board == null):
+	if(position == null or board == null or board.cpu_turn_in_progress):
 		return
 	if(board.current_player != owned_player):
 		return

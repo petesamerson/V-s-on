@@ -1,6 +1,14 @@
 extends Node
 class_name CPUPlayer
 
+const CORE_CAPTURE_ENDGAME_PIECES := 3
+
+const EYE_MOVE_ENDGAME_PIECES_LEFT := 6
+const EYE_MOVE_ENDGAME_BONUS := 45.0
+
+const CORE_MOVE_ENDGAME_PIECES_LEFT := 4
+const CORE_MOVE_ENDGAME_BONUS := 60.0
+
 @export var player_number: int = 2
 @export_range(1,5) var difficulty: int = 5
 
@@ -32,12 +40,16 @@ func take_turn() -> void:
 
 	board.regenerate_all_piece_moves(enemy_player, true)
 
+	var visible_enemy_core := find_visible_core(enemy_player)
+
 	var own_core := find_core(player_number)
 	var core_under_attack := (
 		own_core != null
 		# and has_visible_attacker(own_core)
 		and board.is_piece_under_attack(own_core)
 	)
+
+	var non_core_pieces_left := count_non_core_pieces()
 
 	var actions: Array[Dictionary] = []
 
@@ -55,6 +67,35 @@ func take_turn() -> void:
 			destinations = piece.generate_possible_moves(piece.get_cur_pos())
 
 		for destination in destinations:
+			if (
+				piece is CorePiece
+				and non_core_pieces_left > CORE_MOVE_ENDGAME_PIECES_LEFT
+				and not is_running_away(piece, destination)
+			):
+				continue
+
+			if (
+				piece is EyePiece
+				and non_core_pieces_left > EYE_MOVE_ENDGAME_PIECES_LEFT
+				and not is_running_away(piece, destination)
+			):
+				continue
+
+			if (
+				piece is EyePiece
+				and visible_enemy_core != null
+				and visible_enemy_core.cur_moves.has(destination)
+				and moves_from_position(piece, destination).has(
+					visible_enemy_core.get_cur_pos()
+				)
+				and not board.can_enemy_recapture_after_move(
+					visible_enemy_core,
+					destination,
+					piece
+				)
+			):
+				continue
+
 			var randomness_by_difficulty := [40.0, 28.0, 18.0, 10.0, 5.0]
 			var randomness: float = randomness_by_difficulty[
 				clampi(difficulty - 1, 0, 4)
@@ -122,8 +163,12 @@ func is_move_threatened(destination: Vector2i) -> bool:
 			continue
 		if not board.hasCellInVision(player_number, enemy.get_cur_pos()):
 			continue
-		if enemy.cur_moves.has(destination):
-			return true
+		var enemy_moves: Array[Vector2i] = enemy.cur_moves
+		if enemy is TowerRotatePiece:
+			enemy_moves = (enemy as TowerRotatePiece).cur_possible_rotate_moves
+
+		if enemy_moves.has(destination):
+			return true	
 
 	return false
 
@@ -149,17 +194,33 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 
 	var score: float = 0.0
 
+	# var captured_threatens_core := (
+	# 	captured != null
+	# 	and captured.cur_moves.has(own_core.get_cur_pos())
+	# )
+	# if core_under_attack and piece is CorePiece:
+	# 	if captured_threatens_core:
+	# 		score += 1600.0
+	# 	else:
+	# 		score += 100.0
+
 	var captured_threatens_core := (
 		captured != null
-		and captured.cur_moves.has(own_core.get_cur_pos())
+		and get_capture_moves(captured).has(own_core.get_cur_pos())
 	)
-	if core_under_attack and piece is CorePiece:
-		if captured_threatens_core:
-			score += 1600.0
+
+	var non_core_pieces_left := count_non_core_pieces()
+
+	if core_under_attack and captured_threatens_core:
+		if piece is CorePiece:
+			if non_core_pieces_left <= CORE_CAPTURE_ENDGAME_PIECES:
+				score += 1600.0
+			else:
+				score -= 5000.0
 		else:
-			score += 100.0
-		# if captured is CorePiece:
-		# 	return 100000.0
+			score += 2000.0
+	elif core_under_attack and piece is CorePiece:
+		score += 100.0
 
 	var own_support_after := count_core_support(
 		player_number,
@@ -199,6 +260,7 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		score += float(cover_after - cover_before) * 35.0
 
 	var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
+
 
 	if not (piece is EyePiece):
 		for spawn_cell in board.get_possible_spawn_locations():
@@ -450,9 +512,45 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 	if threatened_before and not threatened_after:
 		score += 250.0 + float(piece.piece_value) * 100.0
 
+	if not threatened_after:
+		if (
+			piece is CorePiece
+			and non_core_pieces_left <= CORE_MOVE_ENDGAME_PIECES_LEFT
+			and own_support_after >= 2
+		):
+			score += CORE_MOVE_ENDGAME_BONUS
+		elif (
+			piece is EyePiece
+			and non_core_pieces_left <= EYE_MOVE_ENDGAME_PIECES_LEFT
+		):
+			score += EYE_MOVE_ENDGAME_BONUS
+
 	# Encourage rotating through pieces when choices are close in value.
 	if recent_piece_ids.has(piece.get_instance_id()):
 		score -= 14.0
+
+	var eye_forks_enabled := non_core_pieces_left <= EYE_MOVE_ENDGAME_PIECES_LEFT
+	var can_score_fork := (
+		not (piece is CorePiece)
+		and not threatened_after
+		and (
+			not (piece is EyePiece)
+			or (eye_forks_enabled and board.is_guarded(piece))
+		)
+	)
+
+	if can_score_fork:
+		var forks_before := count_attacked_enemies(piece, old_position)
+		var forks_after := count_attacked_enemies(piece, destination)
+
+		if forks_after >= 2 and forks_after > forks_before:
+			if piece is EyePiece:
+				score += 60.0
+			else:
+				score += minf(
+					25.0,
+					float(forks_after - forks_before) * 12.0
+				)
 
 	score -= float(piece.piece_value) * 5.0
 
@@ -558,6 +656,26 @@ func has_non_core_capture(target: Piece) -> bool:
 			return true
 
 	return false
+
+func count_attacked_enemies(piece: Piece, destination: Vector2i) -> int:
+	var potential_moves: Array[Vector2i]
+
+	if piece is TowerRotatePiece:
+		potential_moves = (piece as TowerRotatePiece) \
+			.generate_all_possible_moves_with_rotation(destination)
+	else:
+		potential_moves = piece.generate_possible_moves(destination)
+
+	var attacked := 0
+	for node in board.player_pieces[1 if player_number == 2 else 0]:
+		var enemy := node as Piece
+		if enemy == null:
+			continue
+
+		if potential_moves.has(enemy.get_cur_pos()):
+			attacked += 1
+
+	return attacked
 
 func hex_distance(a: Vector2i, b: Vector2i) -> int:
 	var cube_a := Board.offset_to_cube(a)
@@ -673,3 +791,36 @@ func has_visible_attacker(piece: Piece) -> bool:
 			return true
 
 	return false
+
+func count_non_core_pieces() -> int:
+	var count := 0
+
+	for node in board.player_pieces[player_number - 1]:
+		var piece := node as Piece
+		if piece != null and not (piece is CorePiece):
+			count += 1
+
+	return count
+
+func is_running_away(piece: Piece, destination: Vector2i) -> bool:
+	var current_position := piece.get_cur_pos()
+
+	return (
+		is_move_threatened(current_position)
+		and not is_move_threatened(destination)
+	)
+
+
+func moves_from_position(piece: Piece, position: Vector2i) -> Array[Vector2i]:
+	var original_moves := piece.cur_moves.duplicate()
+
+	if piece is TowerRotatePiece:
+		var tower := piece as TowerRotatePiece
+		var original_rotate_moves := tower.cur_possible_rotate_moves.duplicate()
+		var moves := tower.generate_all_possible_moves_with_rotation(position)
+		tower.cur_possible_rotate_moves = original_rotate_moves
+		return moves
+
+	var moves := piece.generate_possible_moves(position)
+	piece.cur_moves = original_moves
+	return moves

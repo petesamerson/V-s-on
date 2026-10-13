@@ -26,6 +26,7 @@ var current_player: int = 1
 var play_vs_cpu: bool = false
 
 var game_setup_complete := false
+var cpu_turn_in_progress := false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -517,7 +518,6 @@ func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
 
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	clear_board()
-	print(str("Current player: ") + str(current_player))
 	if(current_player == 1):
 		for p in player_pieces[0]:
 			if(!excluded_pieces.has(p)):
@@ -528,18 +528,15 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 			p.visible = true
 		for p in player_pieces[1]:
 			p.visible = false
-			print("update hide all")
 	else:
 		if(cpu_player == null):
 			for p in player_pieces[1]:
 				if(!excluded_pieces.has(p)):
-					print("updating vision for player 2")
 					print(p.getTypeString())
 					p.draw_current_vision()
 					p.update_piece_color()
 			for p in player_pieces[0]:
 				p.visible = false
-				print("update hide all")
 			for p in player_pieces[1]:
 				p.visible = true
 
@@ -601,6 +598,8 @@ func get_current_core() -> CorePiece:
 
 func does_move_unpower_core(moved_piece: Piece, new_move: Vector2i) -> bool:
 	var core = get_current_core()
+	if core == null:
+		return false
 	if(moved_piece.cur_vision.has(core.get_cur_pos())):
 		if(core.power_count == 1):
 			if(!moved_piece.get_potential_vision(new_move).has(core.get_cur_pos())):
@@ -657,17 +656,21 @@ func is_piece_under_attack(piece: Piece) -> bool:
 	regenerate_all_piece_moves(attacker_player, true)
 
 	var target_cell := piece.get_cur_pos()
-	print("piece cell: " + str(target_cell) + " owned by player " + str(piece.owned_player))
 	var attacked := false
 
 	for attacker in player_pieces[attacker_player - 1]:
-		for move in attacker.cur_moves:
-			print("attacker: " + str(attacker) + " move: " + str(move))
-		if attacker.cur_moves.has(target_cell):
-			attacked = true
-			if piece is CorePiece:
-				attacker.visible = true
-			break
+		# if attacker.cur_moves.has(target_cell):
+		var attacker_moves: Array[Vector2i]
+		if attacker is TowerRotatePiece:
+			attacker_moves = (attacker as TowerRotatePiece).cur_possible_rotate_moves
+		else:
+			attacker_moves = attacker.cur_moves
+
+		if attacker_moves.has(target_cell):	
+				attacked = true
+				if piece is CorePiece:
+					attacker.visible = true
+				break
 
 	# current_player = previous_current_player
 	return attacked
@@ -1063,10 +1066,11 @@ func end_turn(movedPiece: Piece):
 # 		turn_menu.hide()
 func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
-	update_turn_text()
 
 	if current_player == cpu_player.player_number:
 		update_turn_text()
+		await get_tree().process_frame
+		cpu_turn_in_progress = true
 		cpu_player.take_turn()
 
 		if player_last_moves.size() < 2:
@@ -1076,14 +1080,9 @@ func end_turn_vs_cpu() -> void:
 			if(cpu_player.last_moved_piece != null):
 				player_last_moves[1] = cpu_player.last_moved_piece
 	else:
-		# # update_all_piece_vision()
-		# # turn_menu.hide()
-		# # if(cpu_player.last_moved_piece != null):
-		# # 	await update_move_camera(cpu_player.last_moved_piece)
-		# # 	await update_move_camera(player_last_moves[0])
-		# update_turn_text()
 		update_all_piece_vision()
 		turn_menu.hide()
+		update_turn_text()
 
 		# First show the CPU move, if it is visible.
 		var enemy_move: Piece = cpu_player.last_moved_piece
@@ -1110,8 +1109,6 @@ func end_turn_vs_cpu() -> void:
 				await move_camera_to_core()
 		else:
 			await move_camera_to_core()
-
-		update_turn_text()
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
@@ -1154,7 +1151,6 @@ func animate_board():
 		cur_range = 2
 	for i in range(cur_range):
 		set_cell(Vector2i(cur_ani_x - ani_offset,cur_ani_y), 12, Vector2i(0,0))
-		# print(["curAni xy", cur_ani_x, cur_ani_y, "index|offset", ani_index, ani_offset])
 		if(cur_ani_y % 2 == 1):
 			ani_offset += 1
 		cur_ani_y += 1
@@ -1791,3 +1787,7 @@ func _on_check_button_toggled(toggled_on: bool) -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().change_scene_to_file("res://main_menu.tscn")
+
+
+
+const CORE_CAPTURE_ENDGAME_PIECES := 3

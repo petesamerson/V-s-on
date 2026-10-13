@@ -179,7 +179,7 @@ func generate_all_possible_moves_with_rotation(
 	var original_direction := cur_direction
 	var original_moves: Array[Vector2i] = cur_moves.duplicate()
 
-	for direction in range(5):
+	for direction in range(6):
 		cur_direction = direction#posmod(original_direction + direction_offset, 6)
 
 		for move in generate_possible_moves(cur_location):
