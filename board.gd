@@ -300,6 +300,7 @@ func _process(delta: float) -> void:
 
 @onready var player_pieces = [[],[]]
 var player_last_moves: Array[Piece] = []
+var last_capture_capturer_ids: Array[int] = [-1, -1]
 var player_vision_tiles: Array[Array] = [[],[]]
 
 var player_captures: Array[Array] = [[], []]
@@ -608,6 +609,8 @@ func does_move_unpower_core(moved_piece: Piece, new_move: Vector2i) -> bool:
 
 func does_rotate_unpower_core(piece: TowerRotatePiece, first_rotate: bool) -> bool:
 	var core = get_current_core()
+	if(core == null):
+		return false
 	var new_direction = piece.cur_direction
 	if(first_rotate):
 		if new_direction == 0:
