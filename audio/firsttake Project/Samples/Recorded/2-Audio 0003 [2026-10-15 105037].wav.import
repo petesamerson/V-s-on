@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cb45uv17f47wa"
+path="res://.godot/imported/2-Audio 0003 [2026-10-15 105037].wav-9f44520b63bd14a094a194a257baaa73.sample"
+
+[deps]
+
+source_file="res://audio/firsttake Project/Samples/Recorded/2-Audio 0003 [2026-10-15 105037].wav"
+dest_files=["res://.godot/imported/2-Audio 0003 [2026-10-15 105037].wav-9f44520b63bd14a094a194a257baaa73.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

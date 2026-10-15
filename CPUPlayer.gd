@@ -19,6 +19,8 @@ const RECAPTURE_BONUS = 400.0
 @export var player_number: int = 2
 @export_range(1,5) var difficulty: int = 5
 
+var seen_by_player = false
+
 var board: Board
 var last_moved_piece: Piece
 var recent_piece_ids: Array[int] = []
@@ -41,9 +43,9 @@ func take_turn() -> void:
 	if board == null or board.current_player != player_number:
 		return
 
+	cpu_turn_count += 1
 	rotate_towers_for_turn()
 
-	cpu_turn_count += 1
 
 	var enemy_player := 1 if player_number == 2 else 2
 
@@ -73,6 +75,20 @@ func take_turn() -> void:
 		# and has_visible_attacker(own_core)
 		and board.is_piece_under_attack(own_core)
 	)
+	var core_attackers: Array[Piece] = []
+
+	if core_under_attack and own_core != null:
+		for node in board.player_pieces[enemy_player - 1]:
+			var attacker := node as Piece
+			if attacker == null:
+				continue
+
+			var attacker_moves := attacker.cur_moves
+			if attacker is TowerRotatePiece:
+				attacker_moves = (attacker as TowerRotatePiece).cur_possible_rotate_moves
+
+			if attacker_moves.has(own_core.get_cur_pos()):
+				core_attackers.append(attacker)
 
 	var non_core_pieces_left := count_non_core_pieces()
 
@@ -92,12 +108,12 @@ func take_turn() -> void:
 			destinations = piece.generate_possible_moves(piece.get_cur_pos())
 
 		for destination in destinations:
-			if (
-				piece is CorePiece
-				and non_core_pieces_left > CORE_MOVE_ENDGAME_PIECES_LEFT
-				and not is_running_away(piece, destination)
-			):
-				continue
+			# if (
+			# 	piece is CorePiece
+			# 	and non_core_pieces_left > CORE_MOVE_ENDGAME_PIECES_LEFT
+			# 	and not is_running_away(piece, destination)
+			# ):
+			# 	continue
 
 			if (
 				piece is EyePiece
@@ -138,6 +154,33 @@ func take_turn() -> void:
 				# 	and is_move_threatened(destination)
 				# )
 			})
+
+
+	if core_under_attack:
+		var defensive_actions: Array[Dictionary] = []
+
+		for action in actions:
+			var resolves_threat := action["piece"] is CorePiece
+
+			if (
+				not resolves_threat
+				and core_attackers.size() == 1
+				and board.hasCellInVision(
+					player_number,
+					action["destination"]
+				)
+			):
+				var target := board.get_enemy_piece_at_cell(
+					action["destination"],
+					enemy_player
+				)
+				resolves_threat = target == core_attackers[0]
+
+			if resolves_threat:
+				defensive_actions.append(action)
+
+		if not defensive_actions.is_empty():
+			actions = defensive_actions
 
 	if actions.is_empty():
 		print("CPU has no legal moves")
@@ -1045,7 +1088,21 @@ func rotate_towers_for_turn() -> void:
 
 			tower.update_sprite_rotation()
 			tower.draw_vision_change()
+			remember_enemies_in_vision(tower.cur_vision)
 
+func remember_enemies_in_vision(visible_cells: Array[Vector2i]) -> void:
+	var enemy_player := 1 if player_number == 2 else 2
+
+	for node in board.player_pieces[enemy_player - 1]:
+		var enemy := node as Piece
+		if enemy == null:
+			continue
+
+		var enemy_position := enemy.get_cur_pos()
+		if visible_cells.has(enemy_position):
+			var enemy_id := enemy.get_instance_id()
+			enemy_last_seen[enemy_id] = enemy_position
+			enemy_last_seen_turn[enemy_id] = cpu_turn_count
 
 func score_tower_rotation(
 	tower: TowerRotatePiece,

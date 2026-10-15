@@ -521,6 +521,9 @@ stream = ExtResource("32_6ow2y")
 volume_db = 8.0
 autoplay = true
 
+[node name="GameSounds" type="AudioStreamPlayer" parent="."]
+volume_db = -12.0
+
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
 [connection signal="pressed" from="TurnLayer/MarginContainer/VBoxContainer/Pause" to="Board" method="_on_pause_pressed"]

@@ -182,14 +182,14 @@ func update_turn_text():
 	if current_player == 1:
 		var raw_message = "Player 1's Turn"
 		turn_label.text = "[outline_size=10][outline_color=black][b][color=cyan]%s[/color][/b]" % raw_message
-		if(cpu_player != null):
-			display_turn_message()
+		# if(cpu_player != null):
+		# 	display_turn_message()
 	else:
 		var raw_message = "Player 2's Turn"
 		turn_label.text = "[outline_size=10][outline_color=black][b][color=red]%s[/color][/b]" % raw_message
 
-	if(cpu_player == null):
-		display_turn_message()
+	# if(cpu_player == null):
+	# 	display_turn_message()
 
 	update_mobile_scale()
 
@@ -262,7 +262,6 @@ func determine_winner() -> int:
 		return 0
 
 	winner = 2 if loser == 1 else 1
-	print("winner " + str(winner))
 	
 	return winner
 
@@ -338,7 +337,6 @@ func get_possible_spawn_locations() -> Array[Vector2i]:
 	return locations
 
 func spawn_player_location(center: Vector2i, player: int):
-	print("WAHT player " + str(player))
 
 	var core_piece := core_piece_scene.instantiate() as CorePiece
 	core_piece.owned_player = player
@@ -440,7 +438,14 @@ func spawn_player_location(center: Vector2i, player: int):
 # func remove_piece(piece: Piece):
 # 	player_pieces[piece.owned_player - 1].erase(piece)
 # 	pieces_container.remove_child(piece)
+
+var play_capture: bool = false
+
 func remove_piece(piece: Piece) -> void:
+	if(current_player != cpu_player.player_number):
+		play_capture = true
+		queue_game_sound(game_sound_files[1], true)
+
 	var capturer_index := current_player - 1
 
 	player_captures[capturer_index].append({
@@ -522,7 +527,6 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	if(current_player == 1):
 		for p in player_pieces[0]:
 			if(!excluded_pieces.has(p)):
-				print(p.getTypeString())
 				p.draw_current_vision()
 				p.update_piece_color()
 		for p in player_pieces[0]:
@@ -533,7 +537,6 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 		if(cpu_player == null):
 			for p in player_pieces[1]:
 				if(!excluded_pieces.has(p)):
-					print(p.getTypeString())
 					p.draw_current_vision()
 					p.update_piece_color()
 			for p in player_pieces[0]:
@@ -962,7 +965,6 @@ func update_visible_enemy_core_highlights() -> void:
 	enemy_core.update_piece_color()
 
 func display_core_attack():
-	print("core under attack")
 	var text_timer := Timer.new()
 	text_timer.wait_time = 1.5
 	text_timer.one_shot = true
@@ -1009,16 +1011,21 @@ func get_player_color(powered: bool = false) -> Color:
 			return GameColors.PLAYER_RED
 	return Color.WHITE
 
+var played_found_sound = false
+
 func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
 	var enemy_player = 2 if current_player == 1 else 1
 	for p in player_pieces[enemy_player - 1]:
 		if(cell == p.get_cur_pos()):
 			p.visible = visible
-			print("set enemy piece visibility")
+			if cpu_player.player_number == enemy_player:
+				if not cpu_player.seen_by_player:
+					cpu_player.seen_by_player = true
+					queue_game_sound(game_sound_files[3], true)
+					played_found_sound = true
 	return
 
 func clear_board():
-	print("clear")
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
 	update_rotate_map_board()
@@ -1027,7 +1034,6 @@ func clear_board():
 func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 	for p in pieces_container.get_children():
 		if(!excluded_pieces.has(p)):
-			# print(["excluded_log", self.local_to_map(p.position)])
 			p.selected = false
 		p.update_piece_color()
 	update_core_power()
@@ -1038,6 +1044,8 @@ func end_turn(movedPiece: Piece):
 	clear_captures()
 	displayed_warning_text = false
 	if(cpu_player == null or current_player != cpu_player.player_number):
+		queue_game_sound(game_sound_files[0])
+
 		await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
 		for p in player_pieces[i - 1]:
@@ -1055,18 +1063,8 @@ func end_turn(movedPiece: Piece):
 	else:
 		display_winner(current_player)
 
-# func end_turn_vs_cpu():
-# 	current_player = 2 if current_player == 1 else 1
-# 	if current_player == cpu_player.player_number:
-# 		cpu_player.take_turn()
-# 		if(player_last_moves.size() < 2):
-# 			player_last_moves.append(cpu_player.last_moved_piece)
-# 		else:
-# 			player_last_moves[1] = cpu_player.last_moved_piece
-# 	else:
-# 		update_turn_text()
-# 		update_all_piece_vision()
-# 		turn_menu.hide()
+
+var enemy_turn_interrupt = false
 func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
 
@@ -1075,6 +1073,11 @@ func end_turn_vs_cpu() -> void:
 		await get_tree().process_frame
 		cpu_turn_in_progress = true
 		cpu_player.take_turn()
+		if(enemy_turn_interrupt):
+			queue_game_sound(game_sound_files[2], true)
+		elif (played_found_sound):
+			queue_game_sound(game_sound_files[2], false)
+			enemy_turn_interrupt = true
 
 		if player_last_moves.size() < 2:
 			if(cpu_player.last_moved_piece != null):
@@ -1112,6 +1115,7 @@ func end_turn_vs_cpu() -> void:
 				await move_camera_to_core()
 		else:
 			await move_camera_to_core()
+		display_turn_message()
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
@@ -1139,7 +1143,6 @@ func get_enemy_player_numbers():
 	for i in range(player_pieces.size()) :
 		if(i+1) != current_player:
 			enemy_players.append((i + 1))
-	# print(enemy_players)
 	return enemy_players
 
 
@@ -1171,10 +1174,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			camera.get_global_mouse_position() - position
 		)
 		var cell = local_to_map(local)
-		# print(["unhandle board", cell])
 
 		var tile_pos = map_to_local(Vector2i(3, 4))
-		# print(tile_pos)
 
 
 
@@ -1186,7 +1187,6 @@ func draw_hex_around(center: Vector2i) :
 		curTile = 9
 	
 	if(center.y % 2 ==  0): 
-		# print("even")
 		set_cell(
 			Vector2i(center.x - 1, center.y), 
 			curTile,
@@ -1218,7 +1218,6 @@ func draw_hex_around(center: Vector2i) :
 			Vector2i(0,0)
 		)
 	else:
-		# print("odd")
 		set_cell(
 			Vector2i(center.x - 1, center.y - 1), 
 			curTile,
@@ -1295,7 +1294,6 @@ func get_line_from_center(center: Vector2i, direction: int, length: int):
 				if(length % 2 == 0):
 					offset = offset - 1
 			offset = offset + length / 2 
-			# print(["offset", offset, center_even])
 			return hex_line(center, Vector2i(center.x + offset, center.y - length))	
 		1: 
 			return hex_line(center, Vector2i(center.x + length, center.y))
@@ -1384,7 +1382,6 @@ func draw_back_dia_line(center: Vector2i):
 		offset_neg = 0
 
 	for i in range(1,6):
-		# print(["offset", offset_pos,"i", i, center])
 		set_cell(Vector2i(center.x + offset_pos, center.y + i), line_color_id, Vector2i(0,0))
 		set_cell(Vector2i(center.x - offset_neg, center.y - i), line_color_id, Vector2i(0,0))
 		if (center.y + i) % 2 == 0:
@@ -1403,7 +1400,6 @@ func draw_forward_dia_line(center: Vector2i):
 		offset_neg = 0
 
 	for i in range(1,6):
-		# print(["offset", offset_pos,"i", i, center])
 		set_cell(Vector2i(center.x - offset_neg, center.y + i), line_color_id, Vector2i(0,0))
 		set_cell(Vector2i(center.x + offset_pos, center.y - i), line_color_id, Vector2i(0,0))
 		if (center.y + i) % 2 == 0:
@@ -1425,7 +1421,6 @@ func draw_vision_range(center: Vector2i, vision_range: int, color: int):
 	var minXBottom= 10
 
 	for i in range(1,vision_range + 1):
-		# print(["offset", offset_pos,"i", i, center])
 
 		# set_cell(Vector2i(center.x - offset_neg, center.y + i), 6, Vector2i(0,0))
 		# set_cell(Vector2i(center.x + offset_pos, center.y + i), 6, Vector2i(0,0))
@@ -1626,7 +1621,6 @@ func get_hexagon_tiles(center: Vector2i, hex_radius: int):
 
 func draw_hex_tile_line(a: Vector2i, b: Vector2i, tile_id: int) -> void:
 	var cells = hex_line(a, b)
-	# print(["hexline", cells])
 	for pos in cells:
 		set_cell(pos, tile_id, Vector2i(0,0))
 
@@ -1764,6 +1758,7 @@ func _on_next_pressed() -> void:
 		await move_camera_to_core()
 
 	update_turn_text()
+	display_turn_message()
 
 
 func _on_stay_button_pressed() -> void:
@@ -1772,7 +1767,32 @@ func _on_stay_button_pressed() -> void:
 	turn_menu.hide()
 
 @onready var music_player: AudioStreamPlayer2D = $"../AudioStreamPlayer2D"
+@onready var game_sounds: AudioStreamPlayer =$"../GameSounds"
+var game_sound_files: Array[AudioStream] = [
+	preload("res://audio/firsttake.wav"),
+	preload("res://audio/Capture2.wav"),
+	preload("res://audio/EnemyMove.wav"),
+	preload("res://audio/Capture1.wav")
+]
 
+var sound_queue: Array[AudioStream] = []
+
+func queue_game_sound(sound: AudioStream, clearQueue: bool = false) -> void:
+	if(clearQueue):
+		sound_queue = []
+		game_sounds.stop()
+	sound_queue.append(sound)
+	if not game_sounds.finished.is_connected(_play_next_sound):
+		game_sounds.finished.connect(_play_next_sound)
+	if not game_sounds.playing:
+		_play_next_sound()
+
+func _play_next_sound() -> void:
+	if sound_queue.is_empty():
+		return
+	game_sounds.stop()
+	game_sounds.stream = sound_queue.pop_front()
+	game_sounds.play()
 
 func _on_pause_pressed() -> void:
 	settings_cover.visible = true
