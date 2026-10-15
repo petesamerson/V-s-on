@@ -89,10 +89,7 @@ func select_piece():
 
 
 func on_clicked():
-	print("on_tower_clicked " + str(sprite.rotation_degrees) +  " " + str(cur_direction))
-	if(board == null or position == null):
-		return
-	if owned_player != board.current_player:
+	if not can_control_piece():
 		return
 	var cell = board.local_to_map(position)
 	old_selected_tile_ids = []
@@ -222,6 +219,14 @@ func handle_move_input_event(event: InputEvent):
 		# 		else:
 		# 			cur_direction = (cur_direction + 1) % 6
 		# 		sprite.rotation_degrees = (cur_direction + 1)*60 - 30
+		if found and board.online_game and owned_player == board.local_player:
+			var from_cell := board.local_to_map(position)
+			NetworkManager.send_game_message({
+				"action": "rotate",
+				"from": [from_cell.x, from_cell.y],
+				"direction": cur_direction
+			})
+
 		if found:
 			for i in range(cur_moves.size()):
 				var old_move = cur_moves[i]

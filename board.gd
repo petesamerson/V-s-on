@@ -23,7 +23,10 @@ var board_tiles: Array[Vector2i] = []
 
 var turn = 1
 var current_player: int = 1
+
 var play_vs_cpu: bool = false
+var online_game := false
+var local_player := 1
 
 var game_setup_complete := false
 var cpu_turn_in_progress := false
@@ -47,7 +50,13 @@ func _ready() -> void:
 	update_mobile_scale()
 
 	play_vs_cpu = get_tree().root.get_meta("play_vs_cpu", false)
-	if play_vs_cpu:
+
+	online_game = get_tree().root.get_meta("online_game", false)
+	local_player = int(get_tree().root.get_meta("local_player", 1))
+
+	if online_game:
+		NetworkManager.game_message_received.connect(_on_network_game_message)
+	elif play_vs_cpu:
 		intialize_cpu_player(2)
 
 var is_mobile_browser: bool = false
@@ -306,12 +315,17 @@ var player_captures: Array[Array] = [[], []]
 var capture_rows: Array[HFlowContainer] = []
 
 func spawn_all_pieces():
-	var num1 := randi_range(0, 5)
-	var num2 := randi_range(0, 5)
+	var num1: int
+	var num2: int
 
-	while (num2 == num1 || abs(num2 - num1) == 1 || abs(num2 - num1) == 5):
+	if online_game:
+		num1 = int(get_tree().root.get_meta("online_spawn1", 0))
+		num2 = int(get_tree().root.get_meta("online_spawn2", 3))
+	else:
+		num1 = randi_range(0, 5)
 		num2 = randi_range(0, 5)
-
+		while num2 == num1 or abs(num2 - num1) == 1 or abs(num2 - num1) == 5:
+			num2 = randi_range(0, 5)
 	# num1 = 0
 	# num2 = 3
 	var spawn1 = get_line_from_center(Vector2i(10,10), num1, 6)
@@ -442,7 +456,7 @@ func spawn_player_location(center: Vector2i, player: int):
 var play_capture: bool = false
 
 func remove_piece(piece: Piece) -> void:
-	if(current_player != cpu_player.player_number):
+	if(cpu_player == null or current_player != cpu_player.player_number):
 		play_capture = true
 		queue_game_sound(game_sound_files[1], true)
 
@@ -522,39 +536,77 @@ func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
 
 	return null
 
+# func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
+# 	var viewer := local_player if online_game else current_player
+# 	clear_board()
+# 	if(current_player == 1):
+# 		for p in player_pieces[0]:
+# 			if(!excluded_pieces.has(p)):
+# 				p.draw_current_vision()
+# 				p.update_piece_color()
+# 		for p in player_pieces[0]:
+# 			p.visible = true
+# 		for p in player_pieces[1]:
+# 			p.visible = false
+# 	else:
+# 		if(cpu_player == null):
+# 			for p in player_pieces[1]:
+# 				if(!excluded_pieces.has(p)):
+# 					p.draw_current_vision()
+# 					p.update_piece_color()
+# 			for p in player_pieces[0]:
+# 				p.visible = false
+# 			for p in player_pieces[1]:
+# 				p.visible = true
+
+# 	for i in player_pieces.size():
+# 		for j in player_pieces[i].size():
+# 			for v in player_pieces[i][j].cur_vision:
+# 				player_vision_tiles[i].append(v)
+# 				if (hasEnemyPieceInVision(current_player, v)):
+# 					setEnemyPieceVisiblity(v, true)
+
+# 	if(cpu_player == null || current_player == 1):
+# 		update_core_power()
+
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
+	var viewer := local_player if online_game else current_player
+	var own_index := viewer - 1
+	var enemy_index := 1 - own_index
+
 	clear_board()
-	if(current_player == 1):
-		for p in player_pieces[0]:
-			if(!excluded_pieces.has(p)):
-				p.draw_current_vision()
-				p.update_piece_color()
-		for p in player_pieces[0]:
-			p.visible = true
-		for p in player_pieces[1]:
-			p.visible = false
-	else:
-		if(cpu_player == null):
-			for p in player_pieces[1]:
-				if(!excluded_pieces.has(p)):
-					p.draw_current_vision()
-					p.update_piece_color()
-			for p in player_pieces[0]:
-				p.visible = false
-			for p in player_pieces[1]:
-				p.visible = true
+
+	for piece in player_pieces[own_index]:
+		if not excluded_pieces.has(piece):
+			piece.draw_current_vision()
+			piece.update_piece_color()
+		piece.visible = true
+
+	for piece in player_pieces[enemy_index]:
+		piece.visible = false
 
 	for i in player_pieces.size():
-		for j in player_pieces[i].size():
-			for v in player_pieces[i][j].cur_vision:
-				player_vision_tiles[i].append(v)
-				if (hasEnemyPieceInVision(current_player, v)):
-					setEnemyPieceVisiblity(v, true)
+		for piece in player_pieces[i]:
+			for cell in piece.cur_vision:
+				player_vision_tiles[i].append(cell)
+				if hasEnemyPieceInVision(viewer, cell):
+					set_enemy_piece_visiblity(cell, true, viewer)
 
-	if(cpu_player == null || current_player == 1):
-		update_core_power()
+	if cpu_player == null or current_player == 1:
+		update_core_power()					
 
-					
+func set_enemy_piece_visiblity(cell: Vector2i, visible: bool, viewer: int) -> void:
+	var enemy_player := 2 if viewer == 1 else 1
+
+	for piece in player_pieces[enemy_player - 1]:
+		if cell == piece.get_cur_pos():
+			piece.visible = visible
+
+			if cpu_player != null and cpu_player.player_number == enemy_player:
+				if not cpu_player.seen_by_player:
+					cpu_player.seen_by_player = true
+					queue_game_sound(game_sound_files[3], true)
+					played_found_sound = true
 
 func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
 	var enemy_player = 2 if player == 1 else 1
@@ -826,82 +878,72 @@ func can_enemy_recapture_after_move(
 var displayed_warning_text = false
 
 func update_core_power():
+	var viewer := local_player if online_game else current_player
+
 	for child in get_children():
 		if child is Line2D:
 			child.queue_free()
-	var current_core: = get_current_core()
 
-	if current_core == null:
+	var viewed_core: CorePiece = null
+	for piece in player_pieces[viewer - 1]:
+		if piece is CorePiece:
+			viewed_core = piece as CorePiece
+			break
+
+	if viewed_core == null:
 		return
 
 	update_all_core_power_counts()
 
-	#Pieces that can see Core
-	var see_count = 0
-	for p in player_pieces[(current_player + 1)%2]:
-		if(!(p is CorePiece)):
-			if (p.cur_vision.has(current_core.get_cur_pos())):
-				var line := Line2D.new()
-				line.points = PackedVector2Array([
-					Vector2(current_core.position.x, current_core.position.y),
-					Vector2(p.position.x, p.position.y)
-				])
-				line.width = 3.0
-				line.z_index = 1
-				
-				current_core.update_piece_color()
-				if(current_core.selected):
-					line.default_color = Color.WHITE
-				else:
-					line.default_color = get_player_color(true)
-				p.powered = true
-				p.update_piece_color()
-				add_child(line)
-				see_count += 1
-			else:
-				p.powered = false
-				p.update_piece_color()
-	update_core_text(see_count)
-	current_core.power_count = see_count
+	var support_count := 0
+	for piece in player_pieces[viewer - 1]:
+		if piece is CorePiece:
+			continue
 
-	update_visible_enemy_core_highlights()
+		if piece.cur_vision.has(viewed_core.get_cur_pos()):
+			var line := Line2D.new()
+			line.points = PackedVector2Array([
+				Vector2(viewed_core.position.x, viewed_core.position.y),
+				Vector2(piece.position.x, piece.position.y)
+			])
+			line.width = 3.0
+			line.z_index = 1
+			line.default_color = (
+				Color.WHITE
+				if viewed_core.selected
+				else (
+					GameColors.PLAYER_BLUE_POWER
+					if viewer == 1
+					else GameColors.PLAYER_RED_POWER
+				)
+			)
 
-	if(game_setup_complete):
+			viewed_core.update_piece_color()
+			piece.powered = true
+			piece.update_piece_color()
+			add_child(line)
+			support_count += 1
+		else:
+			piece.powered = false
+			piece.update_piece_color()
+
+	update_core_text(support_count)
+	viewed_core.power_count = support_count
+	update_visible_enemy_core_highlights(viewer)
+
+	if game_setup_complete:
 		var winner := determine_winner()
 		if winner != 0:
 			display_winner(winner)
 			return
 
-	# if(see_count == 0):
-	# 	display_winner(determine_winner())
-
-	if(is_piece_under_attack(current_core) and !displayed_warning_text):
+	if is_piece_under_attack(viewed_core) and not displayed_warning_text:
 		display_core_attack()
 
-func update_all_core_power_counts() -> void:
-	for player_id in [1, 2]:
-		var core: CorePiece = null
 
-		for node in player_pieces[player_id - 1]:
-			if node is CorePiece:
-				core = node as CorePiece
-				break
 
-		if core == null:
-			continue
-
-		var support_count := 0
-		for node in player_pieces[player_id - 1]:
-			var supporter := node as Piece
-			if supporter == null or supporter == core:
-				continue
-			if supporter.cur_vision.has(core.get_cur_pos()):
-				support_count += 1
-
-		core.power_count = support_count
-
-func update_visible_enemy_core_highlights() -> void:
-	var enemy_player := 2 if current_player == 1 else 1
+func update_visible_enemy_core_highlights(viewer: int) -> void:
+	var enemy_player := 2 if viewer == 1 else 1
 	var enemy_core: CorePiece = null
 
 	for node in player_pieces[enemy_player - 1]:
@@ -914,12 +956,12 @@ func update_visible_enemy_core_highlights() -> void:
 
 	var core_cell := enemy_core.get_cur_pos()
 
-	if not hasCellInVision(current_player, core_cell):
+	if not hasCellInVision(viewer, core_cell):
 		for node in player_pieces[enemy_player - 1]:
 			var supporter := node as Piece
 			if supporter == null or supporter is CorePiece:
 				continue
-			if not hasCellInVision(current_player, supporter.get_cur_pos()):
+			if not hasCellInVision(viewer, supporter.get_cur_pos()):
 				continue
 
 			supporter.powered = false
@@ -934,8 +976,7 @@ func update_visible_enemy_core_highlights() -> void:
 		if supporter == null or supporter is CorePiece:
 			continue
 
-		# Only show information about opposing pieces the current player can see.
-		if not hasCellInVision(current_player, supporter.get_cur_pos()):
+		if not hasCellInVision(viewer, supporter.get_cur_pos()):
 			continue
 
 		var supports_core := supporter.cur_vision.has(core_cell)
@@ -960,9 +1001,146 @@ func update_visible_enemy_core_highlights() -> void:
 		add_child(line)
 		visible_support_count += 1
 
-	# Tint the visible enemy core based only on the support the player can see.
 	enemy_core.powered = visible_support_count > 0
 	enemy_core.update_piece_color()
+# func update_core_power():
+# 	for child in get_children():
+# 		if child is Line2D:
+# 			child.queue_free()
+# 	var current_core: = get_current_core()
+
+# 	if current_core == null:
+# 		return
+
+# 	update_all_core_power_counts()
+
+# 	#Pieces that can see Core
+# 	var see_count = 0
+# 	for p in player_pieces[(current_player + 1)%2]:
+# 		if(!(p is CorePiece)):
+# 			if (p.cur_vision.has(current_core.get_cur_pos())):
+# 				var line := Line2D.new()
+# 				line.points = PackedVector2Array([
+# 					Vector2(current_core.position.x, current_core.position.y),
+# 					Vector2(p.position.x, p.position.y)
+# 				])
+# 				line.width = 3.0
+# 				line.z_index = 1
+				
+# 				current_core.update_piece_color()
+# 				if(current_core.selected):
+# 					line.default_color = Color.WHITE
+# 				else:
+# 					line.default_color = get_player_color(true)
+# 				p.powered = true
+# 				p.update_piece_color()
+# 				add_child(line)
+# 				see_count += 1
+# 			else:
+# 				p.powered = false
+# 				p.update_piece_color()
+# 	update_core_text(see_count)
+# 	current_core.power_count = see_count
+
+# 	update_visible_enemy_core_highlights()
+
+# 	if(game_setup_complete):
+# 		var winner := determine_winner()
+# 		if winner != 0:
+# 			display_winner(winner)
+# 			return
+
+# 	# if(see_count == 0):
+# 	# 	display_winner(determine_winner())
+
+# 	if(is_piece_under_attack(current_core) and !displayed_warning_text):
+# 		display_core_attack()
+
+func update_all_core_power_counts() -> void:
+	for player_id in [1, 2]:
+		var core: CorePiece = null
+
+		for node in player_pieces[player_id - 1]:
+			if node is CorePiece:
+				core = node as CorePiece
+				break
+
+		if core == null:
+			continue
+
+		var support_count := 0
+		for node in player_pieces[player_id - 1]:
+			var supporter := node as Piece
+			if supporter == null or supporter == core:
+				continue
+			if supporter.cur_vision.has(core.get_cur_pos()):
+				support_count += 1
+
+		core.power_count = support_count
+
+# func update_visible_enemy_core_highlights() -> void:
+# 	var enemy_player := 2 if current_player == 1 else 1
+# 	var enemy_core: CorePiece = null
+
+# 	for node in player_pieces[enemy_player - 1]:
+# 		if node is CorePiece:
+# 			enemy_core = node as CorePiece
+# 			break
+
+# 	if enemy_core == null:
+# 		return
+
+# 	var core_cell := enemy_core.get_cur_pos()
+
+# 	if not hasCellInVision(current_player, core_cell):
+# 		for node in player_pieces[enemy_player - 1]:
+# 			var supporter := node as Piece
+# 			if supporter == null or supporter is CorePiece:
+# 				continue
+# 			if not hasCellInVision(current_player, supporter.get_cur_pos()):
+# 				continue
+
+# 			supporter.powered = false
+# 			supporter.update_piece_color()
+
+# 		return
+
+# 	var visible_support_count := 0
+
+# 	for node in player_pieces[enemy_player - 1]:
+# 		var supporter := node as Piece
+# 		if supporter == null or supporter is CorePiece:
+# 			continue
+
+# 		# Only show information about opposing pieces the current player can see.
+# 		if not hasCellInVision(current_player, supporter.get_cur_pos()):
+# 			continue
+
+# 		var supports_core := supporter.cur_vision.has(core_cell)
+# 		supporter.powered = supports_core
+# 		supporter.update_piece_color()
+
+# 		if not supports_core:
+# 			continue
+
+# 		var line := Line2D.new()
+# 		line.points = PackedVector2Array([
+# 			Vector2(enemy_core.position.x, enemy_core.position.y),
+# 			Vector2(supporter.position.x, supporter.position.y)
+# 		])
+# 		line.width = 3.0
+# 		line.z_index = 1
+# 		line.default_color = (
+# 			GameColors.PLAYER_BLUE_POWER
+# 			if enemy_player == 1
+# 			else GameColors.PLAYER_RED_POWER
+# 		)
+# 		add_child(line)
+# 		visible_support_count += 1
+
+# 	# Tint the visible enemy core based only on the support the player can see.
+# 	enemy_core.powered = visible_support_count > 0
+# 	enemy_core.update_piece_color()
 
 func display_core_attack():
 	var text_timer := Timer.new()
@@ -1013,17 +1191,17 @@ func get_player_color(powered: bool = false) -> Color:
 
 var played_found_sound = false
 
-func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
-	var enemy_player = 2 if current_player == 1 else 1
-	for p in player_pieces[enemy_player - 1]:
-		if(cell == p.get_cur_pos()):
-			p.visible = visible
-			if cpu_player.player_number == enemy_player:
-				if not cpu_player.seen_by_player:
-					cpu_player.seen_by_player = true
-					queue_game_sound(game_sound_files[3], true)
-					played_found_sound = true
-	return
+# func setEnemyPieceVisiblity(cell: Vector2i, visible:bool) -> void:
+# 	var enemy_player = 2 if current_player == 1 else 1
+# 	for p in player_pieces[enemy_player - 1]:
+# 		if(cell == p.get_cur_pos()):
+# 			p.visible = visible
+# 			if cpu_player.player_number == enemy_player:
+# 				if not cpu_player.seen_by_player:
+# 					cpu_player.seen_by_player = true
+# 					queue_game_sound(game_sound_files[3], true)
+# 					played_found_sound = true
+# 	return
 
 func clear_board():
 	for c in board_tiles:
@@ -1053,11 +1231,23 @@ func end_turn(movedPiece: Piece):
 				core_found = true
 	if(core_found):
 		var potential_winner = determine_winner()
-		if(potential_winner == 0):
-			if(cpu_player != null):
+		if potential_winner == 0:
+			if online_game:
+				current_player = 3 - current_player
+				turn_menu.hide()
+				update_turn_text()
+				update_all_piece_vision()
+				if current_player == local_player:
+					display_turn_message()
+			elif cpu_player != null:
 				end_turn_vs_cpu()
 			else:
 				turn_menu.show()
+		# if(potential_winner == 0):
+		# 	if(cpu_player != null):
+		# 		end_turn_vs_cpu()
+		# 	else:
+		# 		turn_menu.show()
 		else:
 			display_winner(potential_winner)
 	else:
@@ -1760,6 +1950,48 @@ func _on_next_pressed() -> void:
 	update_turn_text()
 	display_turn_message()
 
+func _on_network_game_message(payload: Variant, from_player: int) -> void:
+	if not online_game or typeof(payload) != TYPE_DICTIONARY:
+		return
+	if from_player == local_player or from_player != current_player:
+		return
+
+	var from_data: Variant = payload.get("from", [])
+	if typeof(from_data) != TYPE_ARRAY or from_data.size() != 2:
+		return
+
+	var from_cell := Vector2i(int(from_data[0]), int(from_data[1]))
+	if not cell_in_board(from_cell):
+		return
+
+	var piece := get_enemy_piece_at_cell(from_cell, from_player)
+	if piece == null:
+		return
+
+	match payload.get("action", ""):
+		"move":
+			var to_data: Variant = payload.get("to", [])
+			if typeof(to_data) != TYPE_ARRAY or to_data.size() != 2:
+				return
+
+			var to_cell := Vector2i(int(to_data[0]), int(to_data[1]))
+			if not cell_in_board(to_cell):
+				return
+
+			piece.make_cpu_move(to_cell)
+
+		"rotate":
+			if not piece is TowerRotatePiece:
+				return
+
+			var direction := int(payload.get("direction", -1))
+			if direction < 0 or direction > 5:
+				return
+
+			var tower := piece as TowerRotatePiece
+			tower.cur_direction = direction
+			tower.update_sprite_rotation()
+			tower.draw_vision_change()
 
 func _on_stay_button_pressed() -> void:
 	update_turn_text()

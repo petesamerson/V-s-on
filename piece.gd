@@ -121,15 +121,26 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 # 		armed = false
 # 		on_clicked()
 # 		print("UNHANDLED")
-	
+func can_control_piece() -> bool:
+	if board == null or board.cpu_turn_in_progress:
+		return false
+	if owned_player != board.current_player:
+		return false
+	if board.online_game and owned_player != board.local_player:
+		return false
+	return true
 
 func on_clicked() -> void:
-	if(owned_player != board.current_player):
+	if not can_control_piece():
 		return
-	if(position == null or board == null or board.cpu_turn_in_progress):
-		return
-	if(board.current_player != owned_player):
-		return
+	# if(owned_player != board.current_player):
+	# 	return
+	# if(position == null or board == null or board.cpu_turn_in_progress):
+	# 	return
+	# if(board.current_player != owned_player):
+	# 	return
+	# if board.online_game and owned_player != board.local_player:
+	# 	return
 
 	var cell = board.local_to_map(position)  # current tile cell
 	print("Current cell:", cell , "selected", selected)
@@ -200,6 +211,16 @@ func update_piece_color():
 
 
 func _input(event):
+	if not selected or not can_control_piece():
+		return
+
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_LEFT
+	):
+		handle_move_input_event(event)
+		get_viewport().set_input_as_handled()
 	if(
 		selected
 		and event is InputEventMouseButton
@@ -212,10 +233,13 @@ func _input(event):
 			get_viewport().set_input_as_handled()
 
 func handle_move_input_event(event):
+	if not can_control_piece():
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var global_mouse = board.camera.get_global_mouse_position()
 		var local_mouse = board.to_local(global_mouse)
 		var cell = board.local_to_map(local_mouse)
+		var from_cell = board.local_to_map(position)
 		var moved = false
 
 		if cell in cur_moves:
@@ -236,6 +260,12 @@ func handle_move_input_event(event):
 		draw_vision_change()
 
 		if(moved):
+			if board.online_game and owned_player == board.local_player:
+				NetworkManager.send_game_message({
+					"action": "move",
+					"from": [from_cell.x, from_cell.y],
+					"to": [cell.x, cell.y]
+				})
 			end_turn()
 
 		# #debug

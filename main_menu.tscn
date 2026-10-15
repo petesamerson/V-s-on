@@ -82,11 +82,17 @@ theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
 text = "Play vs Cpu"
 
+[node name="OnlinePlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+text = "Play Online"
+
 [node name="PassAndPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
-text = "Pass & Play (2 Player)"
+text = "Pass & Play"
 
 [node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -123,6 +129,7 @@ theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
 [node name="CpuSettingsScreen" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -208,10 +215,174 @@ theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Start Game"
 
+[node name="MutiplayerSettings" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 100
+
+[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fu7sn")
+
+[node name="JoinHost" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
+layout_mode = 0
+offset_right = 952.0
+offset_bottom = 448.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 50
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 60
+text = "Online Multiplayer"
+
+[node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/outline_size = 20
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 50
+text = "Join Room with Code"
+
+[node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 50
+text = "Host Game"
+
+[node name="JoinCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 60
+text = "Join Game"
+
+[node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+text = "Join with the 6 digit code the game host provided"
+
+[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="JoinCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.6436958, 0.73559934, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 80
+max_length = 6
+
+[node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 60
+action_mode = 0
+text = "Join!"
+
+[node name="HostCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 60
+text = "Host Game"
+
+[node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 30
+text = "Choose 6 digit Room Code use to Join"
+
+[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="HostCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.6436958, 0.73559934, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 80
+max_length = 6
+
+[node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 60
+action_mode = 0
+text = "Start Hosting!"
+
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/CpuPlay" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/OnlinePlay" to="." method="_on_online_play_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/PassAndPlay" to="." method="_on_pass_and_play_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
 [connection signal="drag_ended" from="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/Difficulty Slider" to="." method="_on_difficulty_slider_drag_ended"]
 [connection signal="value_changed" from="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/Difficulty Slider" to="." method="_on_difficulty_slider_value_changed"]
 [connection signal="pressed" from="CpuSettingsScreen/MarginContainer/Panel/StartCpuGame" to="." method="_on_start_cpu_game_pressed"]
+[connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer/JoinGame" to="." method="_on_join_game_pressed"]
+[connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer/HostGame" to="." method="_on_host_game_pressed"]
+[connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/JoinGame" to="." method="_on_join_room_pressed"]
+[connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/HostGame" to="." method="_on_start_host_pressed"]
