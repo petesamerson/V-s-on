@@ -221,16 +221,26 @@ func _input(event):
 	):
 		handle_move_input_event(event)
 		get_viewport().set_input_as_handled()
-	if(
-		selected
-		and event is InputEventMouseButton
-		and event.pressed
-		and event.button_index == MOUSE_BUTTON_LEFT
-	):
-		handle_move_input_event(event)
-		var viewport = get_viewport()
-		if(viewport != null):
-			get_viewport().set_input_as_handled()
+	# if not selected or not can_control_piece():
+	# 	return
+
+	# if (
+	# 	event is InputEventMouseButton
+	# 	and event.pressed
+	# 	and event.button_index == MOUSE_BUTTON_LEFT
+	# ):
+	# 	handle_move_input_event(event)
+	# 	get_viewport().set_input_as_handled()
+	# if(
+	# 	selected
+	# 	and event is InputEventMouseButton
+	# 	and event.pressed
+	# 	and event.button_index == MOUSE_BUTTON_LEFT
+	# ):
+	# 	handle_move_input_event(event)
+	# 	var viewport = get_viewport()
+	# 	if(viewport != null):
+	# 		get_viewport().set_input_as_handled()
 
 func handle_move_input_event(event):
 	if not can_control_piece():

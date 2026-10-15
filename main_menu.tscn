@@ -241,9 +241,10 @@ layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_fu7sn")
 
 [node name="JoinHost" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
-layout_mode = 0
-offset_right = 952.0
-offset_bottom = 448.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 50
@@ -258,20 +259,20 @@ theme_override_constants/separation = 20
 [node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 60
+theme_override_font_sizes/font_size = 40
 text = "Online Multiplayer"
 
 [node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/outline_size = 20
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 50
+theme_override_font_sizes/font_size = 30
 text = "Join Room with Code"
 
 [node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 50
+theme_override_font_sizes/font_size = 30
 text = "Host Game"
 
 [node name="JoinCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
@@ -293,14 +294,16 @@ layout_mode = 2
 [node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 60
+theme_override_font_sizes/font_size = 50
 text = "Join Game"
 
 [node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
 text = "Join with the 6 digit code the game host provided"
+autowrap_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
 layout_mode = 2
@@ -313,7 +316,7 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.6436958, 0.73559934, 1)
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 80
+theme_override_font_sizes/font_size = 40
 max_length = 6
 
 [node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
@@ -343,14 +346,15 @@ layout_mode = 2
 [node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 60
+theme_override_font_sizes/font_size = 40
 text = "Host Game"
 
 [node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 30
 text = "Choose 6 digit Room Code use to Join"
+autowrap_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
 layout_mode = 2

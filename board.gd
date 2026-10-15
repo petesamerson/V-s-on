@@ -1307,22 +1307,48 @@ func end_turn_vs_cpu() -> void:
 			await move_camera_to_core()
 		display_turn_message()
 
+# func update_move_camera(movedPiece: Piece):
+# 	update_all_piece_vision()
+# 	if(movedPiece.owned_player == current_player):
+# 		await camera.zoom_to_global_position(
+# 			movedPiece.global_position,
+# 			camera.zoom.x
+# 		)
+# 	else:
+# 		if(player_last_moves.size() == player_pieces.size()):
+# 			var enemy_player = 2 if current_player == 1 else 1
+# 			await camera.zoom_to_global_position(
+# 				player_last_moves[enemy_player - 1].global_position,
+# 				camera.zoom.x
+# 			)
+
+# 	if(player_last_moves.size() < 2):
+# 		player_last_moves.append(movedPiece)
+# 	else:
+# 		player_last_moves[current_player - 1] = movedPiece
+
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
-	if(movedPiece.owned_player == current_player):
+
+	if online_game:
+		if movedPiece.owned_player == local_player or movedPiece.visible:
+			await camera.zoom_to_global_position(
+				movedPiece.global_position,
+				camera.zoom.x
+			)
+	elif movedPiece.owned_player == current_player:
 		await camera.zoom_to_global_position(
 			movedPiece.global_position,
 			camera.zoom.x
 		)
-	else:
-		if(player_last_moves.size() == player_pieces.size()):
-			var enemy_player = 2 if current_player == 1 else 1
-			await camera.zoom_to_global_position(
-				player_last_moves[enemy_player - 1].global_position,
-				camera.zoom.x
-			)
+	elif player_last_moves.size() == player_pieces.size():
+		var enemy_player = 2 if current_player == 1 else 1
+		await camera.zoom_to_global_position(
+			player_last_moves[enemy_player - 1].global_position,
+			camera.zoom.x
+		)
 
-	if(player_last_moves.size() < 2):
+	if player_last_moves.size() < 2:
 		player_last_moves.append(movedPiece)
 	else:
 		player_last_moves[current_player - 1] = movedPiece
