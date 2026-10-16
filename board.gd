@@ -3,6 +3,8 @@ class_name Board
 
 @export var camera: Camera2D
 @onready var tilemap = $TileMap
+@onready var capture_feed: VBoxContainer = $"../TurnLayer/CaptureFeed/MarginContainer/FeedContent/FeedEntries"
+@onready var capture_feed_panel: PanelContainer = $"../TurnLayer/CaptureFeed"
 @onready var turn_label: RichTextLabel = $"../TurnLayer/StatMargin/StatContainer/TurnLabel"
 @onready var core_label: RichTextLabel = $"../TurnLayer/StatMargin/StatContainer/CoreLabel"
 @onready var win_label: Label = $"../TurnLayer/WinLabel"
@@ -11,8 +13,9 @@ class_name Board
 @onready var selection_panel= $"../TurnLayer/SelectionPanel"
 @onready var settings_cover= $"../TurnLayer/SettingsCover"
 @onready var stat_container: VBoxContainer = $"../TurnLayer/StatMargin/StatContainer"
-
 @export var capture_texture: Texture2D
+
+const CAPTURE_FEED_TEXTURE: Texture2D = preload("res://sprites/capturefeed.png")
 
 var Tiles = preload("res://tiles.gd")
 const GameColors = preload("res://colors.gd")
@@ -48,6 +51,8 @@ func _ready() -> void:
 
 	intialize_drawn_sprite_nodes()
 	update_mobile_scale()
+
+	capture_feed_panel.hide()
 
 	play_vs_cpu = get_tree().root.get_meta("play_vs_cpu", false)
 
@@ -455,8 +460,27 @@ func spawn_player_location(center: Vector2i, player: int):
 
 var play_capture: bool = false
 
+# func remove_piece(piece: Piece) -> void:
+# 	if(cpu_player == null or current_player != cpu_player.player_number):
+# 		play_capture = true
+# 		queue_game_sound(game_sound_files[1], true)
+
+# 	add_captured_piece_icon(capturer_index, piece)
+# 	add_capture_feed_entry(piece)
+
+# 	var capturer_index := current_player - 1
+
+# 	player_captures[capturer_index].append({
+# 		"texture": piece.sprite.texture,
+# 		"name": piece.getTypeString()
+# 	})
+# 	add_captured_piece_icon(capturer_index, piece)
+
+# 	player_pieces[piece.owned_player - 1].erase(piece)
+# 	pieces_container.remove_child(piece)
+# 	piece.queue_free()
 func remove_piece(piece: Piece) -> void:
-	if(cpu_player == null or current_player != cpu_player.player_number):
+	if cpu_player == null or current_player != cpu_player.player_number:
 		play_capture = true
 		queue_game_sound(game_sound_files[1], true)
 
@@ -466,6 +490,7 @@ func remove_piece(piece: Piece) -> void:
 		"texture": piece.sprite.texture,
 		"name": piece.getTypeString()
 	})
+
 	add_captured_piece_icon(capturer_index, piece)
 
 	player_pieces[piece.owned_player - 1].erase(piece)
@@ -1360,6 +1385,92 @@ func get_enemy_player_numbers():
 		if(i+1) != current_player:
 			enemy_players.append((i + 1))
 	return enemy_players
+
+# func add_capture_feed_entry(capturing_piece: Piece, captured_piece: Piece) -> void:
+# 	var entry := HBoxContainer.new()
+# 	entry.add_theme_constant_override("separation", round(8 * ui_scale))
+
+# 	for piece in [capturing_piece, captured_piece]:
+# 		var icon := TextureRect.new()
+# 		var icon_side := 48.0 * ui_scale
+# 		icon.custom_minimum_size = Vector2(icon_side, icon_side)
+# 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+# 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+# 		icon.texture = piece.sprite.texture
+# 		icon.modulate = piece.sprite.modulate
+# 		entry.add_child(icon)
+
+# 	capture_feed.add_child(entry)
+
+# 	await get_tree().create_timer(2.5).timeout
+# 	if is_instance_valid(entry):
+# 		entry.queue_free()
+
+func add_capture_feed_entry(capturing_piece: Piece, captured_piece: Piece) -> void:
+	var entry := HBoxContainer.new()
+	var player_color := (
+		GameColors.PLAYER_BLUE
+		if capturing_piece.owned_player == 1
+		else GameColors.PLAYER_RED
+	)
+
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = player_color.darkened(0.65)
+	panel_style.set_corner_radius_all(8)
+	capture_feed_panel.add_theme_stylebox_override("panel", panel_style)
+	# resize_capture_feed_panel()
+	# capture_feed_panel.show()
+	capture_feed.add_child(entry)
+	entry.add_theme_constant_override("separation", round(8 * ui_scale))
+
+	for i in range(2):
+		var piece: Piece = capturing_piece if i == 0 else captured_piece
+
+		var icon := TextureRect.new()
+		var icon_side := 48.0 * ui_scale
+		icon.custom_minimum_size = Vector2(icon_side, icon_side)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = piece.sprite.texture
+		icon.modulate = piece.sprite.modulate
+		entry.add_child(icon)
+
+		if i == 0:
+			var capture_icon := TextureRect.new()
+			var capture_side := 36.0 * ui_scale
+			capture_icon.pivot_offset = Vector2(capture_side / 2.0, capture_side / 2.0)
+			# capture_icon.scale.x = -1.0
+			capture_icon.flip_h = true
+			capture_icon.custom_minimum_size = Vector2(capture_side, capture_side)
+			capture_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			capture_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			capture_icon.texture = CAPTURE_FEED_TEXTURE
+			entry.add_child(capture_icon)
+
+	capture_feed.add_child(entry)
+	resize_capture_feed_panel()
+	capture_feed_panel.show()
+
+	await get_tree().create_timer(2.5).timeout
+
+	if is_instance_valid(entry):
+		capture_feed.remove_child(entry)
+		entry.queue_free()
+
+		if capture_feed.get_child_count() == 0:
+			capture_feed_panel.hide()
+		else:
+			resize_capture_feed_panel()
+
+func resize_capture_feed_panel() -> void:
+	var content_size := capture_feed.get_combined_minimum_size()
+	var padding := Vector2(20.0, 20.0) # 10px margin on each side
+
+	capture_feed_panel.offset_right = content_size.x + padding.x
+
+	var panel_height := content_size.y + padding.y
+	capture_feed_panel.offset_top = -panel_height / 2.0
+	capture_feed_panel.offset_bottom = panel_height / 2.0
 
 
 var cur_ani_x = 0

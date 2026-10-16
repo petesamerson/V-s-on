@@ -294,6 +294,7 @@ func move_piece(move: Vector2i):
 	var enemy_piece = board.get_enemy_piece_at_cell(move, enemy_player)
 	if enemy_piece != null:
 		board.last_capture_capturer_ids[board.current_player - 1] = get_instance_id()
+		board.add_capture_feed_entry(self, enemy_piece)
 		board.remove_piece(enemy_piece)
 		for i in range(cur_moves.size()):
 			var old_move = cur_moves[i]

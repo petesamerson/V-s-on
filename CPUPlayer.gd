@@ -14,7 +14,9 @@ const SCOUT_REVEAL_WEIGHT := 180.0
 const TOWER_SCOUT_MULTIPLIER := 2.5
 const VISIBLE_ATTACK_WEIGHT := 1.5
 
-const RECAPTURE_BONUS = 400.0
+const RECAPTURE_BONUS = 500.0
+const UNGUARDED_EYE_THREAT_PENALTY := 350.0
+const LOW_VALUE_EYE_CAPTURE_BONUS := 250.0
 
 @export var player_number: int = 2
 @export_range(1,5) var difficulty: int = 5
@@ -55,8 +57,18 @@ func take_turn() -> void:
 		var enemy_index := enemy_player - 1
 		last_enemy_capturer_id = board.last_capture_capturer_ids[enemy_index]
 
+		for node in board.player_pieces[enemy_index]:
+			var capturer := node as Piece
+			if (
+				capturer != null
+				and capturer.get_instance_id() == last_enemy_capturer_id
+			):
+				enemy_last_seen[last_enemy_capturer_id] = capturer.get_cur_pos()
+				enemy_last_seen_turn[last_enemy_capturer_id] = cpu_turn_count
+				break
+
 	observed_enemy_capture_count = enemy_capture_count
-	
+
 	for node in board.player_pieces[enemy_player - 1]:
 		var enemy := node as Piece
 		if enemy != null and board.hasCellInVision(player_number, enemy.get_cur_pos()):
@@ -564,7 +576,12 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 				capture_reward *= 0.25 if total_captures < 4 else 0.5
 
 		score += capture_reward
-		
+
+		if captured is EyePiece and is_lower_value_capture:
+			var value_gap := float(captured.piece_value - piece.piece_value)
+			var cheaper_piece_factor := value_gap / maxf(1.0, float(captured.piece_value))
+			score += LOW_VALUE_EYE_CAPTURE_BONUS * cheaper_piece_factor
+
 		if captured.piece_value >= piece.piece_value:
 			score += 200.0
 
@@ -839,6 +856,32 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 	
 	if is_recapture:
 		score += RECAPTURE_BONUS * defensive_factor
+
+	var is_eye_or_triangle := (
+		piece is EyePiece
+		or piece is TriangleOddPiece
+		or piece is TriangleEvenPiece
+	)
+
+	if is_eye_or_triangle and captured == null:
+		var possible_moves := moves_from_position(piece, destination)
+		var threatens_enemy_eye := false
+
+		for node in board.player_pieces[enemy_player - 1]:
+			var enemy := node as Piece
+			if enemy == null or not (enemy is EyePiece):
+				continue
+
+			var enemy_cell := enemy.get_cur_pos()
+			if (
+				board.hasCellInVision(player_number, enemy_cell)
+				or new_vision.has(enemy_cell)
+			) and possible_moves.has(enemy_cell):
+				threatens_enemy_eye = true
+				break
+
+		if threatens_enemy_eye and is_unprotected_move(piece, destination):
+			score -= UNGUARDED_EYE_THREAT_PENALTY
 
 	return score
 

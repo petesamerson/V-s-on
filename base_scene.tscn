@@ -210,6 +210,28 @@ board = NodePath("../Board")
 
 [node name="TurnLayer" type="CanvasLayer" parent="."]
 
+[node name="CaptureFeed" type="PanelContainer" parent="TurnLayer"]
+anchors_preset = -1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -36.0
+offset_right = 130.0
+offset_bottom = 36.0
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/CaptureFeed"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="FeedContent" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer"]
+layout_mode = 2
+
+[node name="FeedEntries" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer/FeedContent"]
+layout_mode = 2
+
 [node name="YourTurnLabel" type="Label" parent="TurnLayer"]
 visible = false
 anchors_preset = -1
@@ -254,8 +276,8 @@ vertical_alignment = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -220.0
-offset_bottom = 24.0
+offset_left = -400.0
+offset_bottom = 200.0
 grow_horizontal = 0
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
@@ -270,6 +292,8 @@ layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("30_ov3nv")
 theme_override_fonts/bold_font = ExtResource("30_ov3nv")
 theme_override_font_sizes/normal_font_size = 30
+theme_override_font_sizes/bold_font_size = 30
+theme_override_font_sizes/bold_italics_font_size = 30
 text = "Player 1's Turn"
 fit_content = true
 scroll_active = false
@@ -280,6 +304,9 @@ layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("30_ov3nv")
 theme_override_fonts/bold_font = ExtResource("30_ov3nv")
 theme_override_font_sizes/normal_font_size = 30
+theme_override_font_sizes/bold_font_size = 16
+theme_override_font_sizes/bold_italics_font_size = 16
+theme_override_font_sizes/italics_font_size = 16
 text = "Core Seen by 3 Pieces
 "
 horizontal_alignment = 2
@@ -357,6 +384,7 @@ texture = ExtResource("31_ixihg")
 stretch_mode = 5
 
 [node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
