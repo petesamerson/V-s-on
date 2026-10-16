@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=8 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://main_menu.gd" id="1_fu7sn"]
@@ -9,6 +9,11 @@ bg_color = Color(0, 0, 0, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu7sn"]
 bg_color = Color(0, 0, 0, 0.81960785)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glbon"]
+bg_color = Color(0.2665752, 0.26657522, 0.26657513, 1)
+
+[sub_resource type="Theme" id="Theme_nlkkf"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -312,9 +317,13 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
+[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_glbon")
+
 [node name="JoinCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.6436958, 0.73559934, 1)
+theme = SubResource("Theme_nlkkf")
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 40
 max_length = 6
@@ -362,6 +371,10 @@ theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
+
+[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_glbon")
 
 [node name="HostCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer"]
 layout_mode = 2

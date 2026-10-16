@@ -14,6 +14,15 @@ const SCOUT_REVEAL_WEIGHT := 180.0
 const TOWER_SCOUT_MULTIPLIER := 2.5
 const VISIBLE_ATTACK_WEIGHT := 1.5
 
+const HOP_CATCH_UP_BONUS := 50.0
+const MAX_HOP_CATCH_UP_BONUS := 3
+const EARLY_GAME_CAPTURE_LIMIT := 4
+const EARLY_HOP_MOVE_BONUS := 350.0
+const EARLY_HOP_SCOUT_MULTIPLIER := 7.5
+
+var early_hop_move_count := 0
+var early_tower_move_count := 0
+
 const RECAPTURE_BONUS = 500.0
 const UNGUARDED_EYE_THREAT_PENALTY := 350.0
 const LOW_VALUE_EYE_CAPTURE_BONUS := 250.0
@@ -222,7 +231,19 @@ func take_turn() -> void:
 
 	var choice: Dictionary = shortlist.pick_random()
 	var chosen_piece := choice["piece"] as Piece
+	var total_captures := (
+		board.player_captures[0].size()
+		+ board.player_captures[1].size()
+	)
+
+	if total_captures < EARLY_GAME_CAPTURE_LIMIT:
+		if chosen_piece is HopPiece:
+			early_hop_move_count += 1
+		elif chosen_piece is TowerRotatePiece:
+			early_tower_move_count += 1
+
 	var destination: Vector2i = choice["destination"]
+
 
 	recent_piece_ids.push_front(chosen_piece.get_instance_id())
 	if recent_piece_ids.size() > 2:
@@ -883,6 +904,13 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		if threatens_enemy_eye and is_unprotected_move(piece, destination):
 			score -= UNGUARDED_EYE_THREAT_PENALTY
 
+	if total_captures < EARLY_GAME_CAPTURE_LIMIT and piece is HopPiece:
+		var tower_lead := mini(
+			maxi(0, early_tower_move_count - early_hop_move_count),
+			MAX_HOP_CATCH_UP_BONUS
+		)
+		score += EARLY_HOP_MOVE_BONUS + float(tower_lead) * HOP_CATCH_UP_BONUS
+
 	return score
 
 
@@ -959,7 +987,13 @@ func score_scouting_action(
 		score += 60.0
 	if piece is TowerRotatePiece:
 		score *= TOWER_SCOUT_MULTIPLIER
-
+	elif piece is HopPiece:
+		var captures_so_far := (
+			board.player_captures[0].size()
+			+ board.player_captures[1].size()
+		)
+		if captures_so_far < EARLY_GAME_CAPTURE_LIMIT:
+			score *= EARLY_HOP_SCOUT_MULTIPLIER
 	return score
 
 func find_visible_core(player_id: int) -> CorePiece:

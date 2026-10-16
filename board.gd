@@ -320,6 +320,8 @@ var player_captures: Array[Array] = [[], []]
 var capture_rows: Array[HFlowContainer] = []
 
 func spawn_all_pieces():
+	clear_all_power_lines()
+
 	var num1: int
 	var num2: int
 
@@ -610,15 +612,29 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	for piece in player_pieces[enemy_index]:
 		piece.visible = false
 
-	for i in player_pieces.size():
+	# for i in player_pieces.size():
+	# 	for piece in player_pieces[i]:
+	# 		for cell in piece.cur_vision:
+	# 			player_vision_tiles[i].append(cell)
+	# 			if hasEnemyPieceInVision(viewer, cell):
+	# 				set_enemy_piece_visiblity(cell, true, viewer)
+	for i in range(player_pieces.size()):
+		player_vision_tiles[i].clear()
 		for piece in player_pieces[i]:
 			for cell in piece.cur_vision:
 				player_vision_tiles[i].append(cell)
-				if hasEnemyPieceInVision(viewer, cell):
-					set_enemy_piece_visiblity(cell, true, viewer)
 
-	if cpu_player == null or current_player == 1:
-		update_core_power()					
+		for enemy_piece in player_pieces[enemy_index]:
+			var enemy_cell = enemy_piece.get_cur_pos()
+			var can_see_enemy := hasCellInVision(viewer, enemy_cell)
+
+			enemy_piece.visible = can_see_enemy
+
+			if can_see_enemy:
+				set_enemy_piece_visiblity(enemy_cell, true, viewer)
+
+	# if cpu_player == null or current_player == 1:
+	update_core_power()					
 
 func set_enemy_piece_visiblity(cell: Vector2i, visible: bool, viewer: int) -> void:
 	var enemy_player := 2 if viewer == 1 else 1
@@ -903,11 +919,15 @@ func can_enemy_recapture_after_move(
 var displayed_warning_text = false
 
 func update_core_power():
+
+	clear_all_power_lines()
+
 	var viewer := local_player if online_game else current_player
 
-	for child in get_children():
-		if child is Line2D:
-			child.queue_free()
+	# for child in get_children():
+	# 	if child is Line2D:
+
+	# 		child.queue_free()
 
 	var viewed_core: CorePiece = null
 	for piece in player_pieces[viewer - 1]:
@@ -919,6 +939,7 @@ func update_core_power():
 		return
 
 	update_all_core_power_counts()
+	var active_own_core_lines: Dictionary = {}
 
 	var support_count := 0
 	for piece in player_pieces[viewer - 1]:
@@ -926,35 +947,43 @@ func update_core_power():
 			continue
 
 		if piece.cur_vision.has(viewed_core.get_cur_pos()):
-			var line := Line2D.new()
-			line.points = PackedVector2Array([
-				Vector2(viewed_core.position.x, viewed_core.position.y),
-				Vector2(piece.position.x, piece.position.y)
-			])
-			line.width = 3.0
-			line.z_index = 1
-			line.default_color = (
-				Color.WHITE
-				if viewed_core.selected
-				else (
-					GameColors.PLAYER_BLUE_POWER
-					if viewer == 1
-					else GameColors.PLAYER_RED_POWER
-				)
+			var line_key := "own_core:%d:%d" % [
+				viewed_core.get_instance_id(),
+				piece.get_instance_id()
+			]
+
+			active_own_core_lines[line_key] = true
+
+			set_cached_power_line(
+				line_key,
+				viewed_core.position,
+				piece.position,
+				GameColors.PLAYER_BLUE_POWER if viewer == 1 else GameColors.PLAYER_RED_POWER,
+				5.0
 			)
 
 			viewed_core.update_piece_color()
 			piece.powered = true
 			piece.update_piece_color()
-			add_child(line)
 			support_count += 1
 		else:
 			piece.powered = false
 			piece.update_piece_color()
 
+	remove_cached_lines_except(
+		"own_core:%d:" % viewed_core.get_instance_id(),
+		active_own_core_lines
+	)
+
 	update_core_text(support_count)
 	viewed_core.power_count = support_count
+
+	var enemy_index := 1 - (viewer - 1)
+	remove_cached_lines_with_prefix("enemy_core:")
+	remove_cached_lines_with_prefix("powered_pair:%d:" % enemy_index)
+
 	update_visible_enemy_core_highlights(viewer)
+	draw_powered_piece_links()
 
 	if game_setup_complete:
 		var winner := determine_winner()
@@ -965,35 +994,88 @@ func update_core_power():
 	if is_piece_under_attack(viewed_core) and not displayed_warning_text:
 		display_core_attack()
 
+func draw_powered_piece_links() -> void:
+	var viewer := local_player if online_game else current_player
+	var own_index := viewer - 1
+	var active_own_links: Dictionary = {}
 
+	for player_index in range(player_pieces.size()):
+		var pieces: Array[Piece] = []
+
+		for node in player_pieces[player_index]:
+			var piece := node as Piece
+			if piece == null or piece is CorePiece:
+				continue
+			pieces.append(piece)
+
+		for i in range(pieces.size()):
+			for j in range(i + 1, pieces.size()):
+				var first := pieces[i]
+				var second := pieces[j]
+				var id_a := first.get_instance_id()
+				var id_b := second.get_instance_id()
+				var link_key := "powered_pair:%d:%d:%d" % [
+					player_index,
+					mini(id_a, id_b),
+					maxi(id_a, id_b)
+				]
+
+				var both_visible := (
+					player_index == own_index
+					or (
+						first.visible
+						and second.visible
+						and hasCellInVision(viewer, first.get_cur_pos())
+						and hasCellInVision(viewer, second.get_cur_pos())
+					)
+				)
+				# Keep a previously seen enemy link frozen while either piece is hidden.
+				if not both_visible:
+					remove_cached_power_line(link_key)
+					continue
+
+				if first.powered and second.powered:
+					var link_color: Color = (
+						GameColors.PLAYER_BLUE_POWER
+						if player_index == 0
+						else GameColors.PLAYER_RED_POWER
+					)
+					set_cached_power_line(
+						link_key,
+						first.position,
+						second.position,
+						link_color,
+						2.0,
+						0.35
+					)
+
+					if player_index == own_index:
+						active_own_links[link_key] = true
+				else:
+					remove_cached_power_line(link_key)
+
+	remove_cached_lines_except(
+		"powered_pair:%d:" % own_index,
+		active_own_links
+	)
 
 func update_visible_enemy_core_highlights(viewer: int) -> void:
 	var enemy_player := 2 if viewer == 1 else 1
 	var enemy_core: CorePiece = null
 
+
 	for node in player_pieces[enemy_player - 1]:
 		if node is CorePiece:
 			enemy_core = node as CorePiece
+			if not enemy_core.visible:
+				enemy_core = null
 			break
 
 	if enemy_core == null:
+		remove_cached_lines_with_prefix("enemy_core:")
 		return
 
 	var core_cell := enemy_core.get_cur_pos()
-
-	if not hasCellInVision(viewer, core_cell):
-		for node in player_pieces[enemy_player - 1]:
-			var supporter := node as Piece
-			if supporter == null or supporter is CorePiece:
-				continue
-			if not hasCellInVision(viewer, supporter.get_cur_pos()):
-				continue
-
-			supporter.powered = false
-			supporter.update_piece_color()
-
-		return
-
 	var visible_support_count := 0
 
 	for node in player_pieces[enemy_player - 1]:
@@ -1001,85 +1083,92 @@ func update_visible_enemy_core_highlights(viewer: int) -> void:
 		if supporter == null or supporter is CorePiece:
 			continue
 
-		if not hasCellInVision(viewer, supporter.get_cur_pos()):
+		var line_key := "enemy_core:%d:%d" % [
+			enemy_core.get_instance_id(),
+			supporter.get_instance_id()
+		]
+
+		var supporter_visible := (
+			supporter.visible
+			and hasCellInVision(viewer, supporter.get_cur_pos())
+		)
+
+		if not supporter_visible:
+			remove_cached_power_line(line_key)
 			continue
 
 		var supports_core := supporter.cur_vision.has(core_cell)
 		supporter.powered = supports_core
 		supporter.update_piece_color()
 
-		if not supports_core:
-			continue
+		if supports_core:
+			set_cached_power_line(
+				line_key,
+				enemy_core.position,
+				supporter.position,
+				GameColors.PLAYER_BLUE_POWER if enemy_player == 1 else GameColors.PLAYER_RED_POWER,
+				3.0
+			)
+			visible_support_count += 1
+		else:
+			remove_cached_power_line(line_key)
 
-		var line := Line2D.new()
-		line.points = PackedVector2Array([
-			Vector2(enemy_core.position.x, enemy_core.position.y),
-			Vector2(supporter.position.x, supporter.position.y)
-		])
-		line.width = 3.0
-		line.z_index = 1
-		line.default_color = (
-			GameColors.PLAYER_BLUE_POWER
-			if enemy_player == 1
-			else GameColors.PLAYER_RED_POWER
-		)
-		add_child(line)
-		visible_support_count += 1
-
-	enemy_core.powered = visible_support_count > 0
+	var core_visible := (
+		enemy_core.visible
+		and hasCellInVision(viewer, core_cell)
+	)
+	enemy_core.powered = core_visible and visible_support_count > 0
 	enemy_core.update_piece_color()
-# func update_core_power():
-# 	for child in get_children():
-# 		if child is Line2D:
-# 			child.queue_free()
-# 	var current_core: = get_current_core()
 
-# 	if current_core == null:
-# 		return
+var cached_power_lines: Dictionary = {}
 
-# 	update_all_core_power_counts()
+func set_cached_power_line(
+	key: String,
+	start: Vector2,
+	finish: Vector2,
+	color: Color,
+	width: float,
+	alpha: float = 1.0
+) -> void:
+	var line := cached_power_lines.get(key) as Line2D
 
-# 	#Pieces that can see Core
-# 	var see_count = 0
-# 	for p in player_pieces[(current_player + 1)%2]:
-# 		if(!(p is CorePiece)):
-# 			if (p.cur_vision.has(current_core.get_cur_pos())):
-# 				var line := Line2D.new()
-# 				line.points = PackedVector2Array([
-# 					Vector2(current_core.position.x, current_core.position.y),
-# 					Vector2(p.position.x, p.position.y)
-# 				])
-# 				line.width = 3.0
-# 				line.z_index = 1
-				
-# 				current_core.update_piece_color()
-# 				if(current_core.selected):
-# 					line.default_color = Color.WHITE
-# 				else:
-# 					line.default_color = get_player_color(true)
-# 				p.powered = true
-# 				p.update_piece_color()
-# 				add_child(line)
-# 				see_count += 1
-# 			else:
-# 				p.powered = false
-# 				p.update_piece_color()
-# 	update_core_text(see_count)
-# 	current_core.power_count = see_count
+	if line == null:
+		line = Line2D.new()
+		line.z_index = 1
+		add_child(line)
+		cached_power_lines[key] = line
 
-# 	update_visible_enemy_core_highlights()
+	var line_color := color
+	line_color.a = alpha
 
-# 	if(game_setup_complete):
-# 		var winner := determine_winner()
-# 		if winner != 0:
-# 			display_winner(winner)
-# 			return
+	line.points = PackedVector2Array([start, finish])
+	line.width = width
+	line.default_color = line_color
 
-# 	# if(see_count == 0):
-# 	# 	display_winner(determine_winner())
 
-# 	if(is_piece_under_attack(current_core) and !displayed_warning_text):
-# 		display_core_attack()
+func remove_cached_power_line(key: String) -> void:
+	var line := cached_power_lines.get(key) as Line2D
+	if line != null:
+		line.queue_free()
+		cached_power_lines.erase(key)
+
+func remove_cached_lines_except(prefix: String, keep: Dictionary) -> void:
+	for key in cached_power_lines.keys():
+		if str(key).begins_with(prefix) and not keep.has(key):
+			remove_cached_power_line(key)
+
+func remove_cached_lines_with_prefix(prefix: String) -> void:
+	for key in cached_power_lines.keys():
+		if str(key).begins_with(prefix):
+			remove_cached_power_line(key)
+
+func clear_all_power_lines() -> void:
+	for child in get_children():
+		if child is Line2D:
+			remove_child(child)
+			child.queue_free()
+
+	cached_power_lines.clear()
 
 func update_all_core_power_counts() -> void:
 	for player_id in [1, 2]:
@@ -1416,6 +1505,7 @@ func add_capture_feed_entry(capturing_piece: Piece, captured_piece: Piece) -> vo
 
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = player_color.darkened(0.65)
+	panel_style.bg_color.a = 0.5
 	panel_style.set_corner_radius_all(8)
 	capture_feed_panel.add_theme_stylebox_override("panel", panel_style)
 	# resize_capture_feed_panel()
