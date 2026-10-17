@@ -756,20 +756,30 @@ func is_piece_under_attack(piece: Piece) -> bool:
 
 	var target_cell := piece.get_cur_pos()
 	var attacked := false
-
 	for attacker in player_pieces[attacker_player - 1]:
-		# if attacker.cur_moves.has(target_cell):
-		var attacker_moves: Array[Vector2i]
 		if attacker is TowerRotatePiece:
-			attacker_moves = (attacker as TowerRotatePiece).cur_possible_rotate_moves
-		else:
-			attacker_moves = attacker.cur_moves
-
-		if attacker_moves.has(target_cell):	
+			if (attacker as TowerRotatePiece).can_attack_cell_after_any_rotation(target_cell):
 				attacked = true
 				if piece is CorePiece:
 					attacker.visible = true
 				break
+		elif attacker.cur_moves.has(target_cell):
+			attacked = true
+			break
+
+	# for attacker in player_pieces[attacker_player - 1]:
+	# 	# if attacker.cur_moves.has(target_cell):
+	# 	var attacker_moves: Array[Vector2i]
+	# 	if attacker is TowerRotatePiece:
+	# 		attacker_moves = (attacker as TowerRotatePiece).cur_possible_rotate_moves
+	# 	else:
+	# 		attacker_moves = attacker.cur_moves
+
+	# 	if attacker_moves.has(target_cell):	
+	# 			attacked = true
+	# 			if piece is CorePiece:
+	# 				attacker.visible = true
+	# 			break
 
 	# current_player = previous_current_player
 	return attacked
@@ -921,7 +931,6 @@ var displayed_warning_text = false
 func update_core_power():
 
 	clear_all_power_lines()
-
 	var viewer := local_player if online_game else current_player
 
 	# for child in get_children():
@@ -1170,6 +1179,28 @@ func clear_all_power_lines() -> void:
 
 	cached_power_lines.clear()
 
+# func update_all_core_power_counts() -> void:
+# 	for player_id in [1, 2]:
+# 		var core: CorePiece = null
+
+# 		for node in player_pieces[player_id - 1]:
+# 			if node is CorePiece:
+# 				core = node as CorePiece
+# 				break
+
+# 		if core == null:
+# 			continue
+
+# 		var support_count := 0
+# 		for node in player_pieces[player_id - 1]:
+# 			var supporter := node as Piece
+# 			if supporter == null or supporter == core:
+# 				continue
+# 			if supporter.cur_vision.has(core.get_cur_pos()):
+# 				support_count += 1
+
+# 		core.power_count = support_count
+
 func update_all_core_power_counts() -> void:
 	for player_id in [1, 2]:
 		var core: CorePiece = null
@@ -1182,79 +1213,21 @@ func update_all_core_power_counts() -> void:
 		if core == null:
 			continue
 
+		var core_position := core.get_cur_pos()
 		var support_count := 0
+
 		for node in player_pieces[player_id - 1]:
 			var supporter := node as Piece
 			if supporter == null or supporter == core:
 				continue
-			if supporter.cur_vision.has(core.get_cur_pos()):
+
+			supporter.powered = supporter.cur_vision.has(core_position)
+			supporter.update_piece_color()
+
+			if supporter.powered:
 				support_count += 1
 
 		core.power_count = support_count
-
-# func update_visible_enemy_core_highlights() -> void:
-# 	var enemy_player := 2 if current_player == 1 else 1
-# 	var enemy_core: CorePiece = null
-
-# 	for node in player_pieces[enemy_player - 1]:
-# 		if node is CorePiece:
-# 			enemy_core = node as CorePiece
-# 			break
-
-# 	if enemy_core == null:
-# 		return
-
-# 	var core_cell := enemy_core.get_cur_pos()
-
-# 	if not hasCellInVision(current_player, core_cell):
-# 		for node in player_pieces[enemy_player - 1]:
-# 			var supporter := node as Piece
-# 			if supporter == null or supporter is CorePiece:
-# 				continue
-# 			if not hasCellInVision(current_player, supporter.get_cur_pos()):
-# 				continue
-
-# 			supporter.powered = false
-# 			supporter.update_piece_color()
-
-# 		return
-
-# 	var visible_support_count := 0
-
-# 	for node in player_pieces[enemy_player - 1]:
-# 		var supporter := node as Piece
-# 		if supporter == null or supporter is CorePiece:
-# 			continue
-
-# 		# Only show information about opposing pieces the current player can see.
-# 		if not hasCellInVision(current_player, supporter.get_cur_pos()):
-# 			continue
-
-# 		var supports_core := supporter.cur_vision.has(core_cell)
-# 		supporter.powered = supports_core
-# 		supporter.update_piece_color()
-
-# 		if not supports_core:
-# 			continue
-
-# 		var line := Line2D.new()
-# 		line.points = PackedVector2Array([
-# 			Vector2(enemy_core.position.x, enemy_core.position.y),
-# 			Vector2(supporter.position.x, supporter.position.y)
-# 		])
-# 		line.width = 3.0
-# 		line.z_index = 1
-# 		line.default_color = (
-# 			GameColors.PLAYER_BLUE_POWER
-# 			if enemy_player == 1
-# 			else GameColors.PLAYER_RED_POWER
-# 		)
-# 		add_child(line)
-# 		visible_support_count += 1
-
-# 	# Tint the visible enemy core based only on the support the player can see.
-# 	enemy_core.powered = visible_support_count > 0
-# 	enemy_core.update_piece_color()
 
 func display_core_attack():
 	var text_timer := Timer.new()

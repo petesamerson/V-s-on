@@ -189,6 +189,40 @@ func generate_all_possible_moves_with_rotation(
 
 	return all_moves
 
+func can_attack_cell_after_any_rotation(target: Vector2i) -> bool:
+	var cur_location := get_cur_pos()
+
+	for direction in range(6):
+		var hypothetical_vision := get_potential_vision(
+			cur_location,
+			direction
+		)
+		var visible := (
+			board.hasCellInVision(owned_player, target)
+			or hypothetical_vision.has(target)
+		)
+		if not visible:
+			continue
+
+		var first_axis = board.get_line_from_center(cur_location, direction, 10)
+		var second_axis = board.get_line_from_center(
+			cur_location,
+			(direction + 1) % 6,
+			10
+		)
+
+		for i in range(first_axis.size()):
+			if i % 2 != 0:
+				continue
+
+			var connect_line := board.hex_line(first_axis[i], second_axis[i])
+			var potential_move: Vector2i = connect_line[connect_line.size() / 2]
+			if potential_move == target and board.cell_in_board(target):
+				if not board.friendlyPieceExistsAtCell(owned_player, target):
+					return true
+
+	return false
+
 func handle_move_input_event(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var global_mouse = board.camera.get_global_mouse_position()

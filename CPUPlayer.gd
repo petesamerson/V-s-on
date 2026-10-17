@@ -5,6 +5,7 @@ const CORE_CAPTURE_ENDGAME_PIECES := 3
 
 const EYE_MOVE_ENDGAME_PIECES_LEFT := 6
 const EYE_MOVE_ENDGAME_BONUS := 45.0
+const EYE_RECAPTURE_BONUS := 1200.0
 
 const CORE_MOVE_ENDGAME_PIECES_LEFT := 4
 const CORE_MOVE_ENDGAME_BONUS := 60.0
@@ -17,7 +18,7 @@ const VISIBLE_ATTACK_WEIGHT := 1.5
 const HOP_CATCH_UP_BONUS := 50.0
 const MAX_HOP_CATCH_UP_BONUS := 3
 const EARLY_GAME_CAPTURE_LIMIT := 4
-const EARLY_HOP_MOVE_BONUS := 350.0
+const EARLY_HOP_MOVE_BONUS := 1200.0
 const EARLY_HOP_SCOUT_MULTIPLIER := 7.5
 
 var early_hop_move_count := 0
@@ -26,6 +27,12 @@ var early_tower_move_count := 0
 const RECAPTURE_BONUS = 500.0
 const UNGUARDED_EYE_THREAT_PENALTY := 350.0
 const LOW_VALUE_EYE_CAPTURE_BONUS := 250.0
+
+var next_scout_piece_type := "hop"
+
+const CORE_GUARD_CAPTURE_BONUS_PER_HEX := 80.0
+const MIN_EARLY_CORE_SUPPORT := 4
+const CORE_SUPPORT_ENDGAME_CAPTURE_COUNT := 27
 
 @export var player_number: int = 2
 @export_range(1,5) var difficulty: int = 5
@@ -170,10 +177,12 @@ func take_turn() -> void:
 				"destination": destination,
 				"score": move_score,
 				"unprotected_danger": is_unprotected_move(piece, destination),
-				# "risky_eye_move": (
-				# 	piece is EyePiece
-				# 	and is_move_threatened(destination)
-				# )
+				"scout_score": score_scouting_action(
+					piece,
+					piece.get_cur_pos(),
+					destination,
+					enemy_player
+				),
 			})
 
 
@@ -215,6 +224,24 @@ func take_turn() -> void:
 	if not safer_actions.is_empty():
 		actions = safer_actions
 
+		if should_keep_scouting(enemy_player):
+			var preferred_scout_actions: Array[Dictionary] = []
+
+			for action in actions:
+				if float(action["scout_score"]) <= 0.0:
+					continue
+
+				var candidate := action["piece"] as Piece
+				if (
+					next_scout_piece_type == "hop" and candidate is HopPiece
+				) or (
+					next_scout_piece_type == "tower" and candidate is TowerRotatePiece
+				):
+					preferred_scout_actions.append(action)
+
+			if not preferred_scout_actions.is_empty():
+				actions = preferred_scout_actions
+
 	var best_score: float = -INF
 	for action in actions:
 		best_score = maxf(best_score, action["score"])
@@ -231,19 +258,36 @@ func take_turn() -> void:
 
 	var choice: Dictionary = shortlist.pick_random()
 	var chosen_piece := choice["piece"] as Piece
+	if (
+		float(choice["scout_score"]) > 0.0
+		and (chosen_piece is HopPiece or chosen_piece is TowerRotatePiece)
+	):
+		next_scout_piece_type = "hop" if rng.randf() < 0.5 else "tower"
+
 	var total_captures := (
 		board.player_captures[0].size()
 		+ board.player_captures[1].size()
 	)
 
-	if total_captures < EARLY_GAME_CAPTURE_LIMIT:
-		if chosen_piece is HopPiece:
-			early_hop_move_count += 1
-		elif chosen_piece is TowerRotatePiece:
-			early_tower_move_count += 1
+	# if total_captures < EARLY_GAME_CAPTURE_LIMIT:
+	# 	next_scout_piece_type = (
+	# 		"hop" if rng.randf() < 0.5 else "tower"
+	# 	)
 
 	var destination: Vector2i = choice["destination"]
+	var old_position := chosen_piece.get_cur_pos()
 
+
+	if score_scouting_action(
+		chosen_piece,
+		old_position,
+		destination,
+		enemy_player
+	) > 0.0:
+		if chosen_piece is HopPiece:
+			next_scout_piece_type = "tower"
+		elif chosen_piece is TowerRotatePiece:
+			next_scout_piece_type = "hop"
 
 	recent_piece_ids.push_front(chosen_piece.get_instance_id())
 	if recent_piece_ids.size() > 2:
@@ -459,6 +503,14 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 
 
 	var old_position := piece.get_cur_pos()
+
+	var core_position := own_core.get_cur_pos()
+	var support_before := count_core_support(player_number, core_position)
+	var is_last_core_supporter := (
+		piece.cur_vision.has(core_position)
+		and support_before == 1
+	)
+
 	if protect_eyes_early and piece is EyePiece:
 		var distance_from_core := hex_distance(
 			old_position,
@@ -597,6 +649,15 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 				capture_reward *= 0.25 if total_captures < 4 else 0.5
 
 		score += capture_reward
+
+		if not is_last_core_supporter:
+			var distance_from_core := hex_distance(old_position, core_position)
+			if distance_from_core <= 4:
+				score += (
+					float(5 - distance_from_core)
+					* CORE_GUARD_CAPTURE_BONUS_PER_HEX
+				)
+
 
 		if captured is EyePiece and is_lower_value_capture:
 			var value_gap := float(captured.piece_value - piece.piece_value)
@@ -738,10 +799,17 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 
 	# The core must keep support. Avoid overvaluing extra defenders once
 	# the core is already safe.
-	if own_support_after == 0:
-		score -= 100000.0
-	elif own_support_after == 1:
-		score -= 100.0
+	if total_captures < CORE_SUPPORT_ENDGAME_CAPTURE_COUNT:
+		var support_shortfall := maxi(
+			0,
+			MIN_EARLY_CORE_SUPPORT - own_support_after
+		)
+		score -= float(support_shortfall) * 1000.0
+	else:
+		if own_support_after == 0:
+			score -= 100000.0
+		elif own_support_after == 1:
+			score -= 100.0
 
 	# A threatened destination is safer if allies can answer every
 	# visible attacker from their current squares.
@@ -876,7 +944,10 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 				score += SCOUT_REVEAL_WEIGHT * enemy_protection_weight(enemy)
 	
 	if is_recapture:
-		score += RECAPTURE_BONUS * defensive_factor
+		if captured is EyePiece:
+			score += EYE_RECAPTURE_BONUS * defensive_factor
+		else:
+			score += RECAPTURE_BONUS * defensive_factor	
 
 	var is_eye_or_triangle := (
 		piece is EyePiece
@@ -994,6 +1065,12 @@ func score_scouting_action(
 		)
 		if captures_so_far < EARLY_GAME_CAPTURE_LIMIT:
 			score *= EARLY_HOP_SCOUT_MULTIPLIER
+
+	if piece is HopPiece:
+		score *= 1.5 if next_scout_piece_type == "hop" else 0.1
+	elif piece is TowerRotatePiece:
+		score *= 1.5 if next_scout_piece_type == "tower" else 0.1
+
 	return score
 
 func find_visible_core(player_id: int) -> CorePiece:
