@@ -1004,69 +1004,73 @@ func update_core_power():
 		display_core_attack()
 
 func draw_powered_piece_links() -> void:
-	var viewer := local_player if online_game else current_player
-	var own_index := viewer - 1
-	var active_own_links: Dictionary = {}
+	# Remove the permanent small connections.
+	remove_cached_lines_with_prefix("powered_pair:")
 
-	for player_index in range(player_pieces.size()):
-		var pieces: Array[Piece] = []
+# func draw_powered_piece_links() -> void:
+# 	var viewer := local_player if online_game else current_player
+# 	var own_index := viewer - 1
+# 	var active_own_links: Dictionary = {}
 
-		for node in player_pieces[player_index]:
-			var piece := node as Piece
-			if piece == null or piece is CorePiece:
-				continue
-			pieces.append(piece)
+# 	for player_index in range(player_pieces.size()):
+# 		var pieces: Array[Piece] = []
 
-		for i in range(pieces.size()):
-			for j in range(i + 1, pieces.size()):
-				var first := pieces[i]
-				var second := pieces[j]
-				var id_a := first.get_instance_id()
-				var id_b := second.get_instance_id()
-				var link_key := "powered_pair:%d:%d:%d" % [
-					player_index,
-					mini(id_a, id_b),
-					maxi(id_a, id_b)
-				]
+# 		for node in player_pieces[player_index]:
+# 			var piece := node as Piece
+# 			if piece == null or piece is CorePiece:
+# 				continue
+# 			pieces.append(piece)
 
-				var both_visible := (
-					player_index == own_index
-					or (
-						first.visible
-						and second.visible
-						and hasCellInVision(viewer, first.get_cur_pos())
-						and hasCellInVision(viewer, second.get_cur_pos())
-					)
-				)
-				# Keep a previously seen enemy link frozen while either piece is hidden.
-				if not both_visible:
-					remove_cached_power_line(link_key)
-					continue
+# 		for i in range(pieces.size()):
+# 			for j in range(i + 1, pieces.size()):
+# 				var first := pieces[i]
+# 				var second := pieces[j]
+# 				var id_a := first.get_instance_id()
+# 				var id_b := second.get_instance_id()
+# 				var link_key := "powered_pair:%d:%d:%d" % [
+# 					player_index,
+# 					mini(id_a, id_b),
+# 					maxi(id_a, id_b)
+# 				]
 
-				if first.powered and second.powered:
-					var link_color: Color = (
-						GameColors.PLAYER_BLUE_POWER
-						if player_index == 0
-						else GameColors.PLAYER_RED_POWER
-					)
-					set_cached_power_line(
-						link_key,
-						first.position,
-						second.position,
-						link_color,
-						2.0,
-						0.35
-					)
+# 				var both_visible := (
+# 					player_index == own_index
+# 					or (
+# 						first.visible
+# 						and second.visible
+# 						and hasCellInVision(viewer, first.get_cur_pos())
+# 						and hasCellInVision(viewer, second.get_cur_pos())
+# 					)
+# 				)
+# 				# Keep a previously seen enemy link frozen while either piece is hidden.
+# 				if not both_visible:
+# 					remove_cached_power_line(link_key)
+# 					continue
 
-					if player_index == own_index:
-						active_own_links[link_key] = true
-				else:
-					remove_cached_power_line(link_key)
+# 				if first.powered and second.powered:
+# 					var link_color: Color = (
+# 						GameColors.PLAYER_BLUE_POWER
+# 						if player_index == 0
+# 						else GameColors.PLAYER_RED_POWER
+# 					)
+# 					set_cached_power_line(
+# 						link_key,
+# 						first.position,
+# 						second.position,
+# 						link_color,
+# 						2.0,
+# 						0.35
+# 					)
 
-	remove_cached_lines_except(
-		"powered_pair:%d:" % own_index,
-		active_own_links
-	)
+# 					if player_index == own_index:
+# 						active_own_links[link_key] = true
+# 				else:
+# 					remove_cached_power_line(link_key)
+
+# 	remove_cached_lines_except(
+# 		"powered_pair:%d:" % own_index,
+# 		active_own_links
+	# )
 
 func update_visible_enemy_core_highlights(viewer: int) -> void:
 	var enemy_player := 2 if viewer == 1 else 1
@@ -1263,18 +1267,22 @@ func update_rotate_map_board(rotate_map: Dictionary = {}):
 			rotate_sprites.add_child(sprite)
 		
 
-
 func get_player_color(powered: bool = false) -> Color:
-	match current_player:
-		1: 
-			if(powered):
-				return GameColors.PLAYER_BLUE_POWER
-			return GameColors.PLAYER_BLUE
-		2: 
-			if(powered):
-				return GameColors.PLAYER_RED_POWER
-			return GameColors.PLAYER_RED
-	return Color.WHITE
+	if powered:
+		return GameColors.powered_color(current_player)
+
+	return GameColors.player_color(current_player)
+# func get_player_color(powered: bool = false) -> Color:
+# 	match current_player:
+# 		1: 
+# 			if(powered):
+# 				return GameColors.PLAYER_BLUE_POWER
+# 			return GameColors.PLAYER_BLUE
+# 		2: 
+# 			if(powered):
+# 				return GameColors.PLAYER_RED_POWER
+# 			return GameColors.PLAYER_RED
+# 	return Color.WHITE
 
 var played_found_sound = false
 
@@ -1469,12 +1477,16 @@ func get_enemy_player_numbers():
 # 		entry.queue_free()
 
 func add_capture_feed_entry(capturing_piece: Piece, captured_piece: Piece) -> void:
+
 	var entry := HBoxContainer.new()
-	var player_color := (
-		GameColors.PLAYER_BLUE
-		if capturing_piece.owned_player == 1
-		else GameColors.PLAYER_RED
+	var player_color := GameColors.player_color(
+		capturing_piece.owned_player
 	)
+	# var player_color := (
+	# 	GameColors.PLAYER_BLUE
+	# 	if capturing_piece.owned_player == 1
+	# 	else GameColors.PLAYER_RED
+	# )
 
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = player_color.darkened(0.65)

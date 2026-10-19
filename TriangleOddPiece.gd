@@ -46,7 +46,7 @@ func on_clicked() -> void:
 	update_capture_on_board()
 
 func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
-	cur_moves.clear()
+	cur_moves = []
 	for direction in range(3):
 		var raw_moves = board.get_line_from_center(cur_location, direction * 2, move_range)
 		for move in raw_moves:

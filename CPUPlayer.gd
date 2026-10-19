@@ -35,7 +35,9 @@ const MIN_EARLY_CORE_SUPPORT := 4
 const CORE_SUPPORT_ENDGAME_CAPTURE_COUNT := 27
 
 @export var player_number: int = 2
-@export_range(1,5) var difficulty: int = 5
+@export_range(1,6) var difficulty: int = 5
+
+const TacticalSearch = preload("res://cpu_search.gd")
 
 var seen_by_player = false
 
@@ -134,6 +136,10 @@ func take_turn() -> void:
 			destinations = (piece as TowerRotatePiece).generate_all_possible_moves_with_rotation(piece.get_cur_pos())
 		else:
 			destinations = piece.generate_possible_moves(piece.get_cur_pos())
+		
+				# Scoring may regenerate this piece's moves.
+		# Keep the actual candidate list independent.
+		destinations = destinations.duplicate()
 
 		for destination in destinations:
 			# if (
@@ -184,9 +190,51 @@ func take_turn() -> void:
 					enemy_player
 				),
 			})
+	# Recheck triangle actions from their actual board positions.
+	var validated_actions: Array[Dictionary] = []
 
+	for action in actions:
+		var candidate := action["piece"] as Piece
 
-	if core_under_attack:
+		if not is_instance_valid(candidate):
+			continue
+
+		if candidate is TriangleEvenPiece or candidate is TriangleOddPiece:
+			var legal_moves: Array[Vector2i] = (
+				candidate.generate_possible_moves(
+					candidate.get_cur_pos()
+				).duplicate()
+			)
+
+			if not legal_moves.has(action["destination"]):
+				push_warning(
+					"CPU rejected an invalid triangle move: %s -> %s"
+					% [
+						candidate.get_cur_pos(),
+						action["destination"]
+					]
+				)
+				continue
+
+		validated_actions.append(action)
+
+	actions = validated_actions
+
+	if difficulty >= 4 and not actions.is_empty():
+		var search = TacticalSearch.new()
+
+		var searched_action: Dictionary = search.choose(
+			board,
+			player_number,
+			difficulty,
+			actions
+		)
+
+		if not searched_action.is_empty():
+			actions.clear()
+			actions.append(searched_action)
+
+	if core_under_attack and difficulty < 4:
 		var defensive_actions: Array[Dictionary] = []
 
 		for action in actions:
@@ -250,9 +298,14 @@ func take_turn() -> void:
 	# every turn when several moves are nearly as good.
 	var shortlist: Array[Dictionary] = []
 	for action in actions:
-		var tolerance_by_difficulty := [400.0, 220.0, 75.0, 15.0, 0.0]
-		var tolerance : float = tolerance_by_difficulty[clampi(difficulty - 1, 0, 4)]
-
+		# var tolerance_by_difficulty := [400.0, 220.0, 75.0, 15.0, 0.0]
+		# var tolerance : float = tolerance_by_difficulty[clampi(difficulty - 1, 0, 4)]
+		var tolerance_by_difficulty := [
+			500.0, 250.0, 90.0, 25.0, 8.0, 0.0
+		]
+		var tolerance: float = tolerance_by_difficulty[
+			clampi(difficulty - 1, 0, 5)
+		]
 		if action["score"] >= best_score - tolerance:
 			shortlist.append(action)
 
@@ -1166,19 +1219,29 @@ func has_non_core_capture(target: Piece) -> bool:
 
 	return false
 
-func count_attacked_enemies(piece: Piece, destination: Vector2i) -> int:
-	var potential_moves: Array[Vector2i]
+func count_attacked_enemies(
+	piece: Piece,
+	destination: Vector2i
+) -> int:
+	var potential_moves: Array[Vector2i] = get_moves_from_position(
+		piece,
+		destination
+	)
 
-	if piece is TowerRotatePiece:
-		potential_moves = (piece as TowerRotatePiece) \
-			.generate_all_possible_moves_with_rotation(destination)
-	else:
-		potential_moves = piece.generate_possible_moves(destination)
-
+	var enemy_player := 1 if player_number == 2 else 2
 	var attacked := 0
-	for node in board.player_pieces[1 if player_number == 2 else 0]:
+
+	for node in board.player_pieces[enemy_player - 1]:
 		var enemy := node as Piece
+
 		if enemy == null:
+			continue
+
+		# Only evaluate enemies the CPU can currently see.
+		if not board.hasCellInVision(
+			player_number,
+			enemy.get_cur_pos()
+		):
 			continue
 
 		if potential_moves.has(enemy.get_cur_pos()):

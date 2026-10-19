@@ -193,9 +193,9 @@ theme_override_constants/separation = 30
 custom_minimum_size = Vector2(350, 30)
 layout_mode = 2
 min_value = 1.0
-max_value = 5.0
+max_value = 6.0
 value = 3.0
-tick_count = 5
+tick_count = 6
 
 [node name="CurrentDiff" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2

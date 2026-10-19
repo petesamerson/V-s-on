@@ -12,6 +12,11 @@ var move_range: = 6
 var piece_value = 0
 var powered: bool = false
 
+var effects: Node2D
+var movement_tween: Tween
+var sprite_rest_position := Vector2.ZERO
+var shimmer_material: ShaderMaterial
+
 @onready var area: Area2D = $Area2D
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -26,10 +31,23 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	area.input_event.connect(_on_area_2d_input_event)
 
-	if(owned_player == 1):
-		sprite.modulate = GameColors.PLAYER_BLUE
-	else:
-		sprite.modulate = GameColors.PLAYER_RED
+	# if(owned_player == 1):
+	# 	sprite.modulate = GameColors.PLAYER_BLUE
+	# else:
+	# 	sprite.modulate = GameColors.PLAYER_RED
+
+	sprite_rest_position = sprite.position
+	shimmer_material = ShaderMaterial.new()
+	shimmer_material.shader = preload("res://piece_shimmer.gdshader")
+	sprite.material = shimmer_material
+	update_piece_color()
+
+	if not is_instance_valid(effects):
+		effects = preload("res://piece_effects.gd").new()
+		effects.piece = self
+		board.add_child(effects)
+		effects.z_index = 3
+		tree_exiting.connect(effects.queue_free)
 
 	self.z_index = 2
 	draw_vision_change()
@@ -190,25 +208,54 @@ func highlight_vision_range():
 	board.update_selection_panel(self)
 	
 
+# func update_piece_color():
+# 	if sprite == null: return
+# 	print("piece_color_update " + str(selected))
+# 	if(selected):
+# 		sprite.modulate = Color.WHITE
+# 	else:
+# 		if(owned_player == 1):
+# 			if(powered):
+# 				sprite.modulate = GameColors.PLAYER_BLUE_POWER
+# 			else:
+# 				sprite.modulate = GameColors.PLAYER_BLUE
+# 		else:
+# 			if(powered):
+# 				sprite.modulate = GameColors.PLAYER_RED_POWER
+# 			else:
+# 				sprite.modulate = GameColors.PLAYER_RED
+
 func update_piece_color():
-	if sprite == null: return
-	print("piece_color_update " + str(selected))
-	if(selected):
-		sprite.modulate = Color.WHITE
-	else:
-		if(owned_player == 1):
-			if(powered):
-				sprite.modulate = GameColors.PLAYER_BLUE_POWER
-			else:
-				sprite.modulate = GameColors.PLAYER_BLUE
-		else:
-			if(powered):
-				sprite.modulate = GameColors.PLAYER_RED_POWER
-			else:
-				sprite.modulate = GameColors.PLAYER_RED
+	if sprite == null:
+		return
 
-	
+	var color: Color = GameColors.player_color(owned_player)
 
+	if powered:
+		color = GameColors.powered_color(owned_player)
+
+	sprite.modulate = color
+
+	if shimmer_material != null:
+		var strength: float = 0.0
+		var speed: float = 0.25
+
+		if powered:
+			strength = 0.7 if selected else 0.4
+		elif selected:
+			strength = 0.7
+			speed = 0.55
+
+		shimmer_material.set_shader_parameter(
+			"shimmer_strength", strength
+		)
+		shimmer_material.set_shader_parameter(
+			"shimmer_speed", speed
+		)
+		shimmer_material.set_shader_parameter(
+			"shimmer_phase",
+			fposmod(float(owned_player - 1) * 0.17, 1.0)
+		)
 
 func _input(event):
 	if not selected or not can_control_piece():
@@ -284,27 +331,90 @@ func handle_move_input_event(event):
 		# 	print(["line", i, 8 + i, "center", cell])
 		# 	board.draw_line_from_center(cell, i, 13, 9)
 
+# func move_piece(move: Vector2i):
+# 	moving = true
+# 	position = board.map_to_local(move)
+
+# 	var enemy_player = 1
+# 	if(board.current_player == 1):
+# 		enemy_player = 2
+# 	var enemy_piece = board.get_enemy_piece_at_cell(move, enemy_player)
+# 	if enemy_piece != null:
+# 		board.last_capture_capturer_ids[board.current_player - 1] = get_instance_id()
+# 		board.add_capture_feed_entry(self, enemy_piece)
+# 		board.remove_piece(enemy_piece)
+# 		for i in range(cur_moves.size()):
+# 			var old_move = cur_moves[i]
+# 			if(old_selected_tile_ids.size() > i):
+# 				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+
+# 	cur_moves = []
+# 	old_selected_tile_ids = []
+# 	selected = false
+# 	moving = false
 func move_piece(move: Vector2i):
 	moving = true
+
+	var previous_position := position
+	var visual_position := position + sprite.position
+
+	# Move the logical piece immediately so existing turn,
+	# vision, CPU, and networking code keeps working.
 	position = board.map_to_local(move)
 
+	# Animate the sprite toward its new logical position.
+	if movement_tween != null and movement_tween.is_valid():
+		movement_tween.kill()
+
+	sprite.position = visual_position - position
+
+	movement_tween = create_tween()
+	movement_tween.tween_property(
+		sprite,
+		"position",
+		sprite_rest_position,
+		0.24
+	).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
 	var enemy_player = 1
-	if(board.current_player == 1):
+	if board.current_player == 1:
 		enemy_player = 2
-	var enemy_piece = board.get_enemy_piece_at_cell(move, enemy_player)
+
+	var enemy_piece = board.get_enemy_piece_at_cell(
+		move,
+		enemy_player
+	)
+
+	if is_instance_valid(effects):
+		effects.add_move(
+			previous_position,
+			position,
+			enemy_piece != null
+		)
+
 	if enemy_piece != null:
-		board.last_capture_capturer_ids[board.current_player - 1] = get_instance_id()
+		board.last_capture_capturer_ids[
+			board.current_player - 1
+		] = get_instance_id()
+
 		board.add_capture_feed_entry(self, enemy_piece)
 		board.remove_piece(enemy_piece)
+
 		for i in range(cur_moves.size()):
 			var old_move = cur_moves[i]
-			if(old_selected_tile_ids.size() > i):
-				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
+
+			if old_selected_tile_ids.size() > i:
+				board.set_cell(
+					old_move,
+					old_selected_tile_ids[i],
+					Vector2i.ZERO
+				)
 
 	cur_moves = []
 	old_selected_tile_ids = []
 	selected = false
 	moving = false
+	update_piece_color()
 
 func make_cpu_move(move: Vector2i):
 	move_piece(move)

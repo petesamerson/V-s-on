@@ -54,18 +54,42 @@ func _on_pass_and_play_pressed() -> void:
 
 
 func _on_difficulty_slider_value_changed(value: float) -> void:
-	var difficulty := roundi(value) 
-	# $DifficultyLabel.text = "Difficulty: %d" % difficulty
-	var difficulty_texts := ["Very Easy", "Easy", "Normal", "Hard", "Very Hard"]
-	difficulty_label.text = difficulty_texts[difficulty - 1]
-	get_tree().root.set_meta("cpu_difficulty", difficulty)
+	var selected_difficulty := clampi(roundi(value), 1, 6)
 
+	var difficulty_names := [
+		"Very Easy",
+		"Easy",
+		"Normal",
+		"Hard",
+		"Very Hard",
+		"Expert",
+	]
 
+	difficulty_label.text = difficulty_names[
+		selected_difficulty - 1
+	]
+
+	get_tree().root.set_meta(
+		"cpu_difficulty",
+		selected_difficulty
+	)
+
+# func _on_start_cpu_game_pressed() -> void:
+# 	get_tree().root.set_meta("play_vs_cpu", true)
+# 	get_tree().root.set_meta("online_game", false)
+# 	get_tree().change_scene_to_file("res://base_scene.tscn")
 func _on_start_cpu_game_pressed() -> void:
+	var slider := get_node(
+		"CpuSettingsScreen/MarginContainer/Panel/"
+		+ "MarginContainer/VBoxContainer/HBoxContainer/"
+		+ "Difficulty Slider"
+	) as HSlider
+
+	_on_difficulty_slider_value_changed(slider.value)
+
 	get_tree().root.set_meta("play_vs_cpu", true)
 	get_tree().root.set_meta("online_game", false)
 	get_tree().change_scene_to_file("res://base_scene.tscn")
-
 
 func scale_text_tree(node: Node, factor: float) -> void:
 	if node is Control:
