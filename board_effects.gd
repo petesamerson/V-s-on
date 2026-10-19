@@ -14,6 +14,8 @@ var check_timer: float = 0.0
 var effect_time: float = 0.0
 var effect_visible: Dictionary = {}
 
+var last_move_by_viewer: Dictionary = {}
+
 @export var vision_loss_duration: float = 1.4
 
 var tile_snapshots: Dictionary = {}
@@ -83,6 +85,12 @@ func play_setup() -> void:
 
 	started = true
 	assembling = true
+
+	var fog = preload("res://unseen_board_effect.gd").new()
+	fog.name = "UnseenBoardMist"
+	fog.board = board
+	fog.effects = self
+	add_child(fog)
 
 	var viewer: int = _viewer()
 	last_viewer = viewer
@@ -313,18 +321,20 @@ func _draw() -> void:
 	if not started or assembling or not board.game_setup_complete:
 		return
 
-	# Do not draw from the temporary CPU perspective.
-	if (
-		board.cpu_player != null
-		and board.current_player == board.cpu_player.player_number
-	):
-		return
+	# # Do not draw from the temporary CPU perspective.
+	# if (
+	# 	board.cpu_player != null
+	# 	and board.current_player == board.cpu_player.player_number
+	# ):
+	# 	return
 
 	var viewer: int = _viewer()
 
 	# Wait for the visibility cache after a player switch.
 	if viewer != last_viewer:
 		return
+	
+	_draw_last_move(viewer)
 
 	var player_color: Color = GameColors.player_color(viewer)
 	var selected_piece: Piece = null
@@ -559,3 +569,73 @@ func _clear_vision_fades() -> void:
 
 	fading_tiles.clear()
 	tile_snapshots.clear()
+
+func record_move(
+	from_position: Vector2,
+	to_position: Vector2,
+	moving_player: int
+) -> void:
+	var from_cell: Vector2i = board.local_to_map(from_position)
+	var to_cell: Vector2i = board.local_to_map(to_position)
+
+	last_move_by_viewer.clear()
+
+	for viewer_index in range(board.player_pieces.size()):
+		var viewer: int = viewer_index + 1
+		var own_move: bool = viewer == moving_player
+
+		last_move_by_viewer[viewer] = {
+			"player": moving_player,
+			"from": {
+				"cell": from_cell,
+				"known": (
+					own_move
+					or board.hasCellInVision(viewer, from_cell)
+				),
+			},
+			"to": {
+				"cell": to_cell,
+				"known": (
+					own_move
+					or board.hasCellInVision(viewer, to_cell)
+				),
+			},
+		}
+
+	queue_redraw()
+
+
+func _draw_last_move(viewer: int) -> void:
+	if not last_move_by_viewer.has(viewer):
+		return
+
+	var record: Dictionary = last_move_by_viewer[viewer]
+	var color: Color = GameColors.player_color(
+		int(record["player"])
+	)
+
+	for endpoint_name in ["from", "to"]:
+		var endpoint: Dictionary = record[endpoint_name]
+
+		if not bool(endpoint["known"]):
+			continue
+
+		var cell: Vector2i = endpoint["cell"]
+
+		# Do not reveal a hidden move or leave markers in fog.
+		if not board.hasCellInVision(viewer, cell):
+			continue
+
+		var outline: PackedVector2Array = _tile_polygon(cell)
+		outline.append(outline[0])
+
+		var is_destination: bool = endpoint_name == "to"
+		var alpha: float = 0.55 if is_destination else 0.25
+		var width: float = 2.5 if is_destination else 1.5
+
+		draw_polyline(
+			outline,
+			Color(color, alpha),
+			width,
+			true
+		)

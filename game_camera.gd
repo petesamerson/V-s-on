@@ -65,10 +65,13 @@ func _unhandled_input(event):
 		# 	else:
 		# 		dragging = false
 
+	# elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
+	# 	var current_mouse = get_global_mouse_position()
+	# 	var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
+	# 	position = position.lerp(drag_target, 0.5)
 	elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
-		var current_mouse = get_global_mouse_position()
-		var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
-		position = position.lerp(drag_target, 0.5)
+		interrupt_auto_camera()
+		position -= event.relative / zoom
 
 	#-----More Test Touch Pinch
 	elif event is InputEventMouseMotion and is_mobile_browser == false:
@@ -132,15 +135,8 @@ func _unhandled_input(event):
 
 			previous_pinch_distance = current_distance
 
-		# # One finger = pan
-		# elif touches.size() == 1:
-		# 	if(wasPinched):
-		# 		wasPinched = false
-		# 	else:
-		# 		var delta = event.relative
-		# 		position -= delta / zoom.x
-		# One finger = pan, unless it is left over from a pinch
 		elif touches.size() == 1 and not wasPinched:
+			interrupt_auto_camera()
 			position -= event.relative / zoom.x
 # =====================================
 # Zoom around mouse
@@ -148,7 +144,7 @@ func _unhandled_input(event):
 
 # func _zoom_to_mouse(factor: float):
 
-# 	var mouse_screen = get_global_mouse_position()
+# 	var mouse_screen = get_global_mouse_position)
 
 # 	_zoom_to_point(factor, mouse_screen)
 
@@ -160,6 +156,8 @@ func _zoom_to_mouse(factor: float) -> void:
 # =====================================
 
 func _zoom_to_point(factor: float, screen_point: Vector2):
+	interrupt_auto_camera()
+	
 	var old_zoom = zoom.x
 
 	var new_zoom = clamp(
@@ -180,14 +178,46 @@ func _zoom_to_point(factor: float, screen_point: Vector2):
 
 	position += world_before - world_after
 
+var _auto_camera_sequence: int = 0
+var _auto_camera_interrupted: bool = false
+var _auto_camera_tween: Tween
+
+
+func begin_auto_camera_sequence() -> int:
+	_stop_auto_camera_tween()
+	_auto_camera_sequence += 1
+	_auto_camera_interrupted = false
+	return _auto_camera_sequence
+
+
+func interrupt_auto_camera() -> void:
+	_auto_camera_interrupted = true
+	_auto_camera_sequence += 1
+	_stop_auto_camera_tween()
+
+
+func _stop_auto_camera_tween() -> void:
+	if _auto_camera_tween != null and _auto_camera_tween.is_valid():
+		_auto_camera_tween.kill()
+
+	_auto_camera_tween = null
+
 
 func zoom_to_global_position(
 	target_position: Vector2,
-	target_zoom: float
+	target_zoom: float,
+	sequence_id: int = -1
 ) -> void:
-	board.cpu_turn_in_progress = true
-	var tween := create_tween()
+	if sequence_id < 0:
+		sequence_id = _auto_camera_sequence
 
+	if _auto_camera_interrupted or sequence_id != _auto_camera_sequence:
+		return
+
+	_stop_auto_camera_tween()
+
+	var tween := create_tween()
+	_auto_camera_tween = tween
 	tween.set_parallel(true)
 
 	tween.tween_property(
@@ -203,6 +233,17 @@ func zoom_to_global_position(
 		Vector2(target_zoom, target_zoom),
 		1.5
 	)
-	await tween.finished
-	board.cpu_turn_in_progress = false
-	
+
+	# Cancellation also releases any Board function awaiting this move.
+	while (
+		sequence_id == _auto_camera_sequence
+		and _auto_camera_tween == tween
+		and tween.is_valid()
+		and tween.is_running()
+	):
+		await get_tree().process_frame
+
+	if _auto_camera_tween == tween:
+		_auto_camera_tween = null
+
+

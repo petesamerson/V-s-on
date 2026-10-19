@@ -613,7 +613,7 @@ func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
 # 		update_core_power()
 
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
-	var viewer := local_player if online_game else current_player
+	var viewer := get_viewer_player()
 	var own_index := viewer - 1
 	var enemy_index := 1 - own_index
 
@@ -628,12 +628,6 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	for piece in player_pieces[enemy_index]:
 		piece.visible = false
 
-	# for i in player_pieces.size():
-	# 	for piece in player_pieces[i]:
-	# 		for cell in piece.cur_vision:
-	# 			player_vision_tiles[i].append(cell)
-	# 			if hasEnemyPieceInVision(viewer, cell):
-	# 				set_enemy_piece_visiblity(cell, true, viewer)
 	for i in range(player_pieces.size()):
 		player_vision_tiles[i].clear()
 		for piece in player_pieces[i]:
@@ -679,21 +673,53 @@ func hasCellInVision(player: int, cell: Vector2i) -> bool:
 	return false
 
 var capture_sprites: Node2D
-func set_take_piece_sprite(enemy_loc: Vector2i):
-	# for child in capture_sprites.get_children():
-	# 	child.queue_free()
-	var sprite := Sprite2D.new()
-	sprite.texture = capture_texture
-	var world_position := map_to_local(enemy_loc)
-	sprite.position = world_position
-	# add_child(sprite)
-	capture_sprites.add_child(sprite)
+
 
 func clear_captures():
 	for child in capture_sprites.get_children():
 		child.queue_free()
 	
+func set_take_piece_sprite(enemy_loc: Vector2i):
+	var icon := Sprite2D.new()
+	icon.texture = capture_texture
+	icon.position = map_to_local(enemy_loc)
+	icon.scale = Vector2.ONE * 0.94
+	icon.modulate.a = 0.65
 
+	capture_sprites.add_child(icon)
+
+	# Binding the tween to the icon stops it automatically
+	# when selection cleanup frees the icon.
+	var pulse := icon.create_tween()
+	pulse.set_loops()
+
+	pulse.tween_property(
+		icon,
+		"scale",
+		Vector2.ONE * 1.08,
+		0.75
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	pulse.parallel().tween_property(
+		icon,
+		"modulate:a",
+		1.0,
+		0.75
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	pulse.tween_property(
+		icon,
+		"scale",
+		Vector2.ONE * 0.94,
+		0.75
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	pulse.parallel().tween_property(
+		icon,
+		"modulate:a",
+		0.65,
+		0.75
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	
 
 func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
@@ -947,7 +973,7 @@ var displayed_warning_text = false
 func update_core_power():
 
 	clear_all_power_lines()
-	var viewer := local_player if online_game else current_player
+	var viewer := get_viewer_player()
 
 	# for child in get_children():
 	# 	if child is Line2D:
@@ -1365,15 +1391,27 @@ func end_turn(movedPiece: Piece):
 		display_winner(current_player)
 
 
+func get_viewer_player() -> int:
+	if online_game:
+		return local_player
+
+	if cpu_player != null:
+		return 3 - cpu_player.player_number
+
+	return current_player
+
 var enemy_turn_interrupt = false
 func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
 
 	if current_player == cpu_player.player_number:
 		update_turn_text()
-		await get_tree().process_frame
 		cpu_turn_in_progress = true
-		cpu_player.take_turn()
+
+		await get_tree().process_frame
+		await cpu_player.take_turn()
+
+		cpu_turn_in_progress = false
 		if(enemy_turn_interrupt):
 			queue_game_sound(game_sound_files[2], true)
 		elif (played_found_sound):
@@ -1389,6 +1427,7 @@ func end_turn_vs_cpu() -> void:
 	else:
 		update_all_piece_vision()
 		turn_menu.hide()
+		var camera_sequence: int = camera.begin_auto_camera_sequence()
 		update_turn_text()
 
 		# First show the CPU move, if it is visible.
@@ -1400,7 +1439,8 @@ func end_turn_vs_cpu() -> void:
 		):
 			await camera.zoom_to_global_position(
 				enemy_move.global_position,
-				camera.zoom.x
+				camera.zoom.x,
+				camera_sequence
 			)
 
 		# Then show this player's last move, or their core.
@@ -1410,53 +1450,38 @@ func end_turn_vs_cpu() -> void:
 			if is_instance_valid(own_move):
 				await camera.zoom_to_global_position(
 					own_move.global_position,
-					camera.zoom.x
+					camera.zoom.x,
+					camera_sequence
 				)
 			else:
-				await move_camera_to_core()
+				await move_camera_to_core(camera_sequence)
 		else:
-			await move_camera_to_core()
+			await move_camera_to_core(camera_sequence)
 		display_turn_message()
-
-# func update_move_camera(movedPiece: Piece):
-# 	update_all_piece_vision()
-# 	if(movedPiece.owned_player == current_player):
-# 		await camera.zoom_to_global_position(
-# 			movedPiece.global_position,
-# 			camera.zoom.x
-# 		)
-# 	else:
-# 		if(player_last_moves.size() == player_pieces.size()):
-# 			var enemy_player = 2 if current_player == 1 else 1
-# 			await camera.zoom_to_global_position(
-# 				player_last_moves[enemy_player - 1].global_position,
-# 				camera.zoom.x
-# 			)
-
-# 	if(player_last_moves.size() < 2):
-# 		player_last_moves.append(movedPiece)
-# 	else:
-# 		player_last_moves[current_player - 1] = movedPiece
 
 func update_move_camera(movedPiece: Piece):
 	update_all_piece_vision()
+	var camera_sequence: int = camera.begin_auto_camera_sequence()
 
 	if online_game:
 		if movedPiece.owned_player == local_player or movedPiece.visible:
 			await camera.zoom_to_global_position(
 				movedPiece.global_position,
-				camera.zoom.x
+				camera.zoom.x,
+				camera_sequence
 			)
 	elif movedPiece.owned_player == current_player:
 		await camera.zoom_to_global_position(
 			movedPiece.global_position,
-			camera.zoom.x
+			camera.zoom.x,
+			camera_sequence
 		)
 	elif player_last_moves.size() == player_pieces.size():
 		var enemy_player = 2 if current_player == 1 else 1
 		await camera.zoom_to_global_position(
 			player_last_moves[enemy_player - 1].global_position,
-			camera.zoom.x
+			camera.zoom.x,
+			camera_sequence
 		)
 
 	if player_last_moves.size() < 2:
@@ -2124,12 +2149,19 @@ static func hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 
 	return results
 
-func move_camera_to_core():
-	var core = get_current_core()
-	camera.zoom_to_global_position(core.position,0.6)
-	# for p in pieces_container.get_children():
-	# 	if(p is CorePiece and p.owned_player == current_player):
+func move_camera_to_core(camera_sequence: int = -1) -> void:
+	var core := get_current_core()
+
+	if not is_instance_valid(core):
+		return
+
 	update_selection_panel(core)
+
+	await camera.zoom_to_global_position(
+		core.global_position,
+		0.6,
+		camera_sequence
+	)
 
 func _on_next_pressed() -> void:
 	var enemy_eye = false
@@ -2141,6 +2173,7 @@ func _on_next_pressed() -> void:
 	update_all_piece_vision()
 	# move_camera_to_core()
 	turn_menu.hide()
+	var camera_sequence: int = camera.begin_auto_camera_sequence()
 	# if(player_last_moves.size() == player_pieces.size()):
 	# 	await update_move_camera(
 	# 		player_last_moves[current_player - 1]
@@ -2158,7 +2191,8 @@ func _on_next_pressed() -> void:
 		):
 			await camera.zoom_to_global_position(
 				enemy_move.global_position,
-				camera.zoom.x
+				camera.zoom.x,
+				camera_sequence
 			)
 
 	# Return to this player's last move, or their core if they have not moved yet.
@@ -2168,12 +2202,13 @@ func _on_next_pressed() -> void:
 		if is_instance_valid(own_move):
 			await camera.zoom_to_global_position(
 				own_move.global_position,
-				camera.zoom.x
+				camera.zoom.x,
+				camera_sequence
 			)
 		else:
-			await move_camera_to_core()
+			await move_camera_to_core(camera_sequence)
 	else:
-		await move_camera_to_core()
+		await move_camera_to_core(camera_sequence)
 
 	update_turn_text()
 	display_turn_message()

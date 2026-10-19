@@ -18,6 +18,8 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 
 func on_clicked() -> void:
+	if not can_control_piece():
+		return
 	if board == null or position == null:
 		return
 	if owned_player != board.current_player:

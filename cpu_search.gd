@@ -19,6 +19,11 @@ var initial_known_tiles: Dictionary = {}
 var initial_positions: Dictionary = {}
 var recent_capturer: Piece
 
+var frame_tree: SceneTree
+var slice_started_us: int = 0
+
+const SEARCH_SLICE_US: int = 4000
+
 func choose(
 	live_board: Board,
 	player_id: int,
@@ -27,6 +32,8 @@ func choose(
 	recent_capturer_id: int = -1
 ) -> Dictionary:
 	cpu_player = player_id
+	frame_tree = live_board.get_tree()
+	slice_started_us = Time.get_ticks_usec()
 	enemy_player = 2 if player_id == 1 else 1
 
 	completed_depth = 0
@@ -52,6 +59,7 @@ func choose(
 	var roots: Array[Dictionary] = []
 
 	for candidate in candidates:
+		await _yield_search_frame()
 		var live_piece := candidate["piece"] as Piece
 
 		if not is_instance_valid(live_piece):
@@ -80,7 +88,7 @@ func choose(
 		}
 
 		# action["priority"] = _move_priority(action)
-		action["recapture_bonus"] = _recapture_preference(action)
+		action["recapture_bonus"] = await _recapture_preference(action)
 		action["priority"] = (
 			_move_priority(action)
 			+ _legacy_preference(action)
@@ -93,7 +101,7 @@ func choose(
 
 	# Examine core safety before captures and scouting
 	# determine which moves survive the root limit.
-	roots = _prefer_core_safe_actions(roots, cpu_player)
+	roots = await _prefer_core_safe_actions(roots, cpu_player, false)
 
 	roots.sort_custom(
 		func(a, b):
@@ -112,6 +120,7 @@ func choose(
 	var best_piece_safety: int = -1
 
 	for action in roots:
+		await _yield_search_frame()
 		var original: Dictionary = action["original"]
 
 		var piece_safety: int = (
@@ -149,6 +158,8 @@ func choose(
 
 	# Iterative deepening: only commit a fully finished depth.
 	for depth in range(2, max_depth + 1):
+		await _yield_search_frame()
+
 		if _expired():
 			break
 
@@ -157,12 +168,13 @@ func choose(
 		var alpha: float = -INF
 
 		for action in roots:
+			await _yield_search_frame()
 			if _expired():
 				break
 
 			var undo: Dictionary = _push(action)
 
-			var value: float = _minimax(
+			var value: float = await _minimax(
 				depth - 1,
 				enemy_player,
 				alpha,
@@ -259,7 +271,7 @@ func _build_simulation(live_board: Board) -> void:
 				copy.owned_player - 1
 			].append(copy)
 
-			# clones[source.get_instance_id()] = copy
+			clones[source.get_instance_id()] = copy
 			initial_positions[copy.get_instance_id()] = (
 				copy.get_cur_pos()
 			)
@@ -421,6 +433,7 @@ func _actions(side: int) -> Array[Dictionary]:
 	var actions: Array[Dictionary] = []
 
 	for node in simulation.player_pieces[side - 1]:
+		await _yield_search_frame()
 		if _expired():
 			break
 
@@ -428,6 +441,7 @@ func _actions(side: int) -> Array[Dictionary]:
 		var destinations: Array[Vector2i] = _moves(piece)
 
 		for destination in destinations:
+			await _yield_search_frame()
 			var action: Dictionary = {
 				"piece": piece,
 				"destination": destination,
@@ -436,7 +450,7 @@ func _actions(side: int) -> Array[Dictionary]:
 			action["priority"] = _move_priority(action)
 			actions.append(action)
 
-	actions = _prefer_core_safe_actions(actions, side)
+	actions = await _prefer_core_safe_actions(actions, side)
 	actions.sort_custom(
 		func(a, b):
 			return float(a["priority"]) > float(b["priority"])
@@ -593,6 +607,7 @@ func _evaluate() -> float:
 		var visible_cells: Dictionary = {}
 
 		for node in simulation.player_pieces[side - 1]:
+			await _yield_search_frame()
 			var piece := node as Piece
 
 			if not piece is CorePiece:
@@ -633,7 +648,7 @@ func _evaluate() -> float:
 		score -= 8000.0
 
 	score += _scouting_score()
-	score += _tactical_score()
+	score += await _tactical_score()
 	return score
 
 
@@ -643,8 +658,10 @@ func _minimax(
 	alpha: float,
 	beta: float
 ) -> float:
+	await _yield_search_frame()
+
 	if _expired():
-		return _evaluate()
+		return await _evaluate()
 
 	var terminal: float = _terminal_score()
 
@@ -652,12 +669,12 @@ func _minimax(
 		return terminal
 
 	if depth <= 0:
-		return _evaluate()
+		return await _evaluate()
 
-	var actions: Array[Dictionary] = _actions(side)
+	var actions: Array[Dictionary] = await _actions(side)
 
 	if actions.is_empty() or timed_out:
-		return _evaluate()
+		return await _evaluate()
 
 	var maximizing: bool = side == cpu_player
 	var best: float = -INF if maximizing else INF
@@ -669,7 +686,7 @@ func _minimax(
 
 		var undo: Dictionary = _push(action)
 
-		var value: float = _minimax(
+		var value: float = await _minimax(
 			depth - 1,
 			next_side,
 			alpha,
@@ -692,10 +709,9 @@ func _minimax(
 			break
 
 	if timed_out:
-		return _evaluate()
+		return await _evaluate()
 
 	return best
-
 
 func _expired() -> bool:
 	if Time.get_ticks_msec() >= deadline:
@@ -812,12 +828,16 @@ func _core_threat_count(side: int) -> int:
 
 func _prefer_core_safe_actions(
 	actions: Array[Dictionary],
-	side: int
+	side: int,
+	stop_on_timeout: bool = true
 ) -> Array[Dictionary]:
 	var preferred: Array[Dictionary] = []
 	var best_safety: int = -2
 
 	for action in actions:
+		await _yield_search_frame()
+		if stop_on_timeout and _expired():
+			break
 		var undo: Dictionary = _push(action)
 		var core: CorePiece = _core(side)
 		var terminal: float = _terminal_score()
@@ -885,6 +905,8 @@ func _can_recapture(
 	# An unseen core does not mean the opponent has lost.
 	if not core_captured and not power_lost:
 		for node in simulation.player_pieces[defending_side - 1]:
+			await _yield_search_frame()
+
 			var defender := node as Piece
 			var moves: Array[Vector2i] = _moves(defender)
 
@@ -915,6 +937,7 @@ func _tactical_score() -> float:
 		var strongest_fork: float = 0.0
 
 		for node in simulation.player_pieces[side - 1]:
+			await _yield_search_frame()
 			if _expired():
 				simulation.current_player = saved_player
 				return 0.0
@@ -931,6 +954,7 @@ func _tactical_score() -> float:
 			)
 
 			for target_node in targets:
+				await _yield_search_frame()
 				if _expired():
 					simulation.current_player = saved_player
 					return 0.0
@@ -947,7 +971,7 @@ func _tactical_score() -> float:
 				var gain: float = _exchange_value(target)
 				var attacker_cost: float = _exchange_value(attacker)
 
-				if _can_recapture(attacker, target):
+				if await _can_recapture(attacker, target):
 					gain -= attacker_cost
 				# var gain: float = (
 				# 	float(target.piece_value) * 100.0
@@ -1055,7 +1079,7 @@ func _recapture_preference(action: Dictionary) -> float:
 	var target_value: float = float(target.piece_value)
 	var attacker_value: float = float(piece.piece_value)
 
-	if _can_recapture(piece, target):
+	if await _can_recapture(piece, target):
 		var trade_gain: float = target_value - attacker_value
 
 		# Do not encourage an expensive revenge trade.
@@ -1067,3 +1091,23 @@ func _recapture_preference(action: Dictionary) -> float:
 	# Taking the capturer without losing the responding piece
 	# also prevents it from continuing its attack.
 	return 200.0 + target_value * 25.0
+
+func _yield_search_frame() -> void:
+	if Time.get_ticks_usec() - slice_started_us < SEARCH_SLICE_US:
+		return
+
+	await frame_tree.process_frame
+	slice_started_us = Time.get_ticks_usec()
+# func _yield_search_frame() -> void:
+# 	if Time.get_ticks_usec() - slice_started_us < SEARCH_SLICE_US:
+# 		return
+
+# 	var wait_started_us: int = Time.get_ticks_usec()
+
+# 	await frame_tree.process_frame
+
+# 	var waited_us: int = Time.get_ticks_usec() - wait_started_us
+
+# 	# Exclude time spent waiting for rendering.
+# 	deadline += int(ceil(float(waited_us) / 1000.0))
+# 	slice_started_us = Time.get_ticks_usec()

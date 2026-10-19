@@ -118,14 +118,41 @@ func _draw() -> void:
 			Color(color, pulse), 3.0, true
 		)
 
-		for cell in piece.cur_moves:
-			draw_arc(
-				piece.board.map_to_local(cell),
-				28.0,
-				0.0, TAU, 24,
-				Color(color, pulse), 2.0, true
-			)
+		draw_move_markers(color)
 
+func draw_move_markers(color: Color) -> void:
+	var pulse: float = 0.75 + 0.25 * sin(elapsed * 3.0)
+
+	for cell in piece.cur_moves:
+		if not piece.board.hasCellInVision(
+			piece.owned_player,
+			cell
+		):
+			continue
+
+		var capture: bool = false
+
+		for player_id in range(
+			1,
+			piece.board.player_pieces.size() + 1
+		):
+			if player_id == piece.owned_player:
+				continue
+
+			if piece.board.get_enemy_piece_at_cell(
+				cell,
+				player_id
+			) != null:
+				capture = true
+				break
+
+		if capture:
+			continue
+
+		var center: Vector2 = piece.board.map_to_local(cell)
+
+		draw_circle(center, 10.0, Color(color, 0.12))
+		draw_circle(center, 4.0, Color(color, pulse))
 
 func draw_tile_shimmer(color: Color) -> void:
 	var center := piece.position

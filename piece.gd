@@ -192,10 +192,22 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 	return cur_moves
 
 func update_capture_on_board():
-	for move in cur_moves:
-		var enemy_player = 2 if owned_player == 1 else 1
-		if(board.get_enemy_piece_at_cell(move, enemy_player) != null):
-			board.set_take_piece_sprite(move)
+	board.clear_captures()
+
+	for cell in cur_moves:
+		if not board.hasCellInVision(owned_player, cell):
+			continue
+
+		for player_id in range(1, board.player_pieces.size() + 1):
+			if player_id == owned_player:
+				continue
+
+			if board.get_enemy_piece_at_cell(
+				cell,
+				player_id
+			) != null:
+				board.set_take_piece_sprite(cell)
+				break
 
 func highlight_vision_range():
 	print("hightlight")
@@ -384,6 +396,13 @@ func move_piece(move: Vector2i):
 		move,
 		enemy_player
 	)
+
+	if is_instance_valid(board.board_effects):
+		board.board_effects.record_move(
+			previous_position,
+			position,
+			owned_player
+		)
 
 	if is_instance_valid(effects):
 		effects.add_move(

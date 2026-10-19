@@ -42,6 +42,8 @@ func draw_vision_change():
 
 
 func on_clicked() -> void:
+	if not can_control_piece():
+		return
 	if owned_player != board.current_player:
 		return
 	if(board == null or position == null): 
