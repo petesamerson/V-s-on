@@ -148,7 +148,6 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 	else:
 		second_direction = (cur_direction - 1) % 6
 	second_axis = board.get_line_from_center(cur_location, second_direction, 10)
-	print("axis" + str([first_axis, second_axis]))
 	if(first_axis != null and second_axis != null):
 		var connect_line = board.hex_line(first_axis[2], second_axis[2])
 		var potential_new_move = connect_line[(connect_line.size())/2]

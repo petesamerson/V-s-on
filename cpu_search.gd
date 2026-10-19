@@ -17,12 +17,14 @@ var all_enemies_known: bool = false
 
 var initial_known_tiles: Dictionary = {}
 var initial_positions: Dictionary = {}
+var recent_capturer: Piece
 
 func choose(
 	live_board: Board,
 	player_id: int,
 	difficulty: int,
-	candidates: Array[Dictionary]
+	candidates: Array[Dictionary],
+	recent_capturer_id: int = -1
 ) -> Dictionary:
 	cpu_player = player_id
 	enemy_player = 2 if player_id == 1 else 1
@@ -45,6 +47,7 @@ func choose(
 	deadline = Time.get_ticks_msec() + budget_ms
 
 	_build_simulation(live_board)
+	recent_capturer = clones.get(recent_capturer_id) as Piece
 
 	var roots: Array[Dictionary] = []
 
@@ -77,6 +80,7 @@ func choose(
 		}
 
 		# action["priority"] = _move_priority(action)
+		action["recapture_bonus"] = _recapture_preference(action)
 		action["priority"] = (
 			_move_priority(action)
 			+ _legacy_preference(action)
@@ -100,22 +104,48 @@ func choose(
 	if roots.size() > 18:
 		roots.resize(18)
 
+	# The core-safety pass has already filtered these roots.
+	# If deeper search times out, preserve the original AI's
+	# piece-safety judgment and strategic scoring.
 	var best_original: Dictionary = roots[0]["original"]
-
-	# A cheap fallback if the time budget expires early.
 	var fallback_score: float = -INF
+	var best_piece_safety: int = -1
 
 	for action in roots:
-		if _expired():
-			break
+		var original: Dictionary = action["original"]
+
+		var piece_safety: int = (
+			0 if bool(original.get("unprotected_danger", true))
+			else 1
+		)
 
 		var undo: Dictionary = _push(action)
-		var value: float = _evaluate()
+
+		if _terminal_score() == WIN_SCORE:
+			piece_safety = 2
+
 		_pop(action, undo)
 
-		if value > fallback_score:
-			fallback_score = value
-			best_original = action["original"]
+		var original_score: float = (
+			float(original.get("score", 0.0))
+			+ float(action.get("recapture_bonus", 0.0))
+		)
+		if (
+			piece_safety > best_piece_safety
+			or (
+				piece_safety == best_piece_safety
+				and original_score > fallback_score
+			)
+		):
+			best_piece_safety = piece_safety
+			fallback_score = original_score
+			best_original = original
+
+	# Preparation and mandatory safety checks must not consume
+	# the entire allowance for looking ahead.
+	timed_out = false
+	deadline = Time.get_ticks_msec() + budget_ms
+
 
 	# Iterative deepening: only commit a fully finished depth.
 	for depth in range(2, max_depth + 1):
@@ -140,6 +170,8 @@ func choose(
 			)
 
 			_pop(action, undo)
+			if absf(value) < WIN_SCORE * 0.5:
+				value += _legacy_preference(action)
 
 			if timed_out:
 				break
@@ -463,14 +495,19 @@ func _move_priority(action: Dictionary) -> float:
 
 func _legacy_preference(action: Dictionary) -> float:
 	var original: Dictionary = action.get("original", {})
+
 	var original_score: float = float(
 		original.get("score", 0.0)
 	)
 
-	# Preserve the old AI's preferences without letting
-	# opening bonuses outweigh core safety or a forced result.
-	return clampf(original_score, -5000.0, 5000.0) * 0.05
+	var recapture_bonus: float = float(
+		action.get("recapture_bonus", 0.0)
+	)
 
+	return (
+		clampf(original_score, -5000.0, 5000.0) * 0.05
+		+ recapture_bonus
+	)
 
 func _push(action: Dictionary) -> Dictionary:
 	var piece := action["piece"] as Piece
@@ -596,6 +633,7 @@ func _evaluate() -> float:
 		score -= 8000.0
 
 	score += _scouting_score()
+	score += _tactical_score()
 	return score
 
 
@@ -737,12 +775,27 @@ func _can_reach_core(attacker: Piece, target: Vector2i) -> bool:
 
 	return false
 
-
 func _core_threat_count(side: int) -> int:
 	var core: CorePiece = _core(side)
 
 	if core == null:
 		return 0
+
+	var critical_cells: Array[Vector2i] = [
+		core.get_cur_pos()
+	]
+
+	# Capturing the last supporter also loses the game.
+	if core.power_count == 1:
+		for node in simulation.player_pieces[side - 1]:
+			var supporter := node as Piece
+
+			if supporter is CorePiece:
+				continue
+
+			if supporter.cur_vision.has(core.get_cur_pos()):
+				critical_cells.append(supporter.get_cur_pos())
+				break
 
 	var opponent: int = 2 if side == 1 else 1
 	var count: int = 0
@@ -750,11 +803,12 @@ func _core_threat_count(side: int) -> int:
 	for node in simulation.player_pieces[opponent - 1]:
 		var attacker := node as Piece
 
-		if _can_reach_core(attacker, core.get_cur_pos()):
-			count += 1
+		for target in critical_cells:
+			if _can_reach_core(attacker, target):
+				count += 1
+				break
 
 	return count
-
 
 func _prefer_core_safe_actions(
 	actions: Array[Dictionary],
@@ -791,3 +845,225 @@ func _prefer_core_safe_actions(
 			preferred.append(action)
 
 	return preferred
+
+func _can_recapture(
+	attacker: Piece,
+	target: Piece
+) -> bool:
+	var defending_side: int = target.owned_player
+	var destination := target.get_cur_pos()
+
+	var action: Dictionary = {
+		"piece": attacker,
+		"destination": destination,
+	}
+
+	# Evaluate the board after the threatened capture.
+	# The target no longer contributes vision or core support.
+	var undo: Dictionary = _push(action)
+
+	simulation.current_player = defending_side
+
+	var can_recapture: bool = false
+	var defending_core: CorePiece = _core(defending_side)
+
+	# A side that has already lost cannot recapture.
+	var core_captured: bool = (
+		known_cores.has(defending_side)
+		and defending_core == null
+	)
+
+	var power_lost: bool = (
+		defending_core != null
+		and defending_core.power_count == 0
+		and (
+			defending_side == cpu_player
+			or all_enemies_known
+		)
+	)
+
+	# An unseen core does not mean the opponent has lost.
+	if not core_captured and not power_lost:
+		for node in simulation.player_pieces[defending_side - 1]:
+			var defender := node as Piece
+			var moves: Array[Vector2i] = _moves(defender)
+
+			if moves.has(destination):
+				can_recapture = true
+				break
+
+	_pop(action, undo)
+
+	return can_recapture
+
+
+func _tactical_score() -> float:
+	var saved_player: int = simulation.current_player
+	var total: float = 0.0
+
+	for side in [cpu_player, enemy_player]:
+		simulation.current_player = side
+
+		var opponent: int = 2 if side == 1 else 1
+		var sign_value: float = (
+			1.0 if side == cpu_player else -1.0
+		)
+
+		# Avoid counting multiple attackers against the same
+		# target as several separate material gains.
+		var best_gain_by_target: Dictionary = {}
+		var strongest_fork: float = 0.0
+
+		for node in simulation.player_pieces[side - 1]:
+			if _expired():
+				simulation.current_player = saved_player
+				return 0.0
+				# return total
+
+			var attacker := node as Piece
+			var moves: Array[Vector2i] = _moves(attacker)
+			var profitable_targets: Array[float] = []
+
+			# Copy because simulated captures temporarily
+			# remove targets from their player's array.
+			var targets: Array = (
+				simulation.player_pieces[opponent - 1].duplicate()
+			)
+
+			for target_node in targets:
+				if _expired():
+					simulation.current_player = saved_player
+					return 0.0
+
+				var target := target_node as Piece
+
+				if target is CorePiece:
+					# Core threats have their own much
+					# larger safety and terminal scores.
+					continue
+
+				if not moves.has(target.get_cur_pos()):
+					continue
+				var gain: float = _exchange_value(target)
+				var attacker_cost: float = _exchange_value(attacker)
+
+				if _can_recapture(attacker, target):
+					gain -= attacker_cost
+				# var gain: float = (
+				# 	float(target.piece_value) * 100.0
+				# )
+
+				# if _can_recapture(attacker, target):
+				# 	gain -= (
+				# 		float(attacker.piece_value) * 100.0
+				# 	)
+
+				gain = maxf(gain, 0.0)
+
+				var target_id: int = target.get_instance_id()
+				var previous_gain: float = float(
+					best_gain_by_target.get(target_id, 0.0)
+				)
+
+				best_gain_by_target[target_id] = maxf(
+					previous_gain,
+					gain
+				)
+
+				if gain > 0.0:
+					profitable_targets.append(gain)
+
+			if profitable_targets.size() >= 2:
+				profitable_targets.sort()
+				profitable_targets.reverse()
+
+				# The second-best target measures the
+				# alternative threat in a potential fork.
+				strongest_fork = maxf(
+					strongest_fork,
+					profitable_targets[1]
+				)
+
+		var side_score: float = 0.0
+
+		for target_id in best_gain_by_target:
+			side_score += float(
+				best_gain_by_target[target_id]
+			)
+
+		# Multiple profitable targets are a serious fork.
+		side_score += minf(
+			strongest_fork * 0.6,
+			400.0
+		)
+
+		# Treat enemy threats seriously. Our own threats
+		# are opportunities until the capture happens.
+		var threat_weight: float = (
+			0.45 if side == cpu_player else 1.0
+		)
+
+		total += (
+			sign_value
+			* minf(side_score, 4000.0)
+			* threat_weight
+		)
+	simulation.current_player = saved_player
+	return total
+
+func _exchange_value(piece: Piece) -> float:
+	var value: float = float(piece.piece_value) * 100.0
+
+	if piece is CorePiece:
+		return WIN_SCORE
+
+	var core: CorePiece = _core(piece.owned_player)
+
+	if (
+		core != null
+		and piece.cur_vision.has(core.get_cur_pos())
+	):
+		# Powered pieces retain their material value,
+		# with a premium for supporting the core.
+		value *= 1.35
+
+		if core.power_count <= 2:
+			value += 150.0
+
+	return value
+
+
+func _recapture_preference(action: Dictionary) -> float:
+	if not is_instance_valid(recent_capturer):
+		return 0.0
+
+	var piece := action["piece"] as Piece
+	var destination: Vector2i = action["destination"]
+
+	var target: Piece = simulation.get_enemy_piece_at_cell(
+		destination,
+		enemy_player
+	)
+
+	if target != recent_capturer:
+		return 0.0
+
+	# Keep core captures under the existing terminal checks.
+	if piece is CorePiece or target is CorePiece:
+		return 0.0
+
+	var target_value: float = float(target.piece_value)
+	var attacker_value: float = float(piece.piece_value)
+
+	if _can_recapture(piece, target):
+		var trade_gain: float = target_value - attacker_value
+
+		# Do not encourage an expensive revenge trade.
+		if trade_gain < 0.0:
+			return 0.0
+
+		return 150.0 + trade_gain * 40.0
+
+	# Taking the capturer without losing the responding piece
+	# also prevents it from continuing its attack.
+	return 200.0 + target_value * 25.0

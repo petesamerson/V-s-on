@@ -38,6 +38,8 @@ const CORE_SUPPORT_ENDGAME_CAPTURE_COUNT := 27
 @export_range(1,6) var difficulty: int = 5
 
 const TacticalSearch = preload("res://cpu_search.gd")
+const SpawnKnowledge = preload("res://cpu_spawn_knowledge.gd")
+var spawn_knowledge = SpawnKnowledge.new()
 
 var seen_by_player = false
 
@@ -64,6 +66,16 @@ func take_turn() -> void:
 		return
 
 	cpu_turn_count += 1
+
+	if cpu_turn_count == 1:
+		spawn_knowledge.initialize(board, player_number)
+
+	spawn_knowledge.observe(
+		board,
+		player_number,
+		difficulty,
+		cpu_turn_count
+	)
 	rotate_towers_for_turn()
 
 
@@ -150,14 +162,16 @@ func take_turn() -> void:
 			# 	continue
 
 			if (
-				piece is EyePiece
+				difficulty < 4
+				and piece is EyePiece
 				and non_core_pieces_left > EYE_MOVE_ENDGAME_PIECES_LEFT
 				and not is_running_away(piece, destination)
 			):
 				continue
 
 			if (
-				piece is EyePiece
+				difficulty < 4
+				and piece is EyePiece
 				and visible_enemy_core != null
 				and visible_enemy_core.cur_moves.has(destination)
 				and moves_from_position(piece, destination).has(
@@ -227,9 +241,9 @@ func take_turn() -> void:
 			board,
 			player_number,
 			difficulty,
-			actions
+			actions,
+			last_enemy_capturer_id
 		)
-
 		if not searched_action.is_empty():
 			actions.clear()
 			actions.append(searched_action)
@@ -1028,7 +1042,12 @@ func score_move(piece: Piece, destination: Vector2i, core_under_attack: bool) ->
 		if threatens_enemy_eye and is_unprotected_move(piece, destination):
 			score -= UNGUARDED_EYE_THREAT_PENALTY
 
-	if total_captures < EARLY_GAME_CAPTURE_LIMIT and piece is HopPiece:
+	# if total_captures < EARLY_GAME_CAPTURE_LIMIT and piece is HopPiece:
+	if (
+		difficulty < 4
+		and total_captures < EARLY_GAME_CAPTURE_LIMIT
+		and piece is HopPiece
+	):
 		var tower_lead := mini(
 			maxi(0, early_tower_move_count - early_hop_move_count),
 			MAX_HOP_CATCH_UP_BONUS
@@ -1074,57 +1093,92 @@ func enemy_protection_weight(enemy: Piece) -> float:
 
 	return 1.0 + minf(float(protection) * 0.5, 2.0)
 
-
 func score_scouting_action(
 	piece: Piece,
 	old_position: Vector2i,
 	destination: Vector2i,
-	enemy_player: int
+	_enemy_player: int
 ) -> float:
-	if not should_keep_scouting(enemy_player):
+	if piece is CorePiece:
 		return 0.0
 
-	var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
-	var score := 0.0
+	var vision: Array[Vector2i] = piece.get_potential_vision(
+		destination
+	)
 
-	for node in board.player_pieces[enemy_player - 1]:
-		var enemy := node as Piece
-		if enemy == null or enemy.is_queued_for_deletion():
-			continue
+	var newly_seen: int = 0
 
-		var enemy_cell := enemy.get_cur_pos()
-		if board.hasCellInVision(player_number, enemy_cell):
-			continue
+	for cell in vision:
+		if not board.hasCellInVision(player_number, cell):
+			newly_seen += 1
 
-		var protection := enemy_protection_weight(enemy)
-		var distance_gain := (
-			hex_distance(old_position, enemy_cell)
-			- hex_distance(destination, enemy_cell)
+	var value: float = maxf(1.0, float(piece.piece_value))
+	var cheap_scout: float = 1.0 / (1.0 + value * 0.75)
+
+	var score: float = (
+		float(newly_seen) * 2.5 * cheap_scout
+	)
+
+	if difficulty >= 4:
+		score += spawn_knowledge.score_move(
+			piece,
+			old_position,
+			destination,
+			board
 		)
-
-		score += float(distance_gain) * SCOUT_APPROACH_WEIGHT * protection
-
-		if new_vision.has(enemy_cell):
-			score += SCOUT_REVEAL_WEIGHT * protection
-
-	if not moved_piece_ids.has(piece.get_instance_id()):
-		score += 60.0
-	if piece is TowerRotatePiece:
-		score *= TOWER_SCOUT_MULTIPLIER
-	elif piece is HopPiece:
-		var captures_so_far := (
-			board.player_captures[0].size()
-			+ board.player_captures[1].size()
-		)
-		if captures_so_far < EARLY_GAME_CAPTURE_LIMIT:
-			score *= EARLY_HOP_SCOUT_MULTIPLIER
-
-	if piece is HopPiece:
-		score *= 1.5 if next_scout_piece_type == "hop" else 0.1
-	elif piece is TowerRotatePiece:
-		score *= 1.5 if next_scout_piece_type == "tower" else 0.1
 
 	return score
+
+# func score_scouting_action(
+# 	piece: Piece,
+# 	old_position: Vector2i,
+# 	destination: Vector2i,
+# 	enemy_player: int
+# ) -> float:
+# 	if not should_keep_scouting(enemy_player):
+# 		return 0.0
+
+# 	var new_vision: Array[Vector2i] = piece.get_potential_vision(destination)
+# 	var score := 0.0
+
+# 	for node in board.player_pieces[enemy_player - 1]:
+# 		var enemy := node as Piece
+# 		if enemy == null or enemy.is_queued_for_deletion():
+# 			continue
+
+# 		var enemy_cell := enemy.get_cur_pos()
+# 		if board.hasCellInVision(player_number, enemy_cell):
+# 			continue
+
+# 		var protection := enemy_protection_weight(enemy)
+# 		var distance_gain := (
+# 			hex_distance(old_position, enemy_cell)
+# 			- hex_distance(destination, enemy_cell)
+# 		)
+
+# 		score += float(distance_gain) * SCOUT_APPROACH_WEIGHT * protection
+
+# 		if new_vision.has(enemy_cell):
+# 			score += SCOUT_REVEAL_WEIGHT * protection
+
+# 	if not moved_piece_ids.has(piece.get_instance_id()):
+# 		score += 60.0
+# 	if piece is TowerRotatePiece:
+# 		score *= TOWER_SCOUT_MULTIPLIER
+# 	elif piece is HopPiece:
+# 		var captures_so_far := (
+# 			board.player_captures[0].size()
+# 			+ board.player_captures[1].size()
+# 		)
+# 		if captures_so_far < EARLY_GAME_CAPTURE_LIMIT:
+# 			score *= EARLY_HOP_SCOUT_MULTIPLIER
+
+# 	if piece is HopPiece:
+# 		score *= 1.5 if next_scout_piece_type == "hop" else 0.1
+# 	elif piece is TowerRotatePiece:
+# 		score *= 1.5 if next_scout_piece_type == "tower" else 0.1
+
+# 	return score
 
 func find_visible_core(player_id: int) -> CorePiece:
 	var core := find_core(player_id)
@@ -1321,47 +1375,83 @@ func remember_enemies_in_vision(visible_cells: Array[Vector2i]) -> void:
 			enemy_last_seen[enemy_id] = enemy_position
 			enemy_last_seen_turn[enemy_id] = cpu_turn_count
 
+# func score_tower_rotation(
+# 	tower: TowerRotatePiece,
+# 	new_vision: Array[Vector2i],
+# 	enemy_player: int
+# ) -> float:
+# 	var other_vision := {}
+
+# 	for node in board.player_pieces[player_number - 1]:
+# 		var piece := node as Piece
+# 		if piece == null or piece == tower:
+# 			continue
+
+# 		for cell in piece.cur_vision:
+# 			other_vision[cell] = true
+
+# 	var old_unique_count := 0
+# 	for cell in tower.cur_vision:
+# 		if not other_vision.has(cell):
+# 			old_unique_count += 1
+
+# 	var new_unique_count := 0
+# 	for cell in new_vision:
+# 		if not other_vision.has(cell):
+# 			new_unique_count += 1
+
+# 	var score := float(new_unique_count - old_unique_count)
+
+# 	# Before finding the enemy, strongly favor rotations that reveal
+# 	# previously unseen enemy pieces, wherever they are.
+# 	if should_keep_scouting(enemy_player):
+# 		for node in board.player_pieces[enemy_player - 1]:
+# 			var enemy := node as Piece
+# 			if enemy == null:
+# 				continue
+
+# 			var enemy_cell := enemy.get_cur_pos()
+# 			if (
+# 				new_vision.has(enemy_cell)
+# 				and not board.hasCellInVision(player_number, enemy_cell)
+# 			):
+# 				score += 100.0
+
+# 	return score
 func score_tower_rotation(
 	tower: TowerRotatePiece,
 	new_vision: Array[Vector2i],
-	enemy_player: int
+	_enemy_player: int
 ) -> float:
-	var other_vision := {}
+	var other_vision: Dictionary = {}
 
 	for node in board.player_pieces[player_number - 1]:
-		var piece := node as Piece
-		if piece == null or piece == tower:
+		var ally := node as Piece
+
+		if ally == null or ally == tower:
 			continue
 
-		for cell in piece.cur_vision:
+		for cell in ally.cur_vision:
 			other_vision[cell] = true
 
-	var old_unique_count := 0
+	var old_unique: int = 0
+	var new_unique: int = 0
+
 	for cell in tower.cur_vision:
 		if not other_vision.has(cell):
-			old_unique_count += 1
+			old_unique += 1
 
-	var new_unique_count := 0
 	for cell in new_vision:
 		if not other_vision.has(cell):
-			new_unique_count += 1
+			new_unique += 1
 
-	var score := float(new_unique_count - old_unique_count)
+	var score: float = float(new_unique - old_unique)
 
-	# Before finding the enemy, strongly favor rotations that reveal
-	# previously unseen enemy pieces, wherever they are.
-	if should_keep_scouting(enemy_player):
-		for node in board.player_pieces[enemy_player - 1]:
-			var enemy := node as Piece
-			if enemy == null:
-				continue
-
-			var enemy_cell := enemy.get_cur_pos()
-			if (
-				new_vision.has(enemy_cell)
-				and not board.hasCellInVision(player_number, enemy_cell)
-			):
-				score += 100.0
+	if difficulty >= 4:
+		score += (
+			spawn_knowledge.vision_bonus(new_vision)
+			- spawn_knowledge.vision_bonus(tower.cur_vision)
+		)
 
 	return score
 

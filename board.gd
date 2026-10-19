@@ -24,6 +24,8 @@ var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
 
+var board_effects: Node2D
+
 var turn = 1
 var current_player: int = 1
 
@@ -40,6 +42,12 @@ func _ready() -> void:
 	board_tiles = get_hexagon_tiles(board_center, board_size)
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
+
+	board_effects = preload("res://board_effects.gd").new()
+	board_effects.board = self
+	board_effects.name = "BoardEffects"
+	add_child(board_effects)
+	board_effects.z_index = 1
 
 	call_deferred("spawn_all_pieces")
 
@@ -241,6 +249,13 @@ func update_selection_panel(selectedPiece: Piece):
 		if child is PanelContainer:
 			var tr = child.get_child(0).get_child(0) as TextureRect
 			tr.texture = selectedPiece.sprite.texture
+			tr.self_modulate = selectedPiece.sprite.modulate
+
+			# Share the material so the shimmer stays synchronized.
+			tr.material = selectedPiece.sprite.material
+
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		if child is VBoxContainer:
 			for label in child.get_children():
 				if(label is Label):
@@ -346,6 +361,7 @@ func spawn_all_pieces():
 	move_camera_to_core()
 	game_setup_complete = true
 	update_core_power()
+	board_effects.play_setup()
 
 func get_possible_spawn_locations() -> Array[Vector2i]:
 	var locations: Array[Vector2i] = []
