@@ -251,6 +251,17 @@ func take_turn() -> void:
 		var search = TacticalSearch.new()
 		search.turn_deadline = turn_deadline
 
+		var material_lead: float = (
+			get_material_value(player_number)
+			- get_material_value(enemy_player)
+		)
+
+		search.aggression = 1.0 + clampf(
+			material_lead / 10.0,
+			0.0,
+			1.0
+		)
+
 		var searched_action: Dictionary = search.choose(
 			board,
 			player_number,
@@ -529,6 +540,12 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 		board.player_captures[0].size()
 		+ board.player_captures[1].size()
 	)
+	var game_progress: float = clampf(
+		float(total_captures)
+		/ float(CORE_SUPPORT_ENDGAME_CAPTURE_COUNT),
+		0.0,
+		1.0
+	)
 	var protect_eyes_early := total_captures < 4
 
 	var captured: Model.DataPiece = null
@@ -561,13 +578,16 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 	elif core_under_attack and piece is Model.DataCorePiece:
 		score += 100.0
 
+	var core_position_after: Vector2i = own_core.get_cur_pos()
+	if piece is Model.DataCorePiece:
+		core_position_after = destination
+
 	var own_support_after := count_core_support(
 		player_number,
-		own_core.get_cur_pos(),
+		core_position_after,
 		piece,
 		destination
 	)
-
 
 	var old_position := piece.get_cur_pos()
 
@@ -640,7 +660,7 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 			score += float(distance_before - distance_after) * 3.0
 
 
-	if (piece is Model.DataTowerRotatePiece or Model.DataHopPiece):
+	if (piece is Model.DataTowerRotatePiece or piece is Model.DataHopPiece):
 		var vision_without_piece := {}
 
 		for node in board.player_pieces[player_number - 1]:
@@ -689,10 +709,16 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 		var is_lower_value_capture :bool = captured.piece_value < piece.piece_value
 
 		if is_lower_value_capture and not is_recapture:
-			if piece is Model.DataTowerRotatePiece and captured is Model.DataHopPiece:
-				capture_reward *= 0.05 if total_captures < 4 else 0.1
-			else:
-				capture_reward *= 0.25 if total_captures < 4 else 0.5
+			var value_gap: float = (
+				float(piece.piece_value) - float(captured.piece_value)
+			)
+
+			# Initially discourage spending stronger units on cheaper targets.
+			capture_reward *= lerpf(0.1, 0.75, game_progress)
+
+			# Relax the extra penalty as the game progresses.
+			if not captured_threatens_core:
+				score -= value_gap * lerpf(70.0, 10.0, game_progress)
 
 		score += capture_reward
 
@@ -705,10 +731,15 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 				)
 
 
-		if captured is Model.DataEyePiece and is_lower_value_capture:
-			var value_gap := float(captured.piece_value - piece.piece_value)
-			var cheaper_piece_factor := value_gap / maxf(1.0, float(captured.piece_value))
-			score += LOW_VALUE_EYE_CAPTURE_BONUS * cheaper_piece_factor
+		if captured is Model.DataEyePiece:
+			var value_gap: float = (
+				float(captured.piece_value) - float(piece.piece_value)
+			)
+			if value_gap > 0.0:
+				var cheaper_piece_factor: float = (
+					value_gap / maxf(1.0, float(captured.piece_value))
+				)
+				score += 500.0 * cheaper_piece_factor
 
 		if captured.piece_value >= piece.piece_value:
 			score += 200.0
@@ -829,22 +860,29 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 				if ally.cur_vision.has(cell) and not piece.cur_vision.has(cell):
 					score += 0.1
 
-	for ally in board.get_children():
-		if ally is Model.DataPiece and ally != piece:
-			if board.get_guarders(ally).has(piece):
-				score -= 18.0
+	for node in board.player_pieces[player_number - 1]:
+		var ally := node as Model.DataPiece
+		if ally == null or ally == piece:
+			continue
 
-	if total_captures < CORE_SUPPORT_ENDGAME_CAPTURE_COUNT:
-		var support_shortfall := maxi(
-			0,
-			MIN_EARLY_CORE_SUPPORT - own_support_after
-		)
-		score -= float(support_shortfall) * 1000.0
-	else:
-		if own_support_after == 0:
-			score -= 100000.0
-		elif own_support_after == 1:
-			score -= 100.0
+		if board.get_guarders(ally).has(piece):
+			if not new_vision.has(ally.get_cur_pos()):
+				score -= 60.0
+	
+	# Start with four Core supporters, gradually reducing toward one.
+	var desired_support: int = int(round(
+		lerpf(4.0, 1.0, game_progress)
+	))
+
+	var support_shortfall: int = maxi(
+		0, desired_support - own_support_after
+	)
+
+	score -= float(support_shortfall) * 1000.0
+
+	# Never treat an unsupported Core as an acceptable tradeoff.
+	if own_support_after == 0:
+		score -= 100000.0
 
 	var threatened_before := false
 	var threatened_after := false
@@ -864,6 +902,7 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 			enemy_moves = (enemy_piece as Model.DataTowerRotatePiece).cur_possible_rotate_moves
 
 		if enemy_moves.has(destination):
+			threatened_after = true
 			var value := float(piece.piece_value)
 			var attacker_value := float(enemy_piece.piece_value)
 
@@ -1012,6 +1051,32 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 		)
 		score += EARLY_HOP_MOVE_BONUS + float(tower_lead) * HOP_CATCH_UP_BONUS
 
+	if difficulty >= 4 and not piece is Model.DataCorePiece:
+		if not moved_piece_ids.has(piece.get_instance_id()):
+			if not threatened_after and own_support_after >= MIN_EARLY_CORE_SUPPORT:
+				score += 40.0
+	
+	if piece is Model.DataCorePiece:
+		if not core_under_attack and captured == null:
+			if non_core_pieces_left > CORE_MOVE_ENDGAME_PIECES_LEFT:
+				score -= 600.0
+
+				if own_support_after < support_before:
+					score -= (
+						float(support_before - own_support_after)
+						* 200.0
+					)
+
+	var exposure_score: float = score_exposure_change(
+		piece, destination
+	)
+
+	# Concealment matters less when fighting or escaping danger.
+	if captured != null or core_under_attack:
+		exposure_score *= 0.25
+
+	score += exposure_score
+
 	return score
 
 
@@ -1049,6 +1114,74 @@ func enemy_protection_weight(enemy: Model.DataPiece) -> float:
 			protection += 1
 
 	return 1.0 + minf(float(protection) * 0.5, 2.0)
+
+func score_exposure_change(
+	piece: Model.DataPiece,
+	destination: Vector2i
+) -> float:
+	var enemy_player: int = 3 - player_number
+	var known_enemy_vision: Dictionary = {}
+	var observer_count: int = 0
+
+	# Only use enemy pieces the CPU can currently see.
+	for node in board.player_pieces[enemy_player - 1]:
+		var enemy := node as Model.DataPiece
+		if not board.hasCellInVision(
+			player_number, enemy.get_cur_pos()
+		):
+			continue
+
+		observer_count += 1
+		for cell in enemy.cur_vision:
+			known_enemy_vision[cell] = true
+
+	# No known observers does not prove that the move is concealed.
+	if observer_count == 0:
+		return 0.0
+
+	var exposed_before: bool = known_enemy_vision.has(
+		piece.get_cur_pos()
+	)
+	var exposed_after: bool = known_enemy_vision.has(destination)
+
+	var captures: int = (
+		board.player_captures[0].size()
+		+ board.player_captures[1].size()
+	)
+	var opening_weight: float = lerpf(
+		1.0, 0.4, clampf(float(captures) / 20.0, 0.0, 1.0)
+	)
+
+	var exposure_cost: float = (
+		10.0 + float(piece.piece_value) * 8.0
+	)
+	if piece is Model.DataCorePiece:
+		exposure_cost = 160.0
+	elif piece is Model.DataEyePiece:
+		exposure_cost = 120.0
+
+	exposure_cost *= opening_weight
+
+	if exposed_after and not exposed_before:
+		return -exposure_cost
+
+	if exposed_before and not exposed_after:
+		return exposure_cost * 0.25
+
+	# Reward useful concealed exploration, rather than hiding alone.
+	if not exposed_after and not piece is Model.DataCorePiece:
+		var new_cells: int = 0
+		for cell in piece.get_potential_vision(destination):
+			if not board.hasCellInVision(player_number, cell):
+				new_cells += 1
+
+		return minf(
+			float(new_cells) * 2.0
+			/ maxf(1.0, float(piece.piece_value)),
+			20.0
+		)
+
+	return 0.0
 
 func score_scouting_action(
 	piece: Model.DataPiece,
@@ -1243,8 +1376,12 @@ func rotate_towers_for_turn() -> void:
 				tower.get_cur_pos(),
 				new_direction
 			)
-			var score := score_tower_rotation(tower, new_vision, enemy_player)
+			if not _tower_rotation_preserves_support(tower, new_direction):
+				continue
 
+			var score := score_tower_rotation(
+				tower, new_vision, enemy_player
+			)
 			if score > best_score:
 				best_score = score
 				best_key = key
@@ -1278,9 +1415,56 @@ func remember_enemies_in_vision(visible_cells: Array[Vector2i]) -> void:
 
 
 
+func _tower_rotation_preserves_support(
+	tower: Model.DataTowerRotatePiece,
+	new_direction: int
+) -> bool:
+	var old_direction: int = tower.cur_direction
+	var core := find_core(player_number)
 
+	var new_vision: Array[Vector2i] = tower.get_potential_vision(
+		tower.get_cur_pos(), new_direction
+	)
 
+	# Keep an existing contribution to core power.
+	if core != null:
+		var core_cell: Vector2i = core.get_cur_pos()
+		if tower.cur_vision.has(core_cell):
+			if not new_vision.has(core_cell):
+				return false
 
+	# Record allies this tower currently guards.
+	board.regenerate_all_piece_moves(1, true)
+	board.regenerate_all_piece_moves(2, true)
+
+	var guarded_allies: Array[Model.DataPiece] = []
+	for node in board.player_pieces[player_number - 1]:
+		var ally := node as Model.DataPiece
+		if ally == tower:
+			continue
+		if board.get_guarders(ally).has(tower):
+			guarded_allies.append(ally)
+
+	# Check the candidate orientation using the same guard rules.
+	tower.cur_direction = new_direction
+	tower.cur_vision = new_vision
+	board.refresh_vision()
+	board.regenerate_all_piece_moves(1, true)
+	board.regenerate_all_piece_moves(2, true)
+
+	var preserves_guards: bool = true
+	for ally in guarded_allies:
+		if board.get_guarders(ally).is_empty():
+			preserves_guards = false
+			break
+
+	# Restore the original orientation and calculated state.
+	tower.cur_direction = old_direction
+	board.refresh_vision()
+	board.regenerate_all_piece_moves(1, true)
+	board.regenerate_all_piece_moves(2, true)
+
+	return preserves_guards
 
 
 

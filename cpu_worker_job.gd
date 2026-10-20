@@ -84,7 +84,7 @@ func prepare(cpu: Node) -> void:
 # Runs exclusively on a worker thread. It has no live Node references.
 func compute() -> Dictionary:
 	var started: int = Time.get_ticks_msec()
-	var budgets: Array[int] = [750, 1000, 1250, 1500, 2250, 3000]
+	var budgets: Array[int] = [750, 1000, 1250, 1500, 4500, 7000]
 	engine.turn_deadline = started + budgets[clampi(engine.difficulty - 1, 0, 5)]
 	engine.take_turn()
 

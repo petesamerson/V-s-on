@@ -214,6 +214,7 @@ func update_turn_text():
 	# 	display_turn_message()
 
 	update_mobile_scale()
+	update_selection_panel_colors()
 
 
 func display_turn_message():
@@ -268,8 +269,35 @@ func update_selection_panel(selectedPiece: Piece):
 							label.text = "MoveRange: " + str(selectedPiece.move_range)
 						"VisionRange":
 							label.text = "VisionRange: " + str(selectedPiece.vision_range)
+	update_selection_panel_colors(selectedPiece.owned_player)
 			
+func update_selection_panel_colors(player_id: int = -1) -> void:
+	if player_id < 1:
+		player_id = get_viewer_player()
 
+	var tint: Color = GameColors.player_color(player_id)
+	var text_color: Color = tint.lerp(Color.WHITE, 0.55)
+
+	var existing: StyleBox = selection_panel.get_theme_stylebox("panel")
+	var panel_style: StyleBoxFlat
+
+	if existing is StyleBoxFlat:
+		panel_style = existing.duplicate() as StyleBoxFlat
+	else:
+		panel_style = StyleBoxFlat.new()
+		panel_style.set_corner_radius_all(8)
+
+	panel_style.bg_color = Color(tint.darkened(0.8), 0.95)
+	panel_style.border_color = Color(tint, 0.8)
+	panel_style.set_border_width_all(2)
+
+	selection_panel.add_theme_stylebox_override(
+		"panel", panel_style
+	)
+
+	for node in selection_panel.find_children("*", "Label", true, false):
+		var label := node as Label
+		label.add_theme_color_override("font_color", text_color)
 
 
 func determine_winner() -> int:
@@ -1409,9 +1437,23 @@ func end_turn_vs_cpu() -> void:
 		cpu_turn_in_progress = true
 
 		await get_tree().process_frame
+
 		await cpu_player.take_turn()
 
-		cpu_turn_in_progress = false
+		# Retry once using a fresh snapshot if no move was completed.
+		if current_player == cpu_player.player_number:
+			push_warning("CPU did not complete its turn; retrying once.")
+			await get_tree().process_frame
+			await cpu_player.take_turn()
+
+		# If normal selection still failed, use the live legal fallback.
+		if current_player == cpu_player.player_number:
+			cpu_player.recover_turn()
+
+		cpu_turn_in_progress = (
+			current_player == cpu_player.player_number
+		)
+
 		if(enemy_turn_interrupt):
 			queue_game_sound(game_sound_files[2], true)
 		elif (played_found_sound):

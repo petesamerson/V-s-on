@@ -128,17 +128,30 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton \
 	and event.button_index == MOUSE_BUTTON_LEFT \
 	and event.pressed:
+		if inspect_enemy_piece():
+			armed = false
+			get_viewport().set_input_as_handled()
+			return
+
 		on_clicked()
 		armed = true
 
-# func _unhandled_input(event: InputEvent) -> void:
-# 	if event is InputEventMouseButton \
-# 	and not event.pressed \
-# 	and event.button_index == MOUSE_BUTTON_LEFT \
-# 	and armed == true:
-# 		armed = false
-# 		on_clicked()
-# 		print("UNHANDLED")
+func inspect_enemy_piece() -> bool:
+	if not is_instance_valid(board):
+		return false
+	if not board.game_setup_complete:
+		return false
+
+	var viewer: int = board.get_viewer_player()
+	if owned_player == viewer:
+		return false
+	if not board.hasCellInVision(viewer, get_cur_pos()):
+		return false
+
+	# Panel only: never set selected or generate highlights.
+	board.update_selection_panel(self)
+	return true
+
 func can_control_piece() -> bool:
 	if board == null or board.cpu_turn_in_progress:
 		return false
@@ -146,19 +159,14 @@ func can_control_piece() -> bool:
 		return false
 	if board.online_game and owned_player != board.local_player:
 		return false
+	if is_instance_valid(board.cpu_player):
+		if owned_player == board.cpu_player.player_number:
+			return false
 	return true
 
 func on_clicked() -> void:
 	if not can_control_piece():
 		return
-	# if(owned_player != board.current_player):
-	# 	return
-	# if(position == null or board == null or board.cpu_turn_in_progress):
-	# 	return
-	# if(board.current_player != owned_player):
-	# 	return
-	# if board.online_game and owned_player != board.local_player:
-	# 	return
 
 	var cell = board.local_to_map(position)  # current tile cell
 	print("Current cell:", cell , "selected", selected)
@@ -278,28 +286,22 @@ func _input(event):
 		and event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
 	):
+		var mouse_cell: Vector2i = board.local_to_map(
+			board.to_local(board.camera.get_global_mouse_position())
+		)
+		var enemy := board.get_enemy_piece_at_cell(
+			mouse_cell, 3 - owned_player
+		) as Piece
+
+		# Legal capture clicks continue through normal move handling.
+		if is_instance_valid(enemy) and not cur_moves.has(mouse_cell):
+			# Restore existing highlights and deselect normally.
+			handle_move_input_event(event)
+			enemy.inspect_enemy_piece()
+			get_viewport().set_input_as_handled()
+			return
 		handle_move_input_event(event)
 		get_viewport().set_input_as_handled()
-	# if not selected or not can_control_piece():
-	# 	return
-
-	# if (
-	# 	event is InputEventMouseButton
-	# 	and event.pressed
-	# 	and event.button_index == MOUSE_BUTTON_LEFT
-	# ):
-	# 	handle_move_input_event(event)
-	# 	get_viewport().set_input_as_handled()
-	# if(
-	# 	selected
-	# 	and event is InputEventMouseButton
-	# 	and event.pressed
-	# 	and event.button_index == MOUSE_BUTTON_LEFT
-	# ):
-	# 	handle_move_input_event(event)
-	# 	var viewport = get_viewport()
-	# 	if(viewport != null):
-	# 		get_viewport().set_input_as_handled()
 
 func handle_move_input_event(event):
 	if not can_control_piece():

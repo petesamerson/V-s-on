@@ -14,7 +14,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer) -> void:
 	super.setup(inital_pos, b)
 	sprite.texture = preload("res://sprites/triangle_piece.png")
 
-	piece_value = 3
+	piece_value = 5
 
 
 func on_clicked() -> void:

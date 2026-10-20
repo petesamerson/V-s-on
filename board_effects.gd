@@ -24,6 +24,9 @@ var fading_tiles: Dictionary = {}
 @export var visible_effect_strength: float = 0.14
 @export var selected_effect_strength: float = 0.22
 
+@export var enemy_overlap_strength: float = 0.18
+@export var enemy_overlap_speed: float = 0.65
+
 func _viewer() -> int:
 	if board.online_game:
 		return board.local_player
@@ -418,6 +421,82 @@ func _draw() -> void:
 				points,
 				Color(player_color, alpha)
 			)
+	_draw_enemy_overlap(viewer)
+
+func _draw_enemy_overlap(viewer: int) -> void:
+	var enemy: int = 3 - viewer
+	var tint: Color = GameColors.player_color(enemy)
+	var visible_enemy_vision: Dictionary = {}
+
+	for node in board.player_pieces[enemy - 1]:
+		var piece := node as Piece
+		if not is_instance_valid(piece):
+			continue
+		if piece.is_queued_for_deletion():
+			continue
+		if not board.hasCellInVision(viewer, piece.get_cur_pos()):
+			continue
+
+		for vision_cell in piece.cur_vision:
+			visible_enemy_vision[vision_cell] = true
+
+	for cell in board.board_tiles:
+		if not board.hasCellInVision(viewer, cell):
+			continue
+		if not visible_enemy_vision.has(cell):
+			continue
+		var points: PackedVector2Array = _tile_polygon(cell)
+		var center: Vector2 = board.map_to_local(cell)
+
+		# One full pulse every three seconds, synchronized across tiles.
+		var pulse: float = (
+			0.5 + 0.5 * sin(effect_time * TAU / 3.0)
+		)
+		var alpha: float = (
+			enemy_overlap_strength * lerpf(0.7, 1.0, pulse)
+		)
+		var phase: float = (
+			effect_time * enemy_overlap_speed
+			- center.x * 0.004
+			- center.y * 0.003
+		)
+
+		draw_colored_polygon(points, Color(tint, alpha))
+
+		var outline: PackedVector2Array = points.duplicate()
+		outline.append(points[0])
+
+		draw_polyline(
+			outline,
+			Color(tint, alpha * 1.6),
+			2.0,
+			true
+		)
+
+		# A short highlight travels gently around each tile.
+		var edge_phase: float = (
+			effect_time * enemy_overlap_speed
+		)
+		var edge: int = (
+			int(floor(edge_phase)) % points.size()
+		)
+		var next_edge: int = (edge + 1) % points.size()
+		var travel: float = fposmod(edge_phase, 1.0)
+
+		var start: Vector2 = points[edge].lerp(
+			points[next_edge], travel
+		)
+		var end: Vector2 = points[edge].lerp(
+			points[next_edge], minf(travel + 0.3, 1.0)
+		)
+
+		draw_line(
+			start,
+			end,
+			Color(tint, minf(alpha * 3.0, 1.0)),
+			3.0,
+			true
+		)
 
 func _draw_tile_glint(
 	polygon: PackedVector2Array,

@@ -23,6 +23,9 @@ var recent_capturer: Model.DataPiece
 var turn_deadline: int = 0
 var slice_started_us: int = 0
 
+var initial_exposure_cost: float = 0.0
+var aggression: float = 1.0
+
 const SEARCH_SLICE_US: int = 4000
 
 func choose(
@@ -46,10 +49,10 @@ func choose(
 
 	if difficulty == 5:
 		budget_ms = 250
-		max_depth = 3
+		max_depth = 4
 	elif difficulty >= 6:
 		budget_ms = 500
-		max_depth = 5
+		max_depth = 6
 
 	deadline = turn_deadline if turn_deadline > 0 else Time.get_ticks_msec() + budget_ms
 
@@ -278,72 +281,8 @@ func _build_simulation(
 
 		for cell in piece.cur_vision:
 			initial_known_tiles[cell] = true
+	initial_exposure_cost = _known_exposure_cost()
 
-func _scouting_score() -> float:
-	var cheapest_revealer: Dictionary = {}
-	var exposure_penalty: float = 0.0
-
-	for node in simulation.player_pieces[cpu_player - 1]:
-		var piece := node as Model.DataPiece
-
-		if piece is Model.DataCorePiece:
-			continue
-
-		var value: float = maxf(
-			1.0,
-			float(piece.piece_value)
-		)
-
-		var unknown_cells: int = 0
-
-		for cell in piece.cur_vision:
-			if initial_known_tiles.has(cell):
-				continue
-
-			unknown_cells += 1
-
-			var previous_value: float = float(
-				cheapest_revealer.get(cell, INF)
-			)
-
-			cheapest_revealer[cell] = minf(
-				previous_value,
-				value
-			)
-
-		var initial_cell: Vector2i = initial_positions.get(
-			piece.get_instance_id(),
-			piece.get_cur_pos()
-		)
-
-		if (
-			piece.get_cur_pos() != initial_cell
-			and unknown_cells > 0
-		):
-			var uncertainty: float = minf(
-				float(unknown_cells) / 12.0,
-				1.0
-			)
-
-			exposure_penalty += (
-				uncertainty
-				* value
-				* value
-				* 2.0
-			)
-
-	var exploration_reward: float = 0.0
-
-	for cell in cheapest_revealer:
-		var scout_value: float = float(
-			cheapest_revealer[cell]
-		)
-
-		exploration_reward += (
-			5.0 / (1.0 + scout_value * 0.75)
-		)
-
-	return minf(exploration_reward, 120.0) - exposure_penalty
 
 func _refresh() -> void:
 	for group in simulation.player_pieces:
@@ -496,9 +435,23 @@ func _legacy_preference(action: Dictionary) -> float:
 		action.get("recapture_bonus", 0.0)
 	)
 
+	var activity_preference: float = 0.0
+	var piece := action["piece"] as Model.DataPiece
+
+	if piece is Model.DataCorePiece:
+		if not simulation.is_piece_under_attack(piece):
+			var target := simulation.get_enemy_piece_at_cell(
+				action["destination"],
+				3 - piece.owned_player
+			)
+			if target == null:
+				if simulation.player_pieces[piece.owned_player - 1].size() > 5:
+					activity_preference -= 60.0
+
 	return (
 		clampf(original_score, -5000.0, 5000.0) * 0.05
 		+ recapture_bonus
+		+ activity_preference
 	)
 
 func _push(action: Dictionary) -> Dictionary:
@@ -587,11 +540,11 @@ func _evaluate() -> float:
 			var piece := node as Model.DataPiece
 
 			if not piece is Model.DataCorePiece:
-				score += (
-					sign_value
-					* float(piece.piece_value)
-					* 100.0
-				)
+				var material_value: float = float(piece.piece_value) * 100.0
+				if piece is Model.DataEyePiece:
+					material_value += 300.0
+
+				score += sign_value * material_value
 
 			for cell in piece.cur_vision:
 				visible_cells[cell] = true
@@ -623,6 +576,11 @@ func _evaluate() -> float:
 
 	score += _scouting_score()
 	score += _tactical_score()
+	var exposure_change: float = (
+		_known_exposure_cost() - initial_exposure_cost
+	)
+	score -= exposure_change
+
 	return score
 
 
@@ -966,14 +924,21 @@ func _tactical_score() -> float:
 				best_gain_by_target[target_id]
 			)
 
+		var fork_multiplier: float = 0.6
+		if side == cpu_player:
+			fork_multiplier *= aggression
+
 		side_score += minf(
-			strongest_fork * 0.6,
-			400.0
+			strongest_fork * fork_multiplier,
+			600.0
 		)
 
-		var threat_weight: float = (
-			0.45 if side == cpu_player else 1.0
-		)
+
+		var threat_weight: float = 1.0
+		if side == cpu_player:
+			threat_weight = lerpf(
+				0.45, 0.75, aggression - 1.0
+			)
 
 		total += (
 			sign_value
@@ -989,6 +954,9 @@ func _exchange_value(piece: Model.DataPiece) -> float:
 	if piece is Model.DataCorePiece:
 		return WIN_SCORE
 
+	if piece is Model.DataEyePiece:
+		value += 300.0
+
 	var core: Model.DataCorePiece = _core(piece.owned_player)
 
 	if (
@@ -1002,6 +970,79 @@ func _exchange_value(piece: Model.DataPiece) -> float:
 
 	return value
 
+func _scouting_score() -> float:
+	var cheapest_revealer: Dictionary = {}
+	var risk_penalty: float = 0.0
+	var development_reward: float = 0.0
+
+	for node in simulation.player_pieces[cpu_player - 1]:
+		var piece := node as Model.DataPiece
+		if piece is Model.DataCorePiece:
+			continue
+
+		var value: float = maxf(1.0, float(piece.piece_value))
+		var initial_cell: Vector2i = initial_positions.get(
+			piece.get_instance_id(), piece.get_cur_pos()
+		)
+		var moved: bool = piece.get_cur_pos() != initial_cell
+		var unknown_cells: int = 0
+
+		# Nearby friendly vision provides support, not guaranteed safety.
+		var supported: bool = false
+		for ally_node in simulation.player_pieces[cpu_player - 1]:
+			var ally := ally_node as Model.DataPiece
+			if ally == piece or ally is Model.DataCorePiece:
+				continue
+			if ally.cur_vision.has(piece.get_cur_pos()):
+				supported = true
+				break
+
+		var threatened: bool = simulation.is_piece_under_attack(piece)
+		var reward_factor: float = 1.0
+		if not supported:
+			reward_factor = 0.45
+		if threatened:
+			reward_factor *= 0.2
+
+		for cell in piece.cur_vision:
+			if initial_known_tiles.has(cell):
+				continue
+
+			unknown_cells += 1
+			var reward: float = (
+				8.0 / (1.0 + value * 0.75)
+			) * reward_factor
+
+			# Count shared discoveries once, using the best scout.
+			cheapest_revealer[cell] = maxf(
+				float(cheapest_revealer.get(cell, 0.0)),
+				reward
+			)
+
+		if moved and unknown_cells > 0:
+			var uncertainty: float = minf(
+				float(unknown_cells) / 12.0, 1.0
+			)
+
+			risk_penalty += (
+				uncertainty * value * value
+				* (1.0 if supported else 3.0)
+			)
+
+			if supported and not threatened:
+				development_reward += (
+					20.0 / (1.0 + value * 0.75)
+				)
+
+	var exploration_reward: float = 0.0
+	for reward in cheapest_revealer.values():
+		exploration_reward += float(reward)
+
+	return (
+		minf(exploration_reward, 160.0)
+		+ minf(development_reward, 30.0)
+		- risk_penalty
+	)
 
 func _recapture_preference(action: Dictionary) -> float:
 	if not is_instance_valid(recent_capturer):
@@ -1034,3 +1075,30 @@ func _recapture_preference(action: Dictionary) -> float:
 
 	return 200.0 + target_value * 25.0
 
+func _known_exposure_cost() -> float:
+	var enemy_vision: Dictionary = {}
+
+	# Normal search contains only enemies known at search start.
+	for node in simulation.player_pieces[enemy_player - 1]:
+		var enemy := node as Model.DataPiece
+		for cell in enemy.cur_vision:
+			enemy_vision[cell] = true
+
+	var cost: float = 0.0
+
+	for node in simulation.player_pieces[cpu_player - 1]:
+		var piece := node as Model.DataPiece
+		if not enemy_vision.has(piece.get_cur_pos()):
+			continue
+
+		var piece_cost: float = (
+			5.0 + float(piece.piece_value) * 4.0
+		)
+		if piece is Model.DataCorePiece:
+			piece_cost = 80.0
+		elif piece is Model.DataEyePiece:
+			piece_cost = 60.0
+
+		cost += piece_cost
+
+	return cost

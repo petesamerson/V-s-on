@@ -13,7 +13,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	sprite.texture = preload("res://sprites/triangle_piece.png")
 	vision_range = 3
-	piece_value = 3
+	piece_value = 5
 
 func on_clicked() -> void:
 	if not can_control_piece():

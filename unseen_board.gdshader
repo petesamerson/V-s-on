@@ -3,7 +3,7 @@ render_mode unshaded;
 
 uniform vec4 fog_tint : source_color = vec4(0.12, 0.15, 0.22, 1.0);
 uniform float fog_opacity : hint_range(0.0, 1.0) = 0.65;
-uniform float drift_speed = 0.06;
+uniform float drift_speed = 0.22;
 
 varying vec2 board_position;
 
@@ -78,12 +78,20 @@ void fragment() {
 		smooth_noise(position * 0.65 - drift + vec2(17.3, 6.2))
 	);
 
-	float mist = mist_layers(
+	float base_mist = mist_layers(
 		position + drift + distortion * 0.9
+	);
+	// Cross the main drift with smaller wisps so the fog visibly rolls.
+	float wisps = mist_layers(
+		position * 1.65 + vec2(-time * 0.7, time * 0.55)
+		+ distortion * 1.3 + vec2(11.7, 4.2)
+	);
+	float mist = smoothstep(
+		0.22, 0.78, base_mist * 0.65 + wisps * 0.35
 	);
 
 	vec3 color = fog_tint.rgb * (
-		0.35 + mist * 0.8
+		0.25 + mist * 1.1
 	);
 
 	COLOR = vec4(color, fog_opacity);

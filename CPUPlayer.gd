@@ -145,3 +145,40 @@ func _exit_tree() -> void:
 	if _cpu_thread != null and _cpu_thread.is_started():
 		_cpu_thread.wait_to_finish()
 	_cpu_thread = null
+
+
+func recover_turn() -> bool:
+	if not is_instance_valid(board):
+		return false
+	if board.current_player != player_number:
+		return false
+	if _cpu_thread != null:
+		return false
+
+	board.update_all_core_power_counts()
+	board.update_all_piece_vision()
+	last_moved_piece = null
+
+	# Emergency recovery: use a move validated by the live rules.
+	for node in board.player_pieces[player_number - 1]:
+		var piece := node as Piece
+		if not is_instance_valid(piece):
+			continue
+		if piece.is_queued_for_deletion():
+			continue
+
+		var moves: Array[Vector2i] = (
+			piece.generate_possible_moves(
+				piece.get_cur_pos()
+			).duplicate()
+		)
+		if moves.is_empty():
+			continue
+
+		last_moved_piece = piece
+		push_warning("CPU recovery: executing a live legal move.")
+		piece.make_cpu_move(moves[0])
+		return true
+
+	push_error("CPU recovery found no legal moves.")
+	return false
