@@ -50,36 +50,80 @@ func _visible_cells(viewer: int) -> Dictionary:
 	return cells
 
 
-func _tile_copy(cell: Vector2i) -> Sprite2D:
-	var source_id: int = board.get_cell_source_id(cell)
+func _tile_parts(cell: Vector2i) -> Array[Dictionary]:
+	var layers: Array[TileMapLayer] = [board]
 
-	if source_id < 0:
-		return null
+	for group in [
+		board.player_fills,
+		board.player_outlines,
+		board.player_move_fills,
+		board.player_selected_outlines
+	]:
+		for layer in group:
+			layers.append(layer)
 
-	var source := board.tile_set.get_source(
-		source_id
-	) as TileSetAtlasSource
+	var parts: Array[Dictionary] = []
 
-	if source == null:
-		return null
+	for layer in layers:
+		var source_id := layer.get_cell_source_id(cell)
+		if source_id < 0:
+			continue
 
-	var atlas := AtlasTexture.new()
-	atlas.atlas = source.texture
-	atlas.region = source.get_tile_texture_region(
-		board.get_cell_atlas_coords(cell)
-	)
+		var source := layer.tile_set.get_source(
+			source_id
+		) as TileSetAtlasSource
 
+		if source == null:
+			continue
+
+		var atlas := AtlasTexture.new()
+		atlas.atlas = source.texture
+		atlas.region = source.get_tile_texture_region(
+			layer.get_cell_atlas_coords(cell)
+		)
+
+		var offset := Vector2.ZERO
+		var data := layer.get_cell_tile_data(cell)
+		var tint := layer.modulate
+
+		if data != null:
+			offset = Vector2(data.texture_origin)
+			tint *= data.modulate
+
+		parts.append({
+			"texture": atlas,
+			"offset": offset,
+			"color": tint
+		})
+
+	return parts
+
+
+func _visual_from_parts(
+	cell: Vector2i,
+	parts: Array
+) -> Sprite2D:
 	var visual := Sprite2D.new()
-	visual.texture = atlas
 	visual.position = board.map_to_local(cell)
 
-	var data: TileData = board.get_cell_tile_data(cell)
-
-	if data != null:
-		visual.position += Vector2(data.texture_origin)
+	for part in parts:
+		var sprite := Sprite2D.new()
+		sprite.texture = part["texture"]
+		sprite.position = part["offset"]
+		sprite.modulate = part["color"]
+		visual.add_child(sprite)
 
 	add_child(visual)
 	return visual
+
+
+func _tile_copy(cell: Vector2i) -> Sprite2D:
+	var parts := _tile_parts(cell)
+
+	if parts.is_empty():
+		return null
+
+	return _visual_from_parts(cell, parts)
 
 
 func play_setup() -> void:
@@ -156,6 +200,18 @@ func play_setup() -> void:
 			0.45
 		).set_delay(delay)
 
+	var highlight_layers: Array[TileMapLayer] = []
+
+	for group in [
+		board.player_fills,
+		board.player_outlines,
+		board.player_move_fills,
+		board.player_selected_outlines
+	]:
+		for layer in group:
+			highlight_layers.append(layer)
+			layer.self_modulate.a = 0.0
+
 	var piece_tween := create_tween()
 
 	piece_tween.tween_property(
@@ -171,6 +227,9 @@ func play_setup() -> void:
 	finish.tween_callback(
 		func():
 			board.self_modulate = original_tile_color
+
+			for layer in highlight_layers:
+				layer.self_modulate.a = 1.0
 
 			for visual in setup_tiles:
 				if is_instance_valid(visual):
@@ -590,32 +649,18 @@ func _update_vision_fades(visible_cells: Dictionary) -> void:
 
 			fading_tiles.erase(cell)
 
-		if tile_snapshots.has(cell):
-			continue
-
-		var copy: Sprite2D = _tile_copy(cell)
-
-		if copy == null:
-			continue
-
 		tile_snapshots[cell] = {
-			"texture": copy.texture,
-			"position": copy.position,
+			"parts": _tile_parts(cell)
 		}
-
-		# Only retain its appearance, not another visible sprite.
-		copy.free()
-
 
 func _play_vision_loss(
 	cell: Vector2i,
 	snapshot: Dictionary
 ) -> void:
-	var visual := Sprite2D.new()
-	visual.texture = snapshot["texture"]
-	visual.position = snapshot["position"]
-	add_child(visual)
-
+	var visual := _visual_from_parts(
+		cell,
+		snapshot["parts"]
+	)
 	# The underlying board has already returned to darkness.
 	# This old image fades away over it.
 	var tween := create_tween()

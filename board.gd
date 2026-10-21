@@ -69,6 +69,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(resize_text_overlay)
 
 	create_player_highlight_layers(2)
+	move_child(board_effects, get_child_count() - 1)
 	instantiate_turn_menu()
 	instantiate_core_menu()
 	create_capture_hud()
@@ -346,13 +347,8 @@ func _on_turn_message_timer_timeout():
 	your_turn_label.visible = false
 
 func display_winner(winner):
-	var raw_message = "Player "+str(winner)+" WINS!"
-	if winner == 1:
-		win_label.text = raw_message
-		win_label.modulate = GameColors.PLAYER_BLUE_POWER
-	else:
-		win_label.text = raw_message#"[outline_size=10][outline_color=black][font_size=200][b][color=red]%s[/color][/b][/font_size]" % raw_message
-		win_label.modulate = GameColors.PLAYER_RED_POWER
+	win_label.text = "Player %d WINS!" % winner
+	win_label.modulate = GameColors.powered_color(winner)
 	win_label.visible = true
 
 func update_selection_panel(selectedPiece: Piece):
@@ -1485,10 +1481,12 @@ var played_found_sound = false
 # 	return
 
 func clear_board():
-	for c in board_tiles:
-		set_cell(c, Tiles.BLACK, Vector2i(0,0))
-	update_rotate_map_board()
+	clear_player_highlights()
 
+	for c in board_tiles:
+		set_cell(c, Tiles.BLACK, Vector2i.ZERO)
+
+	update_rotate_map_board()
 
 func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 	for p in pieces_container.get_children():
