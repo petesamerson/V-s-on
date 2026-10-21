@@ -1,4 +1,4 @@
-[gd_scene load_steps=55 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=60 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -10,6 +10,8 @@
 [ext_resource type="Texture2D" uid="uid://wtxepl7dlc0h" path="res://sprites/hex_dark_red_light_outline.png" id="5_ua0oy"]
 [ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://sprites/HexStar3.png" id="6_anra8"]
 [ext_resource type="Texture2D" uid="uid://dyy56ypwu01au" path="res://sprites/hex_red.png" id="6_cl7ii"]
+[ext_resource type="Texture2D" uid="uid://dfou01ionon02" path="res://sprites/hex_white_fill.png" id="6_nwa72"]
+[ext_resource type="Texture2D" uid="uid://bls0un01edh3g" path="res://sprites/hex_white_outline.png" id="7_x5ok0"]
 [ext_resource type="Texture2D" uid="uid://d3or16dja1a82" path="res://sprites/hex_dark_blue.png" id="8_blj2i"]
 [ext_resource type="Texture2D" uid="uid://qwr56nrdx4or" path="res://sprites/hex_dark_gray1.png" id="9_01iy8"]
 [ext_resource type="Texture2D" uid="uid://bcr661buweyub" path="res://sprites/hex_dark_red.png" id="10_jjdbg"]
@@ -32,6 +34,7 @@
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="30_ov3nv"]
 [ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
+[ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -59,6 +62,16 @@ texture_region_size = Vector2i(100, 100)
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_u1i3c"]
 texture = ExtResource("5_ua0oy")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dltd1"]
+texture = ExtResource("6_nwa72")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_td7wt"]
+texture = ExtResource("7_x5ok0")
 texture_region_size = Vector2i(100, 100)
 0:0/0 = 0
 
@@ -120,6 +133,8 @@ sources/1 = SubResource("TileSetAtlasSource_ddjlp")
 sources/6 = SubResource("TileSetAtlasSource_17fj0")
 sources/2 = SubResource("TileSetAtlasSource_ua0oy")
 sources/13 = SubResource("TileSetAtlasSource_u1i3c")
+sources/14 = SubResource("TileSetAtlasSource_dltd1")
+sources/15 = SubResource("TileSetAtlasSource_td7wt")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ixihg"]
 bg_color = Color(0, 0, 0, 0.43137255)
@@ -171,6 +186,9 @@ tile_set = SubResource("TileSet_7e6gu")
 script = ExtResource("11_2mb0d")
 camera = NodePath("../Camera2D")
 capture_texture = ExtResource("15_u2j6w")
+white_fill_source_id = 14
+white_outline_source_id = 15
+tutorial_mode = null
 piece_scene = ExtResource("12_01iy8")
 core_piece_scene = ExtResource("16_do6al")
 eye_piece_scene = ExtResource("14_17fj0")
@@ -324,10 +342,10 @@ grow_vertical = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
 
 [node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer"]
 layout_mode = 2
@@ -454,7 +472,7 @@ layout_mode = 2
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 50
-text = "Pause"
+icon = ExtResource("32_uukvf")
 
 [node name="SettingsCover" type="Panel" parent="TurnLayer"]
 visible = false

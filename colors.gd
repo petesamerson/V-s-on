@@ -4,34 +4,56 @@ const PLAYER_BLUE_POWER =  Color("#66E5FF")
 const PLAYER_RED = Color("#FF1744")
 const PLAYER_RED_POWER = Color("#ff7070")
 
+const COLOR_NAMES = [
+	"Blue", "Red", "Green", "Yellow", "Purple", "Orange"
+]
 
-
-# Player IDs start at 1. Add more entries to expand the palette.
 const PLAYER_PALETTE = [
-	PLAYER_BLUE,
-	PLAYER_RED,
+	Color("#007BFF"),
+	Color("#FF1744"),
 	Color("#31DB91"),
 	Color("#FFCB47"),
 	Color("#B780FF"),
-	Color("#FF78CA"),
-	Color("#FF913D"),
-	Color("#45E0DD"),
+	Color("#FF913D")
 ]
 
-static func player_color(player_id: int) -> Color:
-	if player_id >= 1 and player_id <= PLAYER_PALETTE.size():
-		return PLAYER_PALETTE[player_id - 1]
+const POWERED_PALETTE = [
+	Color("#66E5FF"),
+	Color("#FF7070"),
+	Color("#80F5BC"),
+	Color("#FFE596"),
+	Color("#D8B5FF"),
+	Color("#FFC18A")
+]
 
-	return Color.from_hsv(
-		fposmod(float(player_id) * 0.61803398875, 1.0),
-		0.7,
-		1.0
-	)
+# Each entry stores the selected palette index for that player.
+static var selected_color_indices: Array[int] = [0, 1]
+
+
+static func player_color(player_id: int) -> Color:
+	return PLAYER_PALETTE[_color_index(player_id)]
+
 
 static func powered_color(player_id: int) -> Color:
-	if player_id == 1:
-		return PLAYER_BLUE_POWER
-	if player_id == 2:
-		return PLAYER_RED_POWER
+	return POWERED_PALETTE[_color_index(player_id)]
 
-	return player_color(player_id).lerp(Color.WHITE, 0.38)
+
+static func set_player_color(player_id: int, color_index: int) -> void:
+	if player_id < 1:
+		return
+	if color_index < 0 or color_index >= PLAYER_PALETTE.size():
+		return
+
+	while selected_color_indices.size() < player_id:
+		selected_color_indices.append(
+			selected_color_indices.size() % PLAYER_PALETTE.size()
+		)
+
+	selected_color_indices[player_id - 1] = color_index
+
+
+static func _color_index(player_id: int) -> int:
+	if player_id >= 1 and player_id <= selected_color_indices.size():
+		return selected_color_indices[player_id - 1]
+
+	return posmod(player_id - 1, PLAYER_PALETTE.size())

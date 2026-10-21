@@ -6,6 +6,13 @@ class_name MainMenu
 @onready var multiplayer_settings: Control = $MutiplayerSettings
 @onready var difficulty_label: Label = $CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/CurrentDiff
 
+const GameColors = preload("res://colors.gd")
+@onready var player_color_select: OptionButton = \
+	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player1Row/P1ColorSelect
+
+@onready var enemy_color_select: OptionButton = \
+	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player2Row/P2ColorSelect
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	update_mobile_scale()
@@ -18,6 +25,54 @@ func _ready() -> void:
 	NetworkManager.network_error.connect(_on_network_error)
 	NetworkManager.game_message_received.connect(_on_lobby_game_message)
 
+	for dropdown in [player_color_select, enemy_color_select]:
+		dropdown.clear()
+		dropdown.custom_minimum_size = Vector2(100, 40)
+
+		for color in GameColors.PLAYER_PALETTE:
+			var swatch := Image.create(
+				60, 24, false, Image.FORMAT_RGBA8
+			)
+			swatch.fill(color)
+
+			var texture := ImageTexture.create_from_image(swatch)
+			dropdown.add_icon_item(texture, "")
+
+	player_color_select.select(GameColors.selected_color_indices[0])
+	enemy_color_select.select(GameColors.selected_color_indices[1])
+
+	player_color_select.item_selected.connect(
+		_on_player_color_selected
+	)
+	enemy_color_select.item_selected.connect(
+		_on_enemy_color_selected
+	)
+
+func _on_player_color_selected(index: int) -> void:
+	GameColors.set_player_color(1, index)
+	refresh_color_options()
+
+
+func _on_enemy_color_selected(index: int) -> void:
+	GameColors.set_player_color(2, index)
+	refresh_color_options()
+
+func refresh_color_options() -> void:
+	var dropdowns: Array[OptionButton] = [
+		player_color_select,
+		enemy_color_select
+	]
+
+	for dropdown in dropdowns:
+		for color_index in range(dropdown.item_count):
+			var taken := false
+
+			for other in dropdowns:
+				if other != dropdown and other.selected == color_index:
+					taken = true
+					break
+
+			dropdown.set_item_disabled(color_index, taken)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
@@ -74,10 +129,6 @@ func _on_difficulty_slider_value_changed(value: float) -> void:
 		selected_difficulty
 	)
 
-# func _on_start_cpu_game_pressed() -> void:
-# 	get_tree().root.set_meta("play_vs_cpu", true)
-# 	get_tree().root.set_meta("online_game", false)
-# 	get_tree().change_scene_to_file("res://base_scene.tscn")
 func _on_start_cpu_game_pressed() -> void:
 	var slider := get_node(
 		"CpuSettingsScreen/MarginContainer/Panel/"
@@ -197,3 +248,14 @@ func _on_lobby_game_message(payload: Variant, from_player: int) -> void:
 		int(payload.get("spawn1", 0)),
 		int(payload.get("spawn2", 3))
 	)
+
+func _on_close_game_settings_pressed() -> void:
+	cpu_settings_screen.visible = false
+
+
+func _on_close_multi_settings_pressed() -> void:
+	multiplayer_settings.visible = false
+
+
+func _on_how_to_play_pressed() -> void:
+	get_tree().change_scene_to_file("res://tutorial.tscn")

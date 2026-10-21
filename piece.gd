@@ -49,7 +49,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 		effects.z_index = 3
 		tree_exiting.connect(effects.queue_free)
 
-	self.z_index = 2
+	self.z_index = 4
 	draw_vision_change()
 	
 # Called when the node enters the scene tree for the first time.
@@ -83,23 +83,39 @@ func get_cur_pos() -> Vector2i:
 	return board.local_to_map(position)
 
 func draw_vision_change():
-	var cur_pos = board.local_to_map(position)
-	var raw_vision = board.get_hexagon_tiles(cur_pos, vision_range)
-	var new_vision: Array[Vector2i] = []
-	
+	var cur_pos := board.local_to_map(position)
+	var raw_vision = board.get_hexagon_tiles(
+		cur_pos, vision_range
+	)
+
+	cur_vision.clear()
+
 	for cell in raw_vision:
-		if(board.cell_in_board(cell)):
-			new_vision.append(cell)
+		if board.cell_in_board(cell):
+			cur_vision.append(cell)
 
-	for cell in cur_vision:
-		board.set_cell(cell,Tiles.BLACK, Vector2i(0,0))
+	if board.game_setup_complete:
+		board.call_deferred("update_all_piece_vision")
 
-	cur_vision = new_vision
-	for cell in cur_vision:
-		if(owned_player == 2):
-			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
-		else:
-			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
+# func draw_vision_change():
+
+	# var cur_pos = board.local_to_map(position)
+	# var raw_vision = board.get_hexagon_tiles(cur_pos, vision_range)
+	# var new_vision: Array[Vector2i] = []
+	
+	# for cell in raw_vision:
+	# 	if(board.cell_in_board(cell)):
+	# 		new_vision.append(cell)
+
+	# for cell in cur_vision:
+	# 	board.set_cell(cell,Tiles.BLACK, Vector2i(0,0))
+
+	# cur_vision = new_vision
+	# for cell in cur_vision:
+	# 	if(owned_player == 2):
+	# 		board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
+	# 	else:
+	# 		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 
 func get_potential_vision(new_pos: Vector2i) -> Array[Vector2i]:
 	var cur_pos = board.local_to_map(position)
@@ -116,10 +132,12 @@ func end_turn():
 
 func draw_current_vision():
 	for cell in cur_vision:
-		if(owned_player == 2):
-			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
-		else:
-			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
+		board.draw_player_vision(cell, owned_player)
+	# for cell in cur_vision:
+	# 	if(owned_player == 2):
+	# 		board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
+	# 	else:
+	# 		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 	
 
 var armed := false
@@ -134,6 +152,8 @@ func _on_area_2d_input_event(viewport, event, shape_idx):
 			return
 
 		on_clicked()
+		if board.tutorial_mode and selected and can_control_piece():
+			board.tutorial_piece_selected.emit(self)
 		armed = true
 
 func inspect_enemy_piece() -> bool:
@@ -217,16 +237,17 @@ func update_capture_on_board():
 				board.set_take_piece_sprite(cell)
 				break
 
-func highlight_vision_range():
-	print("hightlight")
-	for cell in cur_vision:
-		if(owned_player == 1):
-			board.set_cell(cell, Tiles.DARK_BLUE_OUTLINE, Vector2i(0,0))
-		else:
-			board.set_cell(cell, Tiles.DARK_RED_OUTLINE, Vector2i(0,0))
+# func highlight_vision_range():
+# 	print("hightlight")
+# 	for cell in cur_vision:
+# 		if(owned_player == 1):
+# 			board.set_cell(cell, Tiles.DARK_BLUE_OUTLINE, Vector2i(0,0))
+# 		else:
+# 			board.set_cell(cell, Tiles.DARK_RED_OUTLINE, Vector2i(0,0))
 
+# 	board.update_selection_panel(self)
+func highlight_vision_range():
 	board.update_selection_panel(self)
-	
 
 # func update_piece_color():
 # 	if sprite == null: return
@@ -331,6 +352,8 @@ func handle_move_input_event(event):
 		draw_vision_change()
 
 		if(moved):
+			if board.tutorial_mode:
+				board.tutorial_piece_moved.emit(self)
 			if board.online_game and owned_player == board.local_player:
 				NetworkManager.send_game_message({
 					"action": "move",

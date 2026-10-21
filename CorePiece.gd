@@ -15,7 +15,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	sprite.texture = preload("res://sprites/core_piece.png")
 	vision_range = 0
 	move_range = 2
-	z_index = 0
+	z_index = 2
 	powered = true
 	piece_value = 20
 

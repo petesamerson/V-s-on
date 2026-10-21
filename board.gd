@@ -36,6 +36,21 @@ var local_player := 1
 var game_setup_complete := false
 var cpu_turn_in_progress := false
 
+var player_fills: Array[TileMapLayer] = []
+var player_outlines: Array[TileMapLayer] = []
+var player_selected_outlines: Array[TileMapLayer] = []
+var player_move_fills: Array[TileMapLayer] = []
+
+@export var white_fill_source_id: int
+@export var white_outline_source_id: int
+
+
+@export var tutorial_mode: bool = false
+signal tutorial_piece_selected(piece: Piece)
+signal tutorial_piece_moved(piece: Piece)
+signal tutorial_turn_completed
+
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	self.z_index = 0
@@ -53,6 +68,7 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(resize_text_overlay)
 
+	create_player_highlight_layers(2)
 	instantiate_turn_menu()
 	instantiate_core_menu()
 	create_capture_hud()
@@ -66,6 +82,10 @@ func _ready() -> void:
 
 	online_game = get_tree().root.get_meta("online_game", false)
 	local_player = int(get_tree().root.get_meta("local_player", 1))
+
+	if tutorial_mode:
+		play_vs_cpu = false
+		online_game = false
 
 	if online_game:
 		NetworkManager.game_message_received.connect(_on_network_game_message)
@@ -155,7 +175,37 @@ func intialize_drawn_sprite_nodes():
 	capture_sprites.z_index = 3
 	add_child(capture_sprites)
 
+func draw_player_vision(cell: Vector2i, player_id: int) -> void:
+	if not cell_in_board(cell):
+		return
 
+	var i := player_id - 1
+
+	player_fills[i].set_cell(
+		cell, white_fill_source_id, Vector2i.ZERO
+	)
+	player_outlines[i].set_cell(
+		cell, white_outline_source_id, Vector2i.ZERO
+	)
+
+
+func draw_selected_vision(cell: Vector2i, player_id: int) -> void:
+	if not cell_in_board(cell):
+		return
+
+	player_selected_outlines[player_id - 1].set_cell(
+		cell, white_outline_source_id, Vector2i.ZERO
+	)
+
+
+func draw_potential_move(cell: Vector2i, player_id: int) -> void:
+	if not cell_in_board(cell):
+		return
+
+	player_move_fills[player_id - 1].set_cell(
+		cell, white_fill_source_id, Vector2i.ZERO
+	)
+	draw_selected_vision(cell, player_id)
 
 func instantiate_turn_menu():
 	# Apply the styling wrapper dynamically without changing the original variable
@@ -199,23 +249,86 @@ func instantiate_core_menu():
 
 	# core_menu.hide()
 
+func clear_player_highlights() -> void:
+	for layers in [
+		player_fills,
+		player_outlines,
+		player_selected_outlines,
+		player_move_fills
+	]:
+		for layer in layers:
+			layer.clear()		
+
+func redraw_selected_highlights() -> void:
+	for layer in player_selected_outlines:
+		layer.clear()
+
+	for layer in player_move_fills:
+		layer.clear()
+
+	for piece in pieces_container.get_children():
+		if piece is Piece and piece.selected:
+			for cell in piece.cur_vision:
+				draw_selected_vision(cell, piece.owned_player)
+
+			for cell in piece.cur_moves:
+				draw_potential_move(cell, piece.owned_player)
+
+func create_player_highlight_layers(player_count: int) -> void:
+	for layers in [
+		player_fills,
+		player_outlines,
+		player_selected_outlines,
+		player_move_fills
+	]:
+		for layer in layers:
+			remove_child(layer)
+			layer.queue_free()
+		layers.clear()
+
+	for i in range(player_count):
+		var player_id := i + 1
+		var dark := GameColors.player_color(player_id).darkened(0.5)
+		var light := GameColors.powered_color(player_id)
+
+		player_fills.append(
+			create_highlight_layer("VisionFill%d" % player_id, dark)
+		)
+		player_outlines.append(
+			create_highlight_layer("VisionOutline%d" % player_id, dark)
+		)
+		player_move_fills.append(
+			create_highlight_layer("MoveFill%d" % player_id, light)
+		)
+		player_selected_outlines.append(
+			create_highlight_layer("SelectedOutline%d" % player_id, light)
+		)
+
+
+func create_highlight_layer(
+	layer_name: String,
+	color: Color
+) -> TileMapLayer:
+	var layer := TileMapLayer.new()
+	layer.name = layer_name
+	layer.tile_set = tile_set
+	layer.z_index = 1
+	layer.modulate = color
+	add_child(layer)
+	return layer
+
 
 func update_turn_text():
-	if current_player == 1:
-		var raw_message = "Player 1's Turn"
-		turn_label.text = "[outline_size=10][outline_color=black][b][color=cyan]%s[/color][/b]" % raw_message
-		# if(cpu_player != null):
-		# 	display_turn_message()
-	else:
-		var raw_message = "Player 2's Turn"
-		turn_label.text = "[outline_size=10][outline_color=black][b][color=red]%s[/color][/b]" % raw_message
+	var color_hex := GameColors.powered_color(current_player).to_html(false)
 
-	# if(cpu_player == null):
-	# 	display_turn_message()
+	turn_label.text = \
+		"[outline_size=10][outline_color=black][b]" + \
+		"[color=#%s]Player %d's Turn[/color][/b]" % [
+			color_hex, current_player
+		]
 
 	update_mobile_scale()
 	update_selection_panel_colors()
-
 
 func display_turn_message():
 	var text_timer := Timer.new()
@@ -367,8 +480,10 @@ func spawn_all_pieces():
 
 	var num1: int
 	var num2: int
-
-	if online_game:
+	if tutorial_mode:
+		num1 = 0
+		num2 = 3
+	elif online_game:
 		num1 = int(get_tree().root.get_meta("online_spawn1", 0))
 		num2 = int(get_tree().root.get_meta("online_spawn2", 3))
 	else:
@@ -418,7 +533,7 @@ func spawn_player_location(center: Vector2i, player: int):
 	for pos in positions:
 		var piece := eye_piece_scene.instantiate() as EyePiece
 		piece.owned_player = player
-		piece.z_index = 2
+		piece.z_index = 4
 		player_pieces[player - 1].append(piece)
 		pieces_container.add_child(piece)
 		piece.setup(pos, self)
@@ -673,6 +788,7 @@ func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 
 	# if cpu_player == null or current_player == 1:
 	update_core_power()					
+	redraw_selected_highlights()
 
 func set_enemy_piece_visiblity(cell: Vector2i, visible: bool, viewer: int) -> void:
 	var enemy_player := 2 if viewer == 1 else 1
@@ -1037,7 +1153,7 @@ func update_core_power():
 				line_key,
 				viewed_core.position,
 				piece.position,
-				GameColors.PLAYER_BLUE_POWER if viewer == 1 else GameColors.PLAYER_RED_POWER,
+				GameColors.powered_color(viewer),
 				5.0
 			)
 
@@ -1189,7 +1305,7 @@ func update_visible_enemy_core_highlights(viewer: int) -> void:
 				line_key,
 				enemy_core.position,
 				supporter.position,
-				GameColors.PLAYER_BLUE_POWER if enemy_player == 1 else GameColors.PLAYER_RED_POWER,
+				GameColors.powered_color(enemy_player),
 				3.0
 			)
 			visible_support_count += 1
@@ -1217,7 +1333,7 @@ func set_cached_power_line(
 
 	if line == null:
 		line = Line2D.new()
-		line.z_index = 1
+		line.z_index = 3
 		add_child(line)
 		cached_power_lines[key] = line
 
@@ -1381,8 +1497,17 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 		p.update_piece_color()
 	update_core_power()
 	clear_captures()
+	redraw_selected_highlights()
 
 func end_turn(movedPiece: Piece):
+	if tutorial_mode:
+		clear_captures()
+		deselect_all_pieces()
+		update_all_piece_vision()
+		update_core_power()
+		tutorial_turn_completed.emit()
+		return
+
 	var core_found = false
 	clear_captures()
 	displayed_warning_text = false
