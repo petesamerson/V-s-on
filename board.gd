@@ -25,6 +25,7 @@ var board_size = 10
 var board_tiles: Array[Vector2i] = []
 
 var board_effects: Node2D
+var map_border: Node2D
 
 var turn = 1
 var current_player: int = 1
@@ -63,7 +64,13 @@ func _ready() -> void:
 	board_effects.board = self
 	board_effects.name = "BoardEffects"
 	add_child(board_effects)
-	board_effects.z_index = 1
+	board_effects.z_index = 2
+
+	map_border = preload("res://map_border.gd").new()
+	map_border.board = self
+	map_border.z_index = 3
+	add_child(map_border)
+	map_border.rebuild()
 
 	call_deferred("spawn_all_pieces")
 
@@ -77,6 +84,7 @@ func _ready() -> void:
 
 	intialize_drawn_sprite_nodes()
 	update_mobile_scale()
+
 
 	capture_feed_panel.hide()
 
@@ -94,18 +102,38 @@ func _ready() -> void:
 	elif play_vs_cpu:
 		intialize_cpu_player(2)
 
+func _on_mobile_viewport_resized() -> void:
+	update_mobile_scale()
+	
+
 var is_mobile_browser: bool = false
 var ui_scale: float = 1.0
 
+
+func mobile_text_scale() -> float:
+	if not is_mobile_browser:
+		return 1.0
+
+	var screen_size := get_viewport().get_visible_rect().size
+	return 1.25 if screen_size.x > screen_size.y else 2.0
+
 func update_mobile_scale():
 	is_mobile_browser = (
-		OS.has_feature("web_android")
+		OS.has_feature("android") \
+		or OS.has_feature("ios") \
+		or OS.has_feature("web_android") \
 		or OS.has_feature("web_ios")
 	)
+	var pause_button := get_node("../TurnLayer/MarginContainer/VBoxContainer/Pause") as Button
+	var pause_side := 54.0 * (2.0 if is_mobile_browser else 1.0)
+	pause_button.expand_icon = true
+	pause_button.custom_minimum_size = Vector2(pause_side, pause_side)
+	pause_button.add_theme_constant_override("icon_max_width", roundi(pause_side - 16.0))
 	
 	if is_mobile_browser:
 		# selection_panel.scale = Vector2(2.5,2.5)
-		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+		# scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+		scale_text_tree(get_tree().current_scene, mobile_text_scale())
 		selection_panel.pivot_offset = selection_panel.size
 	else:
 		# scale_text_tree(get_tree().current_scene, 2.0 if true else 1.0)
@@ -215,8 +243,12 @@ func instantiate_turn_menu():
 	turn_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	turn_label.fit_content = true
 
-	var raw_message = "Player 1's Turn"
-	turn_label.text = "[outline_size=10][outline_color=black][b][color=cyan]%s[/color][/b]" % raw_message
+	var color_hex := GameColors.powered_color(current_player).to_html(false)
+	turn_label.text = (
+		"[outline_size=10][outline_color=black][b]"
+		+ "[color=#%s]Player %d's Turn[/color][/b]"
+		% [color_hex, current_player]
+	)
 
 	turn_menu.hide()
 
@@ -680,9 +712,9 @@ func remove_piece(piece: Piece) -> void:
 
 	player_captures[capturer_index].append({
 		"texture": piece.sprite.texture,
-		"name": piece.getTypeString()
+		"name": piece.getTypeString(),
+		"cell": piece.get_cur_pos()
 	})
-
 	add_captured_piece_icon(capturer_index, piece)
 
 	player_pieces[piece.owned_player - 1].erase(piece)
@@ -714,7 +746,7 @@ func create_capture_hud() -> void:
 
 		var title := Label.new()
 		title.text = "P%d" % player_id
-		title.modulate = GameColors.PLAYER_BLUE_POWER if player_id == 1 else GameColors.PLAYER_RED_POWER
+		title.modulate = GameColors.powered_color(player_id)
 		column.add_child(title)
 
 		var row := HFlowContainer.new()

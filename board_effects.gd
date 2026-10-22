@@ -23,9 +23,11 @@ var fading_tiles: Dictionary = {}
 
 @export var visible_effect_strength: float = 0.14
 @export var selected_effect_strength: float = 0.22
+@export var powered_effect_strength: float = 0.22
 
 @export var enemy_overlap_strength: float = 0.18
 @export var enemy_overlap_speed: float = 0.65
+@export var enemy_powered_effect_strength: float = 0.24
 
 func _viewer() -> int:
 	if board.online_game:
@@ -411,14 +413,28 @@ func _draw() -> void:
 			break
 
 	var selected_vision: Dictionary = {}
+	var powered_vision: Dictionary = {}
+	var powered_color: Color = GameColors.powered_color(viewer)
+
+	for node in board.player_pieces[viewer - 1]:
+		var piece := node as Piece
+		if piece.powered:
+			for cell in piece.cur_vision:
+				powered_vision[cell] = true
 
 	if selected_piece != null:
 		for cell in selected_piece.cur_vision:
 			selected_vision[cell] = true
 
+	var enemy_vision := _enemy_vision_cells(viewer)
+
 	for cell in effect_visible:
 		# Never leave an effect on a tile that has lost vision.
 		if not board.hasCellInVision(viewer, cell):
+			continue
+		
+		# Enemy-covered tiles receive only the enemy ambient animation.
+		if enemy_vision.has(cell):
 			continue
 
 		var points: PackedVector2Array = _tile_polygon(cell)
@@ -430,6 +446,9 @@ func _draw() -> void:
 			selected_vision.has(cell),
 			center.y * 0.002
 		)
+
+		if powered_vision.has(cell):
+			_draw_powered_vision(points, center, powered_color)
 
 		if selected_vision.has(cell):
 			# A soft wave travels outward from the selected piece.
@@ -465,7 +484,7 @@ func _draw() -> void:
 				1.25,
 				true
 			)
-		else:
+		elif not powered_vision.has(cell):
 			# A slower diagonal wash across ordinary visible tiles.
 			var phase: float = (
 				effect_time * 1.1
@@ -484,10 +503,34 @@ func _draw() -> void:
 			)
 	_draw_enemy_overlap(viewer)
 
+func _draw_powered_vision(
+	points: PackedVector2Array,
+	center: Vector2,
+	tint: Color
+) -> void:
+	# A shared rhythm makes the powered area read as one energized field.
+	var cycle: float = fposmod(effect_time * 0.65, 1.0)
+	var pulse: float = 0.5 + 0.5 * sin(effect_time * TAU * 0.65)
+	var alpha: float = powered_effect_strength * lerpf(0.45, 1.0, pulse)
+	draw_colored_polygon(points, Color(tint, alpha))
+
+	var outline := points.duplicate()
+	outline.append(points[0])
+	draw_polyline(outline, Color(tint, alpha * 1.5), 2.0, true)
+
+	# An expanding inset hex adds motion distinct from ordinary vision's wash.
+	var ring := PackedVector2Array()
+	for point in points:
+		ring.append(center + (point - center) * lerpf(0.35, 0.96, cycle))
+	ring.append(ring[0])
+	var ring_alpha: float = powered_effect_strength * sin(cycle * PI)
+	draw_polyline(ring, Color(tint.lerp(Color.WHITE, 0.15), ring_alpha), 1.25, true)
+
 func _draw_enemy_overlap(viewer: int) -> void:
 	var enemy: int = 3 - viewer
 	var tint: Color = GameColors.player_color(enemy)
 	var visible_enemy_vision: Dictionary = {}
+	var powered_enemy_vision: Dictionary = {}
 
 	for node in board.player_pieces[enemy - 1]:
 		var piece := node as Piece
@@ -499,15 +542,51 @@ func _draw_enemy_overlap(viewer: int) -> void:
 			continue
 
 		for vision_cell in piece.cur_vision:
+			if piece.powered:
+				powered_enemy_vision[vision_cell] = true
 			visible_enemy_vision[vision_cell] = true
 
+	var selection_cells: Dictionary = {}
+
+	for node in board.player_pieces[viewer - 1]:
+		var piece := node as Piece
+		if not piece.selected:
+			continue
+
+		for cell in piece.cur_vision:
+			selection_cells[cell] = true
+		for cell in piece.cur_moves:
+			selection_cells[cell] = true
+	
+	var core_cells: Dictionary = {}
+
+	for side in board.player_pieces:
+		for node in side:
+			var piece := node as Piece
+			if piece is CorePiece and piece.is_visible_in_tree():
+				core_cells[piece.get_cur_pos()] = true
+
 	for cell in board.board_tiles:
+		if core_cells.has(cell):
+			continue
+		if selection_cells.has(cell):
+			continue
 		if not board.hasCellInVision(viewer, cell):
 			continue
 		if not visible_enemy_vision.has(cell):
 			continue
 		var points: PackedVector2Array = _tile_polygon(cell)
 		var center: Vector2 = board.map_to_local(cell)
+
+		# A uniform base prevents underlying player fills changing the brightness.
+		var base_color: Color = tint.darkened(0.75)
+		base_color.a = 0.3
+		draw_colored_polygon(points, base_color)
+
+		if powered_enemy_vision.has(cell):
+			_draw_enemy_powered_vision(points, center, tint)
+			_draw_enemy_selection_overlay(points, cell, viewer)
+			continue
 
 		# One full pulse every three seconds, synchronized across tiles.
 		var pulse: float = (
@@ -558,6 +637,49 @@ func _draw_enemy_overlap(viewer: int) -> void:
 			3.0,
 			true
 		)
+
+func _enemy_vision_cells(viewer: int) -> Dictionary:
+	var cells: Dictionary = {}
+
+	for node in board.player_pieces[2 - viewer]:
+		var piece := node as Piece
+		if not is_instance_valid(piece) or piece.is_queued_for_deletion():
+			continue
+		if not board.hasCellInVision(viewer, piece.get_cur_pos()):
+			continue
+
+		for cell in piece.cur_vision:
+			cells[cell] = true
+
+	return cells
+
+func _draw_enemy_powered_vision(
+	points: PackedVector2Array,
+	center: Vector2,
+	tint: Color
+) -> void:
+	# Match the friendly powered rhythm, but pull inward.
+	var cycle: float = fposmod(effect_time * 0.65, 1.0)
+	var pulse: float = 0.5 + 0.5 * sin(effect_time * TAU * 0.65)
+	var strength: float = enemy_powered_effect_strength
+	var alpha: float = strength * lerpf(0.55, 1.0, pulse)
+
+	# Keep the fill restrained so overlapping player effects remain readable.
+	draw_colored_polygon(points, Color(tint, alpha))
+
+	var outline := points.duplicate()
+	outline.append(points[0])
+	draw_polyline(outline, Color(tint, alpha * 1.8), 2.25, true)
+
+	var ring := PackedVector2Array()
+	for point in points:
+		ring.append(
+			center + (point - center) * lerpf(0.96, 0.35, cycle)
+		)
+	ring.append(ring[0])
+
+	var ring_alpha: float = strength * sin(cycle * PI)
+	draw_polyline(ring, Color(tint, ring_alpha), 1.75, true)
 
 func _draw_tile_glint(
 	polygon: PackedVector2Array,
@@ -765,3 +887,41 @@ func _draw_last_move(viewer: int) -> void:
 			width,
 			true
 		)
+
+
+func _draw_enemy_selection_overlay(
+	points: PackedVector2Array,
+	cell: Vector2i,
+	viewer: int
+) -> void:
+	var selected_piece: Piece = null
+	for node in board.player_pieces[viewer - 1]:
+		var piece := node as Piece
+		if piece.selected:
+			selected_piece = piece
+			break
+
+	if selected_piece == null:
+		return
+
+	var in_vision: bool = selected_piece.cur_vision.has(cell)
+	var can_move: bool = selected_piece.cur_moves.has(cell)
+	if not in_vision and not can_move:
+		return
+
+	var tint: Color = GameColors.powered_color(viewer)
+	var pulse: float = 0.5 + 0.5 * sin(effect_time * 2.0)
+
+	# Movement takes priority over the broader vision highlight.
+	var fill_alpha: float = 0.28 if can_move else 0.12
+	var edge_alpha: float = 0.95 if can_move else 0.60
+	var width: float = 3.5 if can_move else 2.0
+
+	draw_colored_polygon(
+		points,
+		Color(tint, fill_alpha * lerpf(0.8, 1.0, pulse))
+	)
+
+	var outline := points.duplicate()
+	outline.append(points[0])
+	draw_polyline(outline, Color(tint, edge_alpha), width, true)

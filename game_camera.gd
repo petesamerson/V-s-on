@@ -8,16 +8,20 @@ var is_mobile_browser: bool
 
 func _ready() -> void:
 	is_mobile_browser = (
-		OS.has_feature("web_android")
+		OS.has_feature("android") \
+		or OS.has_feature("ios") \
+		or OS.has_feature("web_android") \
 		or OS.has_feature("web_ios")
 	)
 	position = board.map_to_local(
 		board.board_center
 	)
+	call_deferred("rebuild_map_bounds")
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
+	_clamp_to_map()
 	pass
 
 # Camera Movement
@@ -55,47 +59,10 @@ func _unhandled_input(event):
 				test_previous_distance = 0.0
 			else:
 				test_pinch = false
-			#-----More Test Touch Pinch
-
-		# 	if event.pressed:
-		# 		print("At dragging")
-		# 		dragging = true
-		# 		drag_start_mouse = get_global_mouse_position()  # current tile cell
-		# 		drag_start_position = position
-		# 	else:
-		# 		dragging = false
-
-	# elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
-	# 	var current_mouse = get_global_mouse_position()
-	# 	var drag_target = drag_start_position - (current_mouse - drag_start_mouse)
-	# 	position = position.lerp(drag_target, 0.5)
 	elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
 		interrupt_auto_camera()
 		position -= event.relative / zoom
-
-	#-----More Test Touch Pinch
-	elif event is InputEventMouseMotion and is_mobile_browser == false:
-		if test_pinch:
-			var finger1 = event.position
-			var finger2 = event.position + Vector2(
-				200.0 + event.position.y,
-				0
-			)
-
-			var current_distance = finger1.distance_to(finger2)
-
-			if test_previous_distance > 0:
-				var difference = current_distance - test_previous_distance
-				var factor = 1.0 + difference * 0.005
-
-
-				_zoom_to_point(
-					factor,
-					(finger1 + finger2) / 2.0
-				)
-
-			test_previous_distance = current_distance
-	#-----------------
+		_clamp_to_map()
 
 	# Single Touch
 	elif event is InputEventScreenTouch:
@@ -138,6 +105,7 @@ func _unhandled_input(event):
 		elif touches.size() == 1 and not wasPinched:
 			interrupt_auto_camera()
 			position -= event.relative / zoom.x
+			_clamp_to_map()
 # =====================================
 # Zoom around mouse
 # =====================================
@@ -177,6 +145,7 @@ func _zoom_to_point(factor: float, screen_point: Vector2):
 	var world_after = viewport.get_canvas_transform().affine_inverse() * screen_point
 
 	position += world_before - world_after
+	_clamp_to_map()
 
 var _auto_camera_sequence: int = 0
 var _auto_camera_interrupted: bool = false
@@ -247,3 +216,50 @@ func zoom_to_global_position(
 		_auto_camera_tween = null
 
 
+@export var map_camera_padding: float = 800.0
+
+var map_bounds := Rect2()
+var map_bounds_ready: bool = false
+
+
+func rebuild_map_bounds() -> void:
+	map_bounds_ready = false
+
+	for cell in board.board_tiles:
+		var center: Vector2 = board.map_to_local(cell)
+		var half_tile: Vector2 = Vector2(board.tile_set.tile_size) * 0.5
+
+		for corner in [
+			Vector2(-1, -1),
+			Vector2(1, -1),
+			Vector2(1, 1),
+			Vector2(-1, 1),
+		]:
+			var point: Vector2 = board.to_global(center + corner * half_tile)
+			if not map_bounds_ready:
+				map_bounds = Rect2(point, Vector2.ZERO)
+				map_bounds_ready = true
+			else:
+				map_bounds = map_bounds.expand(point)
+
+	_clamp_to_map()
+
+
+func _clamp_to_map() -> void:
+	if not map_bounds_ready:
+		return
+
+	var bounds := map_bounds.grow(map_camera_padding)
+	var half_view := get_viewport_rect().size * 0.5 / zoom
+	var midpoint := bounds.get_center()
+
+	# When the map fits on an axis, keep that axis centered.
+	var travel := Vector2(
+		maxf(bounds.size.x * 0.5 - half_view.x, 0.0),
+		maxf(bounds.size.y * 0.5 - half_view.y, 0.0)
+	)
+
+	global_position = Vector2(
+		clampf(global_position.x, midpoint.x - travel.x, midpoint.x + travel.x),
+		clampf(global_position.y, midpoint.y - travel.y, midpoint.y + travel.y)
+	)

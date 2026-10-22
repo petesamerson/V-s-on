@@ -16,6 +16,9 @@ var clones: Dictionary = {}
 var known_cores: Dictionary = {}
 var all_enemies_known: bool = false
 
+var memory_risk: Dictionary = {}
+var early_eye_protection: float = 0.0
+
 var initial_known_tiles: Dictionary = {}
 var initial_positions: Dictionary = {}
 var recent_capturer: Model.DataPiece
@@ -27,6 +30,7 @@ var initial_exposure_cost: float = 0.0
 var aggression: float = 1.0
 
 const SEARCH_SLICE_US: int = 4000
+const EXCHANGE_EXTENSION_DEPTH: int = 1
 
 func choose(
 	live_board: Model.DataBoard,
@@ -56,6 +60,8 @@ func choose(
 
 	deadline = turn_deadline if turn_deadline > 0 else Time.get_ticks_msec() + budget_ms
 
+	var prep_started_ms: int = Time.get_ticks_msec()
+
 	_build_simulation(live_board)
 	recent_capturer = clones.get(recent_capturer_id) as Model.DataPiece
 
@@ -67,6 +73,10 @@ func choose(
 		var live_piece := candidate["piece"] as Model.DataPiece
 
 		if not is_instance_valid(live_piece):
+			continue
+
+		# Tower root actions are generated separately with directions.
+		if live_piece is Model.DataTowerRotatePiece:
 			continue
 
 		var copy := clones.get(
@@ -99,19 +109,56 @@ func choose(
 		)
 		roots.append(action)
 
+	for node in live_board.player_pieces[cpu_player - 1]:
+		var source := node as Model.DataPiece
+		if not source is Model.DataTowerRotatePiece:
+			continue
+
+		var copy := clones.get(
+			source.get_instance_id()
+		) as Model.DataTowerRotatePiece
+
+		if copy == null:
+			continue
+
+		simulation.current_player = cpu_player
+
+		for option in copy.generate_turn_actions():
+			var destination: Vector2i = option["destination"]
+			var direction: int = int(option["direction"])
+			var priority: float = _directional_priority(option)
+
+			var original: Dictionary = {
+				"piece": source,
+				"destination": destination,
+				"direction": direction,
+				"score": priority,
+				"unprotected_danger": true,
+				"scout_score": 0.0,
+			}
+
+			option["original"] = original
+			option["recapture_bonus"] = 0.0
+			option["priority"] = priority
+			roots.append(option)
+
 	if roots.is_empty():
 		simulation.dispose()
 		return {}
-
-	roots = _prefer_core_safe_actions(roots, cpu_player, false)
 
 	roots.sort_custom(
 		func(a, b):
 			return float(a["priority"]) > float(b["priority"])
 	)
 
-	if roots.size() > 18:
-		roots.resize(18)
+	# Cheap shortlist before applying and undoing every candidate.
+	roots = _trim_search_actions(roots, cpu_player, 48)
+
+	var safety_started_ms: int = Time.get_ticks_msec()
+	var shortlisted_roots: int = roots.size()
+
+	roots = _prefer_core_safe_actions(roots, cpu_player, false)
+	roots = _trim_search_actions(roots, cpu_player, 18)
 
 	var best_original: Dictionary = roots[0]["original"]
 	var fallback_score: float = -INF
@@ -127,6 +174,12 @@ func choose(
 		)
 
 		var undo: Dictionary = _push(action)
+
+		if action["piece"] is Model.DataTowerRotatePiece:
+			var moved_tower := action["piece"] as Model.DataTowerRotatePiece
+			var unsafe: bool = simulation.is_piece_under_attack(moved_tower)
+			original["unprotected_danger"] = unsafe
+			piece_safety = 0 if unsafe else 1
 
 		if _terminal_score() == WIN_SCORE:
 			piece_safety = 2
@@ -152,7 +205,9 @@ func choose(
 	deadline = turn_deadline if turn_deadline > 0 else Time.get_ticks_msec() + budget_ms
 
 
-	for depth in range(2, max_depth + 1):
+	var search_started_ms: int = Time.get_ticks_msec()
+
+	for depth in range(1, max_depth + 1):
 
 
 		if _expired():
@@ -169,12 +224,18 @@ func choose(
 
 			var undo: Dictionary = _push(action)
 
-			var value: float = _minimax(
-				depth - 1,
-				enemy_player,
-				alpha,
-				INF
-			)
+			var value: float
+
+			if depth == 1:
+				# Establish a completed baseline without exchange extensions.
+				value = _evaluate()
+			else:
+				value = _minimax(
+					depth - 1,
+					enemy_player,
+					alpha,
+					INF
+				)
 
 			_pop(action, undo)
 			if absf(value) < WIN_SCORE * 0.5:
@@ -196,11 +257,40 @@ func choose(
 			best_original = iteration_best
 			completed_depth = depth
 
+			# Examine the previous completed depth's best move first.
+			var best_piece: Model.DataPiece = iteration_best["piece"]
+			var best_destination: Vector2i = iteration_best["destination"]
+
+			for i in range(roots.size()):
+				var original: Dictionary = roots[i]["original"]
+				if (
+					original["piece"] == best_piece
+					and original["destination"] == best_destination
+					and int(original.get("direction", -1))
+						== int(iteration_best.get("direction", -1))
+				):
+					var preferred: Dictionary = roots[i]
+					roots.remove_at(i)
+					roots.push_front(preferred)
+					break
+
 	print(
 		"CPU search completed depth ",
 		completed_depth,
 		" at difficulty ",
 		difficulty
+	)
+	print(
+		"CPU timing: candidates=",
+		safety_started_ms - prep_started_ms,
+		" ms, safety/fallback=",
+		search_started_ms - safety_started_ms,
+		" ms, search=",
+		Time.get_ticks_msec() - search_started_ms,
+		" ms, roots=",
+		shortlisted_roots,
+		" -> ",
+		roots.size()
 	)
 
 	simulation.dispose()
@@ -342,8 +432,11 @@ func _moves(piece: Model.DataPiece) -> Array[Vector2i]:
 
 	return result
 
-
-func _actions(side: int) -> Array[Dictionary]:
+func _actions(
+	side: int,
+	apply_limit: bool = true,
+	captures_only: bool = false
+) -> Array[Dictionary]:
 	simulation.current_player = side
 
 	simulation.regenerate_all_piece_moves(1, true)
@@ -357,29 +450,33 @@ func _actions(side: int) -> Array[Dictionary]:
 			break
 
 		var piece := node as Model.DataPiece
-		var destinations: Array[Vector2i] = _moves(piece)
 
-		for destination in destinations:
+		for action in _piece_actions(piece):
+			if _expired():
+				break
 
-			var action: Dictionary = {
-				"piece": piece,
-				"destination": destination,
-			}
+			if captures_only and not _is_capture(action, side):
+				continue
 
-			action["priority"] = _move_priority(action)
+			action["priority"] = _directional_priority(action)
 			actions.append(action)
 
-	actions = _prefer_core_safe_actions(actions, side)
 	actions.sort_custom(
 		func(a, b):
 			return float(a["priority"]) > float(b["priority"])
 	)
 
-	if actions.size() > branch_limit:
-		actions.resize(branch_limit)
+	if apply_limit:
+		actions = _trim_search_actions(
+			actions, side, branch_limit * 3
+		)
+
+	actions = _prefer_core_safe_actions(actions, side)
+
+	if apply_limit:
+		actions = _trim_search_actions(actions, side, branch_limit)
 
 	return actions
-
 
 func _move_priority(action: Dictionary) -> float:
 	var piece := action["piece"] as Model.DataPiece
@@ -424,6 +521,47 @@ func _move_priority(action: Dictionary) -> float:
 			priority += scout_weight
 	return priority
 
+func _is_capture(action: Dictionary, side: int) -> bool:
+	var opponent: int = 3 - side
+	var destination: Vector2i = action["destination"]
+
+	return simulation.get_enemy_piece_at_cell(
+		destination, opponent
+	) != null
+
+
+func _trim_search_actions(
+	actions: Array[Dictionary],
+	side: int,
+	limit: int
+) -> Array[Dictionary]:
+	# Actions have already passed the existing core-safety filter.
+	# Keep every available response when the core is threatened.
+	if _core_threat_count(side) > 0:
+		return actions
+
+	var kept: Array[Dictionary] = []
+	var quiet: Array[Dictionary] = []
+
+	for action in actions:
+		if _is_capture(action, side):
+			kept.append(action)
+		else:
+			quiet.append(action)
+
+	# Captures cannot be pushed out by highly scored scou/ting moves.
+	for action in quiet:
+		if kept.size() >= limit:
+			break
+		kept.append(action)
+
+	kept.sort_custom(
+		func(a, b):
+			return float(a["priority"]) > float(b["priority"])
+	)
+
+	return kept
+
 func _legacy_preference(action: Dictionary) -> float:
 	var original: Dictionary = action.get("original", {})
 
@@ -448,11 +586,18 @@ func _legacy_preference(action: Dictionary) -> float:
 				if simulation.player_pieces[piece.owned_player - 1].size() > 5:
 					activity_preference -= 60.0
 
+	var reversal_penalty: float = float(
+		original.get("reversal_penalty", 0.0)
+	)
+
+	# Remove the penalty from the discounted score, then apply it once
+	# at full strength.
 	return (
-		clampf(original_score, -5000.0, 5000.0) * 0.05
+		clampf(original_score + reversal_penalty, -5000.0, 5000.0) * 0.05
 		+ recapture_bonus
 		+ activity_preference
-	)
+		- reversal_penalty
+)
 
 func _push(action: Dictionary) -> Dictionary:
 	var piece := action["piece"] as Model.DataPiece
@@ -471,6 +616,13 @@ func _push(action: Dictionary) -> Dictionary:
 		"captured_index": -1,
 	}
 
+	if piece is Model.DataTowerRotatePiece:
+		var tower := piece as Model.DataTowerRotatePiece
+		undo["direction"] = tower.cur_direction
+		tower.cur_direction = int(
+			action.get("direction", tower.cur_direction)
+		)
+
 	if captured != null:
 		var group: Array = simulation.player_pieces[opponent - 1]
 		undo["captured_index"] = group.find(captured)
@@ -487,6 +639,11 @@ func _push(action: Dictionary) -> Dictionary:
 func _pop(action: Dictionary, undo: Dictionary) -> void:
 	var piece := action["piece"] as Model.DataPiece
 	piece.position = undo["position"]
+
+	if piece is Model.DataTowerRotatePiece and undo.has("direction"):
+		(piece as Model.DataTowerRotatePiece).cur_direction = int(
+			undo["direction"]
+		)
 
 	var captured := undo["captured"] as Model.DataPiece
 
@@ -539,10 +696,11 @@ func _evaluate() -> float:
 
 			var piece := node as Model.DataPiece
 
+
 			if not piece is Model.DataCorePiece:
 				var material_value: float = float(piece.piece_value) * 100.0
 				if piece is Model.DataEyePiece:
-					material_value += 300.0
+					material_value += 300.0 + 600.0 * early_eye_protection
 
 				score += sign_value * material_value
 
@@ -574,12 +732,15 @@ func _evaluate() -> float:
 	if own_core != null and own_core.power_count == 1:
 		score -= 8000.0
 
+
 	score += _scouting_score()
 	score += _tactical_score()
 	var exposure_change: float = (
 		_known_exposure_cost() - initial_exposure_cost
 	)
 	score -= exposure_change
+	score -= _memory_danger_cost()
+	score -= _early_eye_danger_cost()
 
 	return score
 
@@ -601,8 +762,12 @@ func _minimax(
 		return terminal
 
 	if depth <= 0:
-		return _evaluate()
-
+		return _search_exchanges(
+			side,
+			alpha,
+			beta,
+			EXCHANGE_EXTENSION_DEPTH
+		)
 	var actions: Array[Dictionary] = _actions(side)
 
 	if actions.is_empty() or timed_out:
@@ -642,6 +807,100 @@ func _minimax(
 
 	if timed_out:
 		return _evaluate()
+
+	return best
+
+func _search_exchanges(
+	side: int,
+	alpha: float,
+	beta: float,
+	remaining: int
+) -> float:
+	var terminal: float = _terminal_score()
+	if terminal != 0.0:
+		return terminal
+
+	if _expired() or remaining <= 0:
+		return _evaluate()
+
+	var maximizing: bool = side == cpu_player
+	var core_threatened: bool = _core_threat_count(side) > 0
+
+	var core: Model.DataCorePiece = _core(side)
+	if core != null and core.power_count == 0:
+		core_threatened = true
+
+	var standing_score: float = _evaluate()
+
+	# In a quiet position, the static evaluation is our baseline.
+	# Under a core threat, require an actual response instead.
+	var best: float = standing_score
+	if core_threatened:
+		best = -INF if maximizing else INF
+	else:
+		if maximizing:
+			if best >= beta:
+				return best
+			alpha = maxf(alpha, best)
+		else:
+			if best <= alpha:
+				return best
+			beta = minf(beta, best)
+
+	if _expired():
+		return standing_score
+
+	# Request all actions so quiet moves cannot exclude captures.
+	var actions: Array[Dictionary] = _actions(
+		side,
+		false,
+		not core_threatened
+	)
+
+	# Limit optional capture continuations, not emergency defenses.
+	if not core_threatened and actions.size() > 4:
+		actions.resize(4)
+
+	if timed_out:
+		return standing_score
+
+	var searched: bool = false
+
+	for action in actions:
+		if _expired():
+			break
+
+		# Normally extend captures only. If the core is threatened,
+		# also examine quiet defensive responses.
+		if not core_threatened and not _is_capture(action, side):
+			continue
+
+		var undo: Dictionary = _push(action)
+		var value: float = _search_exchanges(
+			3 - side,
+			alpha,
+			beta,
+			remaining - 1
+		)
+		_pop(action, undo)
+
+		if timed_out:
+			break
+
+		searched = true
+
+		if maximizing:
+			best = maxf(best, value)
+			alpha = maxf(alpha, best)
+		else:
+			best = minf(best, value)
+			beta = minf(beta, best)
+
+		if beta <= alpha:
+			break
+
+	if timed_out or not searched:
+		return standing_score
 
 	return best
 
@@ -955,7 +1214,7 @@ func _exchange_value(piece: Model.DataPiece) -> float:
 		return WIN_SCORE
 
 	if piece is Model.DataEyePiece:
-		value += 300.0
+		value += 300.0 + 600.0 * early_eye_protection
 
 	var core: Model.DataCorePiece = _core(piece.owned_player)
 
@@ -969,6 +1228,22 @@ func _exchange_value(piece: Model.DataPiece) -> float:
 			value += 150.0
 
 	return value
+
+func _early_eye_danger_cost() -> float:
+	if early_eye_protection <= 0.0:
+		return 0.0
+
+	var cost: float = 0.0
+
+	for node in simulation.player_pieces[cpu_player - 1]:
+		var piece := node as Model.DataPiece
+		if not piece is Model.DataEyePiece:
+			continue
+
+		if simulation.is_piece_under_attack(piece):
+			cost += 450.0 * early_eye_protection
+
+	return cost
 
 func _scouting_score() -> float:
 	var cheapest_revealer: Dictionary = {}
@@ -1102,3 +1377,61 @@ func _known_exposure_cost() -> float:
 		cost += piece_cost
 
 	return cost
+
+func _memory_danger_cost() -> float:
+	var total: float = 0.0
+
+	for node in simulation.player_pieces[cpu_player - 1]:
+		var piece := node as Model.DataPiece
+		var risk: float = float(
+			memory_risk.get(piece.get_cur_pos(), 0.0)
+		)
+
+		if risk <= 0.0:
+			continue
+
+		var value: float = _exchange_value(piece)
+		var cost: float = minf(value, 1200.0) * 0.65
+
+		if piece is Model.DataCorePiece:
+			cost = 3000.0
+
+		total += risk * cost
+
+	return total
+
+
+
+func _piece_actions(piece: Model.DataPiece) -> Array[Dictionary]:
+	if piece is Model.DataTowerRotatePiece:
+		return (
+			piece as Model.DataTowerRotatePiece
+		).generate_turn_actions()
+
+	var actions: Array[Dictionary] = []
+
+	for destination in _moves(piece):
+		actions.append({
+			"piece": piece,
+			"destination": destination,
+		})
+
+	return actions
+
+func _directional_priority(action: Dictionary) -> float:
+	var piece := action["piece"] as Model.DataPiece
+
+	if not piece is Model.DataTowerRotatePiece:
+		return _move_priority(action)
+
+	var tower := piece as Model.DataTowerRotatePiece
+	var original_direction: int = tower.cur_direction
+
+	tower.cur_direction = int(
+		action.get("direction", original_direction)
+	)
+
+	var priority: float = _move_priority(action)
+
+	tower.cur_direction = original_direction
+	return priority

@@ -27,11 +27,15 @@ func _ready() -> void:
 
 	for dropdown in [player_color_select, enemy_color_select]:
 		dropdown.clear()
-		dropdown.custom_minimum_size = Vector2(100, 40)
+		var control_scale := 2.0 if is_mobile_browser else 1.0
+		dropdown.custom_minimum_size = Vector2(100, 40) * control_scale
+		var popup = dropdown.get_popup()
+		popup.add_theme_font_size_override("font_size", roundi(16 * control_scale))
+		popup.add_theme_constant_override("v_separation", roundi(8 * control_scale))
 
 		for color in GameColors.PLAYER_PALETTE:
 			var swatch := Image.create(
-				60, 24, false, Image.FORMAT_RGBA8
+				roundi(60 * control_scale), roundi(24 * control_scale), false, Image.FORMAT_RGBA8
 			)
 			swatch.fill(color)
 
@@ -47,6 +51,10 @@ func _ready() -> void:
 	enemy_color_select.item_selected.connect(
 		_on_enemy_color_selected
 	)
+	get_viewport().size_changed.connect(_on_mobile_viewport_resized)
+
+func _on_mobile_viewport_resized() -> void:
+	update_mobile_scale()
 
 func _on_player_color_selected(index: int) -> void:
 	GameColors.set_player_color(1, index)
@@ -88,6 +96,20 @@ func update_mobile_scale():
 	)
 	if is_mobile_browser:
 		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+	# Size the control itself so its icon and hit area share the same bounds.
+	var control_scale := 2.0 if is_mobile_browser else 1.0
+	for close_button: Button in [
+		$CpuSettingsScreen/MarginContainer/Panel/CloseGameSettings,
+		$MutiplayerSettings/MarginContainer/Panel/CloseMultiSettings,
+	]:
+		var side := 54.0 * control_scale
+		close_button.scale = Vector2.ONE
+		close_button.expand_icon = true
+		close_button.custom_minimum_size = Vector2(side, side)
+		close_button.offset_left = -side
+		close_button.offset_top = 0.0
+		close_button.offset_right = 0.0
+		close_button.offset_bottom = side
 
 func _on_new_game_pressed() -> void:
 	# get_tree().root.set_meta("play_vs_cpu", true)

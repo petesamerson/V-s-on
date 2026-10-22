@@ -32,6 +32,15 @@ func prepare(cpu: Node) -> void:
 		engine.board.player_captures[side].resize(
 			source_board.player_captures[side].size()
 		)
+
+		# Transfer only capture coordinates, not rendering resources.
+		for i in range(source_board.player_captures[side].size()):
+			var record: Dictionary = source_board.player_captures[side][i]
+			var worker_record: Dictionary = {}
+			if record.has("cell"):
+				worker_record["cell"] = record["cell"]
+			engine.board.player_captures[side][i] = worker_record
+
 		for source: Node in source_board.player_pieces[side]:
 			if not is_instance_valid(source) or source.is_queued_for_deletion():
 				continue
@@ -56,6 +65,20 @@ func prepare(cpu: Node) -> void:
 			engine.board.pieces_container.add_child(copy)
 			live_to_worker[copy.live_id] = copy.get_instance_id()
 			worker_to_live[copy.get_instance_id()] = copy.live_id
+
+	engine.reversal_origins.clear()
+
+	for record in cpu.get("recent_moves"):
+		var worker_id: int = int(
+			live_to_worker.get(int(record["id"]), -1)
+		)
+
+		if worker_id < 0:
+			continue
+
+		# The history is newest first; keep the most recent origin.
+		if not engine.reversal_origins.has(worker_id):
+			engine.reversal_origins[worker_id] = record["from"]
 
 	for side in range(2):
 		var capturer: int = source_board.last_capture_capturer_ids[side]
@@ -84,7 +107,7 @@ func prepare(cpu: Node) -> void:
 # Runs exclusively on a worker thread. It has no live Node references.
 func compute() -> Dictionary:
 	var started: int = Time.get_ticks_msec()
-	var budgets: Array[int] = [750, 1000, 1250, 1500, 4500, 7000]
+	var budgets: Array[int] = [750, 1000, 1250, 2000, 5000, 10000]
 	engine.turn_deadline = started + budgets[clampi(engine.difficulty - 1, 0, 5)]
 	engine.take_turn()
 

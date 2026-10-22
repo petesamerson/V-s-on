@@ -212,6 +212,69 @@ class DataTowerRotatePiece extends DataPiece:
 		cur_moves = original_moves
 
 		return all_moves
+	
+	func generate_turn_actions() -> Array[Dictionary]:
+		var actions: Array[Dictionary] = []
+
+		var original_direction: int = cur_direction
+		var original_player: int = board.current_player
+		var original_moves: Array[Vector2i] = cur_moves.duplicate()
+		var original_rotate_moves: Array[Vector2i] = (
+			cur_possible_rotate_moves.duplicate()
+		)
+		var original_rotate_map: Dictionary = rotate_map.duplicate(true)
+
+		var pending: Array[int] = [original_direction]
+		var visited: Dictionary = {original_direction: true}
+		var index: int = 0
+
+		board.current_player = owned_player
+
+		while index < pending.size():
+			var direction: int = pending[index]
+			index += 1
+
+			cur_direction = direction
+			board.refresh_vision()
+
+			clear_rotate_maps()
+			var destinations: Array[Vector2i] = (
+				generate_possible_moves(get_cur_pos()).duplicate()
+			)
+			var pivots: Dictionary = rotate_map.duplicate(true)
+
+			for destination in destinations:
+				actions.append({
+					"piece": self,
+					"destination": destination,
+					"direction": direction,
+				})
+
+			for key in ["pivot1", "pivot2"]:
+				var pivot: Vector2i = pivots[key]
+				if not board.cell_in_board(pivot):
+					continue
+
+				var next_direction: int = posmod(
+					direction + (-1 if key == "pivot1" else 1),
+					6
+				)
+
+				if visited.has(next_direction):
+					continue
+
+				visited[next_direction] = true
+				pending.append(next_direction)
+
+		cur_direction = original_direction
+		board.current_player = original_player
+		board.refresh_vision()
+
+		cur_moves = original_moves
+		cur_possible_rotate_moves = original_rotate_moves
+		rotate_map = original_rotate_map
+
+		return actions
 
 	func can_attack_cell_after_any_rotation(target: Vector2i) -> bool:
 		var cur_location := get_cur_pos()

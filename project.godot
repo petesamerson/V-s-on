@@ -25,6 +25,7 @@ NetworkManager="*res://network_manger.gd"
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=6
 
 [editor]
 

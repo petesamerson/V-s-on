@@ -39,6 +39,9 @@ const CORE_SUPPORT_ENDGAME_CAPTURE_COUNT := 27
 var cpu_cover_counts: Dictionary = {}
 var cpu_cover_by_piece: Dictionary = {}
 
+var capture_danger: Dictionary = {}
+var reversal_origins: Dictionary = {}
+
 var player_number: int = 2
 var difficulty: int = 5
 
@@ -85,7 +88,9 @@ func take_turn() -> void:
 		cpu_turn_count
 	)
 
-	rotate_towers_for_turn()
+	if(difficulty < 4):
+		rotate_towers_for_turn()
+
 	rebuild_cpu_cover_cache()
 
 	var enemy_player := 1 if player_number == 2 else 2
@@ -106,6 +111,18 @@ func take_turn() -> void:
 				enemy_last_seen[last_enemy_capturer_id] = capturer.get_cur_pos()
 				enemy_last_seen_turn[last_enemy_capturer_id] = cpu_turn_count
 				break
+
+	# Copy before updating because this dictionary crosses the worker boundary.
+	capture_danger = capture_danger.duplicate(true)
+
+	for i in range(observed_enemy_capture_count, enemy_capture_count):
+		var record: Dictionary = board.player_captures[enemy_player - 1][i]
+		if record.has("cell"):
+			capture_danger[record["cell"]] = cpu_turn_count
+
+	for cell in capture_danger.keys():
+		if cpu_turn_count - int(capture_danger[cell]) > 4:
+			capture_danger.erase(cell)	
 
 	observed_enemy_capture_count = enemy_capture_count
 
@@ -195,12 +212,19 @@ func take_turn() -> void:
 				clampi(difficulty - 1, 0, 4)
 			]
 			var move_score := score_move(piece, destination, core_under_attack)
+
+			var reversal_penalty: float = return_move_penalty(
+				piece, destination, core_under_attack
+			)
+			move_score -= reversal_penalty
+
 			move_score += rng.randf_range(-randomness, randomness)
 
 			actions.append({
 				"piece": piece,
 				"destination": destination,
 				"score": move_score,
+				"reversal_penalty": reversal_penalty,
 				"unprotected_danger": is_unprotected_move(piece, destination),
 				"scout_score": score_scouting_action(
 					piece,
@@ -250,6 +274,17 @@ func take_turn() -> void:
 	if difficulty >= 4 and not actions.is_empty():
 		var search = TacticalSearch.new()
 		search.turn_deadline = turn_deadline
+		var captures_so_far: int = (
+			board.player_captures[0].size()
+			+ board.player_captures[1].size()
+		)
+
+		search.early_eye_protection = 1.0 - clampf(
+			float(captures_so_far) / 12.0,
+			0.0,
+			1.0
+		)
+		search.memory_risk = build_memory_risk()
 
 		var material_lead: float = (
 			get_material_value(player_number)
@@ -384,7 +419,14 @@ func take_turn() -> void:
 
 	last_moved_piece = chosen_piece
 	moved_piece_ids[chosen_piece.get_instance_id()] = true
-	chosen_action = {"piece": chosen_piece, "destination": destination}
+	chosen_action = choice.duplicate()
+
+	if chosen_piece is Model.DataTowerRotatePiece:
+		var tower := chosen_piece as Model.DataTowerRotatePiece
+		tower.cur_direction = int(
+			choice.get("direction", tower.cur_direction)
+		)
+
 	last_enemy_capturer_id = -1
 
 func is_move_threatened(destination: Vector2i) -> bool:
@@ -694,8 +736,8 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 		score += float(cover_after - cover_before) * 35.0
 		score *= maxf(1.0, float(piece.piece_value))
 
-	if core_under_attack and piece is Model.DataCorePiece:
-		score += 1000.0
+	# if core_under_attack and piece is Model.DataCorePiece:
+	# 	score += 1000.0
 
 
 
@@ -1382,6 +1424,9 @@ func rotate_towers_for_turn() -> void:
 			var score := score_tower_rotation(
 				tower, new_vision, enemy_player
 			)
+			score += _tower_rotation_tactical_bonus(
+				tower, new_direction
+			)
 			if score > best_score:
 				best_score = score
 				best_key = key
@@ -1426,12 +1471,25 @@ func _tower_rotation_preserves_support(
 		tower.get_cur_pos(), new_direction
 	)
 
-	# Keep an existing contribution to core power.
+	# Allow this tower to stop supporting the core if at least
+	# two other supporters remain.
 	if core != null:
 		var core_cell: Vector2i = core.get_cur_pos()
+		var support_before: int = count_core_support(
+			player_number, core_cell
+		)
+		var support_after: int = support_before
+
 		if tower.cur_vision.has(core_cell):
-			if not new_vision.has(core_cell):
-				return false
+			support_after -= 1
+		if new_vision.has(core_cell):
+			support_after += 1
+
+		var required_support: int = mini(2, support_before)
+		required_support = maxi(1, required_support)
+
+		if support_after < required_support:
+			return false
 
 	# Record allies this tower currently guards.
 	board.regenerate_all_piece_moves(1, true)
@@ -1466,6 +1524,61 @@ func _tower_rotation_preserves_support(
 
 	return preserves_guards
 
+func _tower_rotation_tactical_bonus(
+	tower: Model.DataTowerRotatePiece,
+	new_direction: int
+) -> float:
+	if difficulty < 4:
+		return 0.0
+
+	# Use part of the existing turn budget, not extra thinking time.
+	var now: int = Time.get_ticks_msec()
+	if turn_deadline <= now:
+		return 0.0
+
+	var probe = TacticalSearch.new()
+	probe.cpu_player = player_number
+	probe.enemy_player = 3 - player_number
+	probe.deadline = mini(turn_deadline, now + 25)
+
+	# Normal visibility only: hidden enemies are not copied.
+	probe._build_simulation(board)
+
+	var copy := probe.clones.get(
+		tower.get_instance_id()
+	) as Model.DataTowerRotatePiece
+
+	if copy == null:
+		probe.simulation.dispose()
+		return 0.0
+
+	var threats_before: int = probe._core_threat_count(player_number)
+	var tactics_before: float = probe._tactical_score()
+
+	if probe.timed_out:
+		probe.simulation.dispose()
+		return 0.0
+
+	copy.cur_direction = new_direction
+	probe._refresh()
+
+	var threats_after: int = probe._core_threat_count(player_number)
+	var tactics_after: float = probe._tactical_score()
+
+	var timed_out: bool = probe.timed_out
+	probe.simulation.dispose()
+
+	if timed_out:
+		return 0.0
+
+	# Do not rotate into additional known core threats.
+	if threats_after > threats_before:
+		return -100000.0
+
+	return (
+		float(threats_before - threats_after) * 1200.0
+		+ (tactics_after - tactics_before) * 0.35
+	)
 
 
 func score_tower_rotation(
@@ -1624,51 +1737,174 @@ func rebuild_cpu_cover_cache() -> void:
 func _yield_cpu_frame() -> void:
 	pass
 
-
 func _core_emergency_actions(
 	actions: Array[Dictionary],
 	own_core: Model.DataCorePiece
 ) -> Array[Dictionary]:
 	var opponent: int = 3 - player_number
 	var winning_captures: Array[Dictionary] = []
+
 	for action in actions:
 		var destination: Vector2i = action["destination"]
 		if board.hasCellInVision(player_number, destination):
-			var target := board.get_enemy_piece_at_cell(destination, opponent)
+			var target := board.get_enemy_piece_at_cell(
+				destination, opponent
+			)
 			if target is Model.DataCorePiece:
 				winning_captures.append(action)
+
 	if not winning_captures.is_empty():
 		return winning_captures
 
-	# Full information is used only to check emergency core escapes.
-	# This separate model never feeds hidden enemies into normal search.
+	# Preserve the existing emergency simulation's information policy.
 	var defense = TacticalSearch.new()
 	defense.cpu_player = player_number
 	defense.enemy_player = opponent
 	defense._build_simulation(board, true)
-	var copied_core := defense.clones.get(
-		own_core.get_instance_id()
-	) as Model.DataCorePiece
-	var retreats: Array[Dictionary] = []
 
-	if copied_core != null:
-		for action in actions:
-			if action["piece"] != own_core:
-				continue
-			var simulated: Dictionary = {
-				"piece": copied_core,
-				"destination": action["destination"],
-			}
-			var undo: Dictionary = defense._push(simulated)
-			var safe: bool = false
-			if copied_core.power_count > 0:
-				defense.simulation.current_player = player_number
-				defense.simulation.regenerate_all_piece_moves(player_number, true)
-				defense.simulation.current_player = opponent
-				safe = not defense.simulation.is_piece_under_attack(copied_core)
-			defense._pop(simulated, undo)
-			if safe:
-				retreats.append(action)
+	var safe_responses: Array[Dictionary] = []
+
+	for action in actions:
+		var original_piece := action["piece"] as Model.DataPiece
+		var copied_piece := defense.clones.get(
+			original_piece.get_instance_id()
+		) as Model.DataPiece
+
+		if copied_piece == null:
+			continue
+
+		var simulated: Dictionary = {
+			"piece": copied_piece,
+			"destination": action["destination"],
+		}
+
+		if action.has("direction"):
+			simulated["direction"] = action["direction"]
+
+		var undo: Dictionary = defense._push(simulated)
+
+		var copied_core: Model.DataCorePiece = defense._core(
+			player_number
+		)
+
+		var safe: bool = false
+
+		if copied_core != null and copied_core.power_count > 0:
+			defense.simulation.current_player = player_number
+			defense.simulation.regenerate_all_piece_moves(
+				player_number, true
+			)
+			defense.simulation.current_player = opponent
+
+			safe = not defense.simulation.is_piece_under_attack(
+				copied_core
+			)
+
+		defense._pop(simulated, undo)
+
+		if safe:
+			safe_responses.append(action)
 
 	defense.simulation.dispose()
-	return retreats
+	return safe_responses
+
+
+func build_memory_risk() -> Dictionary:
+	var risk: Dictionary = {}
+	var enemy_player: int = 3 - player_number
+
+	for node in board.player_pieces[enemy_player - 1]:
+		var enemy := node as Model.DataPiece
+		var id: int = enemy.get_instance_id()
+
+		if not enemy_last_seen.has(id):
+			continue
+		if board.hasCellInVision(player_number, enemy.get_cur_pos()):
+			continue
+
+		var age: int = cpu_turn_count - int(
+			enemy_last_seen_turn.get(id, cpu_turn_count)
+		)
+		if age > 4:
+			continue
+
+		var origin: Vector2i = enemy_last_seen[id]
+
+		# Seeing this cell empty invalidates the exact old position.
+		if board.hasCellInVision(player_number, origin):
+			continue
+
+		var strength: float = 0.65 * pow(0.75, float(age))
+		var cells: Array[Vector2i] = []
+		var directions: Array[int] = [0, 1, 2, 3, 4, 5]
+
+		if enemy is Model.DataTriangleEvenPiece:
+			directions = [1, 3, 5]
+		elif enemy is Model.DataTriangleOddPiece:
+			directions = [0, 2, 4]
+
+		if enemy is Model.DataTowerRotatePiece:
+			# Tower rotation makes the remembered direction uncertain.
+			cells.assign(
+				board.get_hexagon_tiles(origin, enemy.move_range)
+			)
+			strength *= 0.5
+		else:
+			for direction in directions:
+				var line: Array[Vector2i] = board.get_line_from_center(
+					origin, direction, enemy.move_range
+				)
+
+				if enemy is Model.DataHopPiece:
+					if not line.is_empty():
+						cells.append(line.back())
+				else:
+					cells.append_array(line)
+
+		cells.append(origin)
+
+		for cell in cells:
+			if board.cell_in_board(cell):
+				risk[cell] = maxf(
+					float(risk.get(cell, 0.0)),
+					strength
+				)
+
+	# Capture evidence supplements memory without adding duplicate penalties.
+	for origin in capture_danger:
+		var age: int = cpu_turn_count - int(capture_danger[origin])
+		var strength: float = 0.45 * pow(0.75, float(age))
+
+		for cell in board.get_hexagon_tiles(origin, 2):
+			if not board.cell_in_board(cell):
+				continue
+
+			risk[cell] = maxf(
+				float(risk.get(cell, 0.0)),
+				strength
+			)
+
+	return risk
+
+func return_move_penalty(
+	piece: Model.DataPiece,
+	destination: Vector2i,
+	core_under_attack: bool
+) -> float:
+	var id: int = piece.get_instance_id()
+
+	if not reversal_origins.has(id):
+		return 0.0
+	if destination != reversal_origins[id]:
+		return 0.0
+
+	# Do not discourage emergency defenses or escaping an attack.
+	if core_under_attack or is_running_away(piece, destination):
+		return 0.0
+
+	var opponent: int = 3 - player_number
+	if board.hasCellInVision(player_number, destination):
+		if board.get_enemy_piece_at_cell(destination, opponent) != null:
+			return 0.0
+
+	return 30.0

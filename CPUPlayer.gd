@@ -37,6 +37,9 @@ const CORE_SUPPORT_ENDGAME_CAPTURE_COUNT := 27
 var cpu_cover_counts: Dictionary = {}
 var cpu_cover_by_piece: Dictionary = {}
 
+var capture_danger: Dictionary = {}
+var recent_moves: Array[Dictionary] = []
+
 @export var player_number: int = 2
 @export_range(1,6) var difficulty: int = 5
 
@@ -131,6 +134,16 @@ func take_turn() -> void:
 	last_enemy_capturer_id = -1
 	last_moved_piece = chosen
 	print("CPU worker finished in ", result["elapsed_ms"], " ms")
+
+	recent_moves.push_front({
+		"id": chosen.get_instance_id(),
+		"from": chosen.get_cur_pos(),
+		"to": destination,
+	})
+
+	if recent_moves.size() > 2:
+		recent_moves.pop_back()
+
 	chosen.make_cpu_move(destination)
 
 func _find_live_cpu_piece(id: int) -> Piece:
