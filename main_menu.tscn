@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=10 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://main_menu.gd" id="1_fu7sn"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="3_jix8l"]
 [ext_resource type="Texture2D" uid="uid://jjya7x7mgw5a" path="res://sprites/close_icon.png" id="4_jix8l"]
+[ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="5_glbon"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jix8l"]
 bg_color = Color(0, 0, 0, 1)
@@ -442,6 +443,11 @@ offset_bottom = 108.0
 grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
 icon = ExtResource("4_jix8l")
+
+[node name="MenuMusic" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("5_glbon")
+volume_db = 8.0
+autoplay = true
 
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/CpuPlay" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/OnlinePlay" to="." method="_on_online_play_pressed"]
