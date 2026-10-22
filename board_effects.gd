@@ -55,6 +55,7 @@ func _tile_parts(cell: Vector2i) -> Array[Dictionary]:
 
 	for group in [
 		board.player_fills,
+		board.player_powered_fills,
 		board.player_outlines,
 		board.player_move_fills,
 		board.player_selected_outlines
@@ -204,6 +205,7 @@ func play_setup() -> void:
 
 	for group in [
 		board.player_fills,
+		board.player_powered_fills,
 		board.player_outlines,
 		board.player_move_fills,
 		board.player_selected_outlines

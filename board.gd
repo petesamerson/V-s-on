@@ -37,6 +37,7 @@ var game_setup_complete := false
 var cpu_turn_in_progress := false
 
 var player_fills: Array[TileMapLayer] = []
+var player_powered_fills: Array[TileMapLayer] = []
 var player_outlines: Array[TileMapLayer] = []
 var player_selected_outlines: Array[TileMapLayer] = []
 var player_move_fills: Array[TileMapLayer] = []
@@ -169,11 +170,11 @@ func scale_text_tree(node: Node, factor: float) -> void:
 
 func intialize_drawn_sprite_nodes():
 	rotate_sprites = Node2D.new()
-	rotate_sprites.z_index = 3
+	rotate_sprites.z_index = 5
 	add_child(rotate_sprites)
 
 	capture_sprites = Node2D.new()
-	capture_sprites.z_index = 3
+	capture_sprites.z_index = 5
 	add_child(capture_sprites)
 
 func draw_player_vision(cell: Vector2i, player_id: int) -> void:
@@ -253,6 +254,7 @@ func instantiate_core_menu():
 func clear_player_highlights() -> void:
 	for layers in [
 		player_fills,
+		player_powered_fills,
 		player_outlines,
 		player_selected_outlines,
 		player_move_fills
@@ -275,12 +277,14 @@ func redraw_selected_highlights() -> void:
 			for cell in piece.cur_moves:
 				draw_potential_move(cell, piece.owned_player)
 
+
 func create_player_highlight_layers(player_count: int) -> void:
 	for layers in [
 		player_fills,
+		player_powered_fills,
 		player_outlines,
-		player_selected_outlines,
-		player_move_fills
+		player_move_fills,
+		player_selected_outlines
 	]:
 		for layer in layers:
 			remove_child(layer)
@@ -291,19 +295,31 @@ func create_player_highlight_layers(player_count: int) -> void:
 		var player_id := i + 1
 		var dark := GameColors.player_color(player_id).darkened(0.5)
 		var light := GameColors.powered_color(player_id)
+		var powered_vision_color := dark.lerp(light, 0.18)
 
 		player_fills.append(
 			create_highlight_layer("VisionFill%d" % player_id, dark)
 		)
+
+		player_powered_fills.append(
+			create_highlight_layer(
+				"PoweredVisionFill%d" % player_id,
+				powered_vision_color
+			)
+		)
+
 		player_outlines.append(
 			create_highlight_layer("VisionOutline%d" % player_id, dark)
 		)
+
 		player_move_fills.append(
 			create_highlight_layer("MoveFill%d" % player_id, light)
 		)
+
 		player_selected_outlines.append(
 			create_highlight_layer("SelectedOutline%d" % player_id, light)
 		)
+
 
 
 func create_highlight_layer(
@@ -317,6 +333,25 @@ func create_highlight_layer(
 	layer.modulate = color
 	add_child(layer)
 	return layer
+
+func refresh_powered_vision() -> void:
+	for layer in player_powered_fills:
+		layer.clear()
+
+	var viewer := get_viewer_player()
+	var layer := player_powered_fills[viewer - 1]
+
+	for piece in player_pieces[viewer - 1]:
+		if not piece.powered:
+			continue
+
+		for cell in piece.cur_vision:
+			if cell_in_board(cell):
+				layer.set_cell(
+					cell,
+					white_fill_source_id,
+					Vector2i.ZERO
+				)
 
 
 func update_turn_text():
@@ -1175,6 +1210,7 @@ func update_core_power():
 
 	update_visible_enemy_core_highlights(viewer)
 	draw_powered_piece_links()
+	refresh_powered_vision()
 
 	if game_setup_complete:
 		var winner := determine_winner()
@@ -1189,70 +1225,6 @@ func draw_powered_piece_links() -> void:
 	# Remove the permanent small connections.
 	remove_cached_lines_with_prefix("powered_pair:")
 
-# func draw_powered_piece_links() -> void:
-# 	var viewer := local_player if online_game else current_player
-# 	var own_index := viewer - 1
-# 	var active_own_links: Dictionary = {}
-
-# 	for player_index in range(player_pieces.size()):
-# 		var pieces: Array[Piece] = []
-
-# 		for node in player_pieces[player_index]:
-# 			var piece := node as Piece
-# 			if piece == null or piece is CorePiece:
-# 				continue
-# 			pieces.append(piece)
-
-# 		for i in range(pieces.size()):
-# 			for j in range(i + 1, pieces.size()):
-# 				var first := pieces[i]
-# 				var second := pieces[j]
-# 				var id_a := first.get_instance_id()
-# 				var id_b := second.get_instance_id()
-# 				var link_key := "powered_pair:%d:%d:%d" % [
-# 					player_index,
-# 					mini(id_a, id_b),
-# 					maxi(id_a, id_b)
-# 				]
-
-# 				var both_visible := (
-# 					player_index == own_index
-# 					or (
-# 						first.visible
-# 						and second.visible
-# 						and hasCellInVision(viewer, first.get_cur_pos())
-# 						and hasCellInVision(viewer, second.get_cur_pos())
-# 					)
-# 				)
-# 				# Keep a previously seen enemy link frozen while either piece is hidden.
-# 				if not both_visible:
-# 					remove_cached_power_line(link_key)
-# 					continue
-
-# 				if first.powered and second.powered:
-# 					var link_color: Color = (
-# 						GameColors.PLAYER_BLUE_POWER
-# 						if player_index == 0
-# 						else GameColors.PLAYER_RED_POWER
-# 					)
-# 					set_cached_power_line(
-# 						link_key,
-# 						first.position,
-# 						second.position,
-# 						link_color,
-# 						2.0,
-# 						0.35
-# 					)
-
-# 					if player_index == own_index:
-# 						active_own_links[link_key] = true
-# 				else:
-# 					remove_cached_power_line(link_key)
-
-# 	remove_cached_lines_except(
-# 		"powered_pair:%d:" % own_index,
-# 		active_own_links
-	# )
 
 func update_visible_enemy_core_highlights(viewer: int) -> void:
 	var enemy_player := 2 if viewer == 1 else 1

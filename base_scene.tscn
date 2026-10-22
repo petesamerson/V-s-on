@@ -188,7 +188,6 @@ camera = NodePath("../Camera2D")
 capture_texture = ExtResource("15_u2j6w")
 white_fill_source_id = 14
 white_outline_source_id = 15
-tutorial_mode = null
 piece_scene = ExtResource("12_01iy8")
 core_piece_scene = ExtResource("16_do6al")
 eye_piece_scene = ExtResource("14_17fj0")
