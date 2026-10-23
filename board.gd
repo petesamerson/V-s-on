@@ -42,6 +42,7 @@ var player_powered_fills: Array[TileMapLayer] = []
 var player_outlines: Array[TileMapLayer] = []
 var player_selected_outlines: Array[TileMapLayer] = []
 var player_move_fills: Array[TileMapLayer] = []
+var core_attacker_highlights: TileMapLayer
 
 @export var white_fill_source_id: int
 @export var white_outline_source_id: int
@@ -74,9 +75,14 @@ func _ready() -> void:
 
 	call_deferred("spawn_all_pieces")
 
-	get_viewport().size_changed.connect(resize_text_overlay)
+	get_viewport().size_changed.connect(_on_mobile_viewport_resized)
 
 	create_player_highlight_layers(2)
+	core_attacker_highlights = create_highlight_layer(
+		"CoreAttackerHighlights",
+		Color.WHITE
+	)
+	core_attacker_highlights.z_index = 3
 	move_child(board_effects, get_child_count() - 1)
 	instantiate_turn_menu()
 	instantiate_core_menu()
@@ -125,10 +131,11 @@ func update_mobile_scale():
 		or OS.has_feature("web_ios")
 	)
 	var pause_button := get_node("../TurnLayer/MarginContainer/VBoxContainer/Pause") as Button
-	var pause_side := 54.0 * (2.0 if is_mobile_browser else 1.0)
+	var pause_side := 80.0 * (2.0 if is_mobile_browser else 1.0)
 	pause_button.expand_icon = true
 	pause_button.custom_minimum_size = Vector2(pause_side, pause_side)
 	pause_button.add_theme_constant_override("icon_max_width", roundi(pause_side - 16.0))
+	pause_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	
 	if is_mobile_browser:
 		# selection_panel.scale = Vector2(2.5,2.5)
@@ -683,30 +690,14 @@ func spawn_player_location(center: Vector2i, player: int):
 # 	pieces_container.remove_child(piece)
 
 var play_capture: bool = false
+var enemy_captured_this_turn = false
 
-# func remove_piece(piece: Piece) -> void:
-# 	if(cpu_player == null or current_player != cpu_player.player_number):
-# 		play_capture = true
-# 		queue_game_sound(game_sound_files[1], true)
-
-# 	add_captured_piece_icon(capturer_index, piece)
-# 	add_capture_feed_entry(piece)
-
-# 	var capturer_index := current_player - 1
-
-# 	player_captures[capturer_index].append({
-# 		"texture": piece.sprite.texture,
-# 		"name": piece.getTypeString()
-# 	})
-# 	add_captured_piece_icon(capturer_index, piece)
-
-# 	player_pieces[piece.owned_player - 1].erase(piece)
-# 	pieces_container.remove_child(piece)
-# 	piece.queue_free()
 func remove_piece(piece: Piece) -> void:
 	if cpu_player == null or current_player != cpu_player.player_number:
 		play_capture = true
-		queue_game_sound(game_sound_files[1], true)
+		queue_game_sound(PLAYER_CAPTURE_SOUND, true)
+	else: 
+		enemy_captured_this_turn = true
 
 	var capturer_index := current_player - 1
 
@@ -863,7 +854,7 @@ func set_enemy_piece_visiblity(cell: Vector2i, visible: bool, viewer: int) -> vo
 			if cpu_player != null and cpu_player.player_number == enemy_player:
 				if not cpu_player.seen_by_player:
 					cpu_player.seen_by_player = true
-					queue_game_sound(game_sound_files[3], true)
+					queue_game_sound(ENEMY_SPOTTED_SOUND, true)
 					played_found_sound = true
 
 func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
@@ -1249,9 +1240,36 @@ func update_core_power():
 		if winner != 0:
 			display_winner(winner)
 			return
+	
+	highlight_core_attackers(viewed_core)
 
 	if is_piece_under_attack(viewed_core) and not displayed_warning_text:
 		display_core_attack()
+
+func highlight_core_attackers(core: CorePiece) -> void:
+	core_attacker_highlights.clear()
+
+	var enemy_player := 2 if core.owned_player == 1 else 1
+	var target_cell := core.get_cur_pos()
+
+	regenerate_all_piece_moves(enemy_player, true)
+
+	for attacker in player_pieces[enemy_player - 1]:
+		var threatens_core: bool = false
+
+		if attacker is TowerRotatePiece:
+			threatens_core = (
+				attacker as TowerRotatePiece
+			).can_attack_cell_after_any_rotation(target_cell)
+		else:
+			threatens_core = attacker.cur_moves.has(target_cell)
+
+		if threatens_core and attacker.is_visible_in_tree():
+			core_attacker_highlights.set_cell(
+				attacker.get_cur_pos(),
+				white_outline_source_id,
+				Vector2i.ZERO
+			)
 
 func draw_powered_piece_links() -> void:
 	# Remove the permanent small connections.
@@ -1424,6 +1442,7 @@ func display_core_attack():
 	text_timer.wait_time = 1.5
 	text_timer.one_shot = true
 	text_timer.timeout.connect(_on_core_attack_timer_timeout)
+	queue_game_sound(CORE_ATTACK_SOUND)
 	win_label.text = "Core Under Attack!"
 	# win_label.modulate = Color.RED
 	add_child(text_timer)
@@ -1514,7 +1533,7 @@ func end_turn(movedPiece: Piece):
 	clear_captures()
 	displayed_warning_text = false
 	if(cpu_player == null or current_player != cpu_player.player_number):
-		queue_game_sound(game_sound_files[0])
+		queue_game_sound(PLAYER_MOVE_SOUND)
 
 		await update_move_camera(movedPiece)
 	for i in get_enemy_player_numbers():
@@ -1571,6 +1590,7 @@ func end_turn_vs_cpu() -> void:
 		if current_player == cpu_player.player_number:
 			push_warning("CPU did not complete its turn; retrying once.")
 			await get_tree().process_frame
+			enemy_captured_this_turn = false
 			await cpu_player.take_turn()
 
 		# If normal selection still failed, use the live legal fallback.
@@ -1581,10 +1601,13 @@ func end_turn_vs_cpu() -> void:
 			current_player == cpu_player.player_number
 		)
 
-		if(enemy_turn_interrupt):
-			queue_game_sound(game_sound_files[2], true)
+		if(enemy_captured_this_turn):
+			queue_game_sound(ENEMY_CAPTURE_SOUND, true)
+			enemy_captured_this_turn = false
+		elif(enemy_turn_interrupt):
+			queue_game_sound(ENEMY_MOVE_SOUND, true)
 		elif (played_found_sound):
-			queue_game_sound(game_sound_files[2], false)
+			queue_game_sound(ENEMY_MOVE_SOUND, false)
 			enemy_turn_interrupt = true
 
 		if player_last_moves.size() < 2:
@@ -2432,24 +2455,40 @@ func _on_stay_button_pressed() -> void:
 
 @onready var music_player: AudioStreamPlayer2D = $"../AudioStreamPlayer2D"
 @onready var game_sounds: AudioStreamPlayer =$"../GameSounds"
-var game_sound_files: Array[AudioStream] = [
-	preload("res://audio/firsttake.wav"),
-	preload("res://audio/Capture2.wav"),
-	preload("res://audio/EnemyMove.wav"),
-	preload("res://audio/Capture1.wav")
-]
+
+const PLAYER_MOVE_SOUND = preload("res://audio/firsttake.wav")
+const PLAYER_CAPTURE_SOUND = preload("res://audio/Capture2.wav")
+const CORE_ATTACK_SOUND = preload("res://audio/core_attack.wav")
+const ENEMY_MOVE_SOUND = preload("res://audio/EnemyMove.wav")
+const ENEMY_SPOTTED_SOUND = preload("res://audio/Capture1.wav")
+const ENEMY_CAPTURE_SOUND = preload("res://audio/enemy_capture.wav")
+
 
 var sound_queue: Array[AudioStream] = []
 
+
 func queue_game_sound(sound: AudioStream, clearQueue: bool = false) -> void:
-	if(clearQueue):
-		sound_queue = []
-		game_sounds.stop()
+	if clearQueue:
+		# Preserve any core warning waiting in the queue.
+		sound_queue = sound_queue.filter(
+			func(queued: AudioStream) -> bool:
+				return queued == CORE_ATTACK_SOUND
+		)
+
+		# Let a core warning finish before playing other effects.
+		if not (
+			game_sounds.playing
+			and game_sounds.stream == CORE_ATTACK_SOUND
+		):
+			game_sounds.stop()
+
 	sound_queue.append(sound)
+
 	if not game_sounds.finished.is_connected(_play_next_sound):
 		game_sounds.finished.connect(_play_next_sound)
+
 	if not game_sounds.playing:
-		_play_next_sound()
+		_play_next_sound()	
 
 func _play_next_sound() -> void:
 	if sound_queue.is_empty():
@@ -2478,3 +2517,5 @@ func _on_quit_pressed() -> void:
 
 
 const CORE_CAPTURE_ENDGAME_PIECES := 3
+
+

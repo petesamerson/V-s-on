@@ -1,4 +1,4 @@
-[gd_scene load_steps=60 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=63 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -35,6 +35,9 @@
 [ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
+[ext_resource type="Script" path="res://music_playlist.gd" id="33_music_playlist"]
+[ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
+[ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -458,8 +461,8 @@ Current Player
 "
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer"]
-offset_right = 55.0
-scale = Vector2(0.5, 0.5)
+offset_right = 128.0
+offset_bottom = 128.0
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
@@ -563,9 +566,9 @@ theme_override_font_sizes/font_size = 30
 text = "Quit"
 
 [node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
-stream = ExtResource("32_6ow2y")
 volume_db = 8.0
-autoplay = true
+script = ExtResource("33_music_playlist")
+tracks = Array[AudioStream]([ExtResource("32_6ow2y"), ExtResource("34_funk1"), ExtResource("38_td7wt")])
 
 [node name="GameSounds" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0
