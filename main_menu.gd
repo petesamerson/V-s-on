@@ -91,7 +91,9 @@ var is_mobile_browser = false
 
 func update_mobile_scale():
 	is_mobile_browser = (
-		OS.has_feature("web_android")
+		OS.has_feature("android")
+		or OS.has_feature("ios")
+		or OS.has_feature("web_android")
 		or OS.has_feature("web_ios")
 	)
 	if is_mobile_browser:
@@ -164,23 +166,41 @@ func _on_start_cpu_game_pressed() -> void:
 	get_tree().root.set_meta("online_game", false)
 	get_tree().change_scene_to_file("res://base_scene.tscn")
 
+
 func scale_text_tree(node: Node, factor: float) -> void:
 	if node is Control:
 		var control := node as Control
-		if control is Label or control is RichTextLabel or control is Button \
-		or control is LineEdit or control is TextEdit:
-			if not control.has_meta("base_font_size"):
-				control.set_meta("base_font_size", control.get_theme_font_size("font_size"))
+		var size_names: Array[String] = []
 
-			var base_size: int = control.get_meta("base_font_size")
+		if node is RichTextLabel:
+			size_names = [
+				"normal_font_size",
+				"bold_font_size",
+				"italics_font_size",
+				"bold_italics_font_size",
+				"mono_font_size"
+			]
+		elif node is Label or node is Button \
+		or node is LineEdit or node is TextEdit:
+			size_names = ["font_size"]
+
+		for size_name in size_names:
+			var meta_name := "menu_base_" + size_name
+
+			if not control.has_meta(meta_name):
+				control.set_meta(
+					meta_name,
+					control.get_theme_font_size(size_name)
+				)
+
+			var base_size: int = control.get_meta(meta_name)
 			control.add_theme_font_size_override(
-				"font_size",
+				size_name,
 				roundi(base_size * factor)
 			)
 
 	for child in node.get_children():
 		scale_text_tree(child, factor)
-
 
 func _on_online_play_pressed() -> void:
 	multiplayer_settings.visible = true

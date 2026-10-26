@@ -1,13 +1,97 @@
-[gd_scene load_steps=10 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=21 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://main_menu.gd" id="1_fu7sn"]
+[ext_resource type="Shader" uid="uid://bdk0iny516uf4" path="res://menu_board_shimmer.gdshader" id="3_8qtwp"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="3_jix8l"]
+[ext_resource type="Script" uid="uid://dbune3u03vuuy" path="res://menu_board.gd" id="3_nlkkf"]
 [ext_resource type="Texture2D" uid="uid://jjya7x7mgw5a" path="res://sprites/close_icon.png" id="4_jix8l"]
+[ext_resource type="Shader" uid="uid://ev24kqop6eoj" path="res://menu_fog.gdshader" id="4_qe12f"]
 [ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="5_glbon"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jix8l"]
-bg_color = Color(0, 0, 0, 1)
+bg_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dy7ct"]
+shader = ExtResource("3_8qtwp")
+shader_parameter/shimmer_strength = 0.2000000095
+shader_parameter/shimmer_speed = 0.800000038
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_8qtwp"]
+shader = ExtResource("4_qe12f")
+shader_parameter/fog_color = Color(0.2849079, 0.3059137, 0.3311225, 1)
+shader_parameter/fog_strength = 0.800000038
+shader_parameter/drift_speed = 0.10000000149012
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qe12f"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.8117647, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8qtwp"]
+bg_color = Color(0.023529412, 0.16470589, 0.22745098, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.8117647, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dy7ct"]
+bg_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.40784314, 0.40784314, 0.40784314, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0o4t1"]
+bg_color = Color(0.015686275, 0.105882354, 0.14901961, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.8117647, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="Theme" id="Theme_glbon"]
+Button/styles/focus = SubResource("StyleBoxFlat_qe12f")
+Button/styles/hover = SubResource("StyleBoxFlat_8qtwp")
+Button/styles/normal = SubResource("StyleBoxFlat_dy7ct")
+Button/styles/pressed = SubResource("StyleBoxFlat_0o4t1")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nlkkf"]
+content_margin_left = 36.0
+content_margin_top = 36.0
+content_margin_right = 36.0
+content_margin_bottom = 36.0
+bg_color = Color(0.0627451, 0.0627451, 0.0627451, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.40784314, 0.40784314, 0.40784314, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu7sn"]
 bg_color = Color(0, 0, 0, 0.81960785)
@@ -44,6 +128,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="TextureRect" type="TextureRect" parent="MainScreen"]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -53,6 +138,28 @@ grow_vertical = 2
 texture = ExtResource("1_06t4h")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="MenuBoard" type="Control" parent="MainScreen"]
+material = SubResource("ShaderMaterial_dy7ct")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_nlkkf")
+
+[node name="Fog" type="ColorRect" parent="MainScreen/MenuBoard"]
+material = SubResource("ShaderMaterial_8qtwp")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.5019608, 0.5647059, 0.6, 1)
 
 [node name="CenterContainer" type="CenterContainer" parent="MainScreen"]
 layout_mode = 1
@@ -65,23 +172,29 @@ grow_vertical = 2
 [node name="StartPanelContainer" type="PanelContainer" parent="MainScreen/CenterContainer"]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
+theme = SubResource("Theme_glbon")
+theme_override_styles/panel = SubResource("StyleBoxFlat_nlkkf")
 
 [node name="MarginContainer" type="MarginContainer" parent="MainScreen/CenterContainer/StartPanelContainer"]
 layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 12
 
-[node name="GameTitle" type="Label" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="GameTitle" type="RichTextLabel" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
-theme_override_font_sizes/font_size = 80
-text = "V!S!ON"
+theme_override_fonts/normal_font = ExtResource("3_jix8l")
+theme_override_font_sizes/normal_font_size = 80
+bbcode_enabled = true
+text = "[center]V[color=#00CFFF]![/color]S[color=#FF1744]![/color]ON[/center]"
+fit_content = true
+scroll_active = false
 horizontal_alignment = 1
+
+[node name="Space" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
 
 [node name="CpuPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -101,6 +214,10 @@ theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
 text = "Pass & Play"
 
+[node name="Space2" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
 [node name="How to Play" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
@@ -111,8 +228,7 @@ text = "How to Play"
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_jix8l")
 theme_override_font_sizes/font_size = 30
-text = "Settings
-"
+text = "Settings"
 
 [node name="QuitButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -142,6 +258,7 @@ theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
 [node name="CpuSettingsScreen" type="Control" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
