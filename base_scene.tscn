@@ -37,6 +37,7 @@
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
 [ext_resource type="Script" path="res://music_playlist.gd" id="33_music_playlist"]
 [ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
+[ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="35_ixgyq"]
 [ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
@@ -168,18 +169,6 @@ border_color = Color(0, 0.9426603, 0.65268576, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ow2y"]
 bg_color = Color(0, 0.11372549, 0.18431373, 0.17254902)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uukvf"]
-bg_color = Color(0.047019966, 0.14009342, 0.26304728, 1)
-border_width_left = 5
-border_width_top = 5
-border_width_right = 5
-border_width_bottom = 5
-border_color = Color(0, 0.9112158, 0.92614794, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
 
 [node name="BaseScene" type="Node2D"]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
@@ -493,12 +482,13 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -219.5
-offset_right = 150.0
-offset_bottom = 219.5
+offset_left = -170.0
+offset_top = -220.0
+offset_right = 170.0
+offset_bottom = 130.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("35_ixgyq")
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SettingsCover/PausePanel"]
 layout_mode = 2
@@ -508,7 +498,7 @@ theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
 [node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer"]
-custom_minimum_size = Vector2(300, 400)
+custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 theme_override_constants/separation = 20
 
@@ -520,44 +510,17 @@ text = "PAUSED"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Panel" type="Panel" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(100, 200)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_uukvf")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Settings" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("30_ov3nv")
-theme_override_font_sizes/font_size = 40
-text = "Settings"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="CheckButton" type="CheckButton" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/outline_size = 10
-theme_override_constants/h_separation = 1
-theme_override_constants/icon_max_width = 0
-theme_override_fonts/font = ExtResource("30_ov3nv")
-theme_override_font_sizes/font_size = 30
-button_pressed = true
-text = "Music
-"
-alignment = 1
-
 [node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.54870695, 1, 0.49903375, 1)
 theme_override_font_sizes/font_size = 30
 text = "Continue"
+
+[node name="Settings" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 30
+text = "Settings"
 
 [node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -567,15 +530,17 @@ text = "Quit"
 
 [node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
 volume_db = 8.0
+bus = &"Music"
 script = ExtResource("33_music_playlist")
 tracks = Array[AudioStream]([ExtResource("32_6ow2y"), ExtResource("34_funk1"), ExtResource("38_td7wt")])
 
 [node name="GameSounds" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0
+bus = &"Effects"
 
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
 [connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
 [connection signal="pressed" from="TurnLayer/MarginContainer/VBoxContainer/Pause" to="Board" method="_on_pause_pressed"]
-[connection signal="toggled" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer/CheckButton" to="Board" method="_on_check_button_toggled"]
 [connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Continue" to="Board" method="_on_continue_pressed"]
+[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Settings" to="Board" method="_on_settings_pressed"]
 [connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Quit" to="Board" method="_on_quit_pressed"]

@@ -19,6 +19,26 @@ func _ready() -> void:
 	resized.connect(queue_redraw)
 	queue_redraw()
 
+	# Keep the editor preview independent of runtime settings.
+	if Engine.is_editor_hint():
+		return
+
+	var settings := get_node("/root/AppSettings")
+	settings.settings_changed.connect(_apply_animation_settings)
+	_apply_animation_settings()
+
+func _apply_animation_settings() -> void:
+	var settings := get_node("/root/AppSettings")
+	var reduced: bool = settings.reduce_animation
+
+	var board_material := material as ShaderMaterial
+	if board_material != null:
+		board_material.set_shader_parameter("reduce_animation", reduced)
+
+	var fog := get_node("Fog") as ColorRect
+	var fog_material := fog.material as ShaderMaterial
+	if fog_material != null:
+		fog_material.set_shader_parameter("reduce_animation", reduced)
 
 func _hex_points(center: Vector2, radius: float) -> PackedVector2Array:
 	var points := PackedVector2Array()

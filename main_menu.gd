@@ -121,8 +121,14 @@ func _on_new_game_pressed() -> void:
 func _on_quit_button_pressed() -> void:
 	get_tree().quit()
 
+
 func _on_settings_button_pressed() -> void:
-	pass # Replace with function body.
+	if get_tree().current_scene.has_node("SettingsOverlay"):
+		return
+
+	var settings := preload("res://settings_menu.tscn").instantiate()
+	settings.name = "SettingsOverlay"
+	get_tree().current_scene.add_child(settings)
 
 
 func _on_pass_and_play_pressed() -> void:

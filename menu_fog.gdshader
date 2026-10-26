@@ -5,6 +5,8 @@ uniform vec4 fog_color : source_color = vec4(0.26, 0.28, 0.30, 1.0);
 uniform float fog_strength : hint_range(0.0, 1.0) = 0.8;
 uniform float drift_speed : hint_range(0.0, 0.1) = 0.1;
 
+uniform bool reduce_animation = false;
+
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
@@ -40,7 +42,8 @@ void fragment() {
 	);
 
 	vec2 position = UV * aspect * 5.0;
-	float time = TIME * drift_speed;
+
+	float time = reduce_animation ? 0.0 : TIME * drift_speed;
 
 	float clouds = mist(position + vec2(time, -time * 0.4));
 	float wisps = mist(

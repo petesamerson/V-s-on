@@ -4,6 +4,8 @@ render_mode unshaded;
 uniform float shimmer_strength : hint_range(0.0, 0.4) = 0.12;
 uniform float shimmer_speed : hint_range(0.0, 2.0) = 0.8;
 
+uniform bool reduce_animation = false;
+
 void fragment() {
 	vec4 base = COLOR;
 
@@ -21,7 +23,9 @@ void fragment() {
 	);
 
 	float pulse = pow(0.5 + 0.5 * sin(phase), 4.0);
-	float highlight = pulse * shimmer_strength * colored;
+	float highlight = reduce_animation
+	? 0.0
+	: pulse * shimmer_strength * colored;
 
 	vec3 brighter = mix(base.rgb, vec3(1.0), 0.65);
 	COLOR = vec4(mix(base.rgb, brighter, highlight), base.a);

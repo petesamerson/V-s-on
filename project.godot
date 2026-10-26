@@ -20,6 +20,7 @@ boot_splash/minimum_display_time=2000
 [autoload]
 
 NetworkManager="*res://network_manger.gd"
+AppSettings="*res://app_settings.gd"
 
 [display]
 

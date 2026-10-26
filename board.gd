@@ -2504,11 +2504,19 @@ func _on_pause_pressed() -> void:
 func _on_continue_pressed() -> void:
 	settings_cover.visible = false
 
-func _on_check_button_toggled(toggled_on: bool) -> void:
-	if toggled_on:
-		music_player.play()
-	else:
-		music_player.stop()
+# func _on_check_button_toggled(toggled_on: bool) -> void:
+# 	if toggled_on:
+# 		music_player.play()
+# 	else:
+# 		music_player.stop()
+
+func _on_settings_pressed() -> void:
+	if get_tree().current_scene.has_node("SettingsOverlay"):
+		return
+
+	var settings := preload("res://settings_menu.tscn").instantiate()
+	settings.name = "SettingsOverlay"
+	get_tree().current_scene.add_child(settings)
 
 
 func _on_quit_pressed() -> void:

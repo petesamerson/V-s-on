@@ -1,0 +1,583 @@
+[gd_scene load_steps=63 format=3 uid="uid://br3rtq2rlri2y"]
+
+[ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
+[ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
+[ext_resource type="Texture2D" uid="uid://capls38okfmy1" path="res://sprites/rotate1.png" id="2_ni26a"]
+[ext_resource type="Texture2D" uid="uid://c5k4xofouujet" path="res://sprites/hex_light_blue.png" id="3_3lrhi"]
+[ext_resource type="Texture2D" uid="uid://0yf4wg5too3j" path="res://sprites/hexOut2.png" id="4_oqo0w"]
+[ext_resource type="Texture2D" uid="uid://dq4qbep4elc11" path="res://sprites/hex_dark_blue_light_outline.png" id="5_0rpld"]
+[ext_resource type="Texture2D" uid="uid://dwllv78itts6c" path="res://sprites/HexStar2.png" id="5_21qnn"]
+[ext_resource type="Texture2D" uid="uid://wtxepl7dlc0h" path="res://sprites/hex_dark_red_light_outline.png" id="5_ua0oy"]
+[ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://sprites/HexStar3.png" id="6_anra8"]
+[ext_resource type="Texture2D" uid="uid://dyy56ypwu01au" path="res://sprites/hex_red.png" id="6_cl7ii"]
+[ext_resource type="Texture2D" uid="uid://dfou01ionon02" path="res://sprites/hex_white_fill.png" id="6_nwa72"]
+[ext_resource type="Texture2D" uid="uid://bls0un01edh3g" path="res://sprites/hex_white_outline.png" id="7_x5ok0"]
+[ext_resource type="Texture2D" uid="uid://d3or16dja1a82" path="res://sprites/hex_dark_blue.png" id="8_blj2i"]
+[ext_resource type="Texture2D" uid="uid://qwr56nrdx4or" path="res://sprites/hex_dark_gray1.png" id="9_01iy8"]
+[ext_resource type="Texture2D" uid="uid://bcr661buweyub" path="res://sprites/hex_dark_red.png" id="10_jjdbg"]
+[ext_resource type="Script" uid="uid://calvtyfnhirjj" path="res://Board.gd" id="11_2mb0d"]
+[ext_resource type="PackedScene" uid="uid://caic1yu3a6go1" path="res://Piece.tscn" id="12_01iy8"]
+[ext_resource type="Script" uid="uid://cqa7rx5tlb2hg" path="res://game_camera.gd" id="13_2mb0d"]
+[ext_resource type="PackedScene" uid="uid://m65ucpry42ve" path="res://TowerRotatePiece.tscn" id="13_jjdbg"]
+[ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://TowerRotatePiece.gd" id="14_01iy8"]
+[ext_resource type="PackedScene" uid="uid://y5au8wvdsi7d" path="res://eye_piece.tscn" id="14_17fj0"]
+[ext_resource type="PackedScene" uid="uid://cmd81nu6wec8w" path="res://HopPiece.tscn" id="15_hwg3g"]
+[ext_resource type="Texture2D" uid="uid://etdc0bowpxcl" path="res://sprites/capture1.png" id="15_u2j6w"]
+[ext_resource type="PackedScene" uid="uid://clsvmvbnvab3x" path="res://core_piece.tscn" id="16_do6al"]
+[ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://HopPiece.gd" id="17_ay483"]
+[ext_resource type="PackedScene" uid="uid://oicaiahgfjhr" path="res://triangle_even_piece.tscn" id="17_ddjlp"]
+[ext_resource type="PackedScene" uid="uid://dgqhmggiljsm5" path="res://TriangleOddPiece.tscn" id="20_gqdld"]
+[ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://TriangleOddPiece.gd" id="20_h480d"]
+[ext_resource type="Script" uid="uid://yyorinitem65" path="res://TriangleEvenPiece.gd" id="21_h480d"]
+[ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://EyePiece.gd" id="22_ddjlp"]
+[ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://CorePiece.gd" id="26_u1i3c"]
+[ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="30_ov3nv"]
+[ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
+[ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
+[ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
+[ext_resource type="Script" path="res://music_playlist.gd" id="33_music_playlist"]
+[ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
+[ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
+texture = ExtResource("1_57xsf")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ddjlp"]
+texture = ExtResource("2_ni26a")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ni26a"]
+texture = ExtResource("2_jvre3")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ay483"]
+texture = ExtResource("3_3lrhi")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_hwg3g"]
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_u1i3c"]
+texture = ExtResource("5_ua0oy")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dltd1"]
+texture = ExtResource("6_nwa72")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_td7wt"]
+texture = ExtResource("7_x5ok0")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ua0oy"]
+texture = ExtResource("5_0rpld")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_21qnn"]
+texture = ExtResource("4_oqo0w")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_anra8"]
+texture = ExtResource("5_21qnn")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vxc0a"]
+texture = ExtResource("6_anra8")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_17fj0"]
+texture = ExtResource("6_cl7ii")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_cl7ii"]
+texture = ExtResource("8_blj2i")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_gqdld"]
+texture = ExtResource("9_01iy8")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_h480d"]
+texture = ExtResource("10_jjdbg")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_7e6gu"]
+tile_shape = 3
+tile_layout = 1
+tile_size = Vector2i(100, 100)
+sources/0 = SubResource("TileSetAtlasSource_qcxwf")
+sources/3 = SubResource("TileSetAtlasSource_21qnn")
+sources/4 = SubResource("TileSetAtlasSource_anra8")
+sources/5 = SubResource("TileSetAtlasSource_vxc0a")
+sources/7 = SubResource("TileSetAtlasSource_cl7ii")
+sources/8 = SubResource("TileSetAtlasSource_gqdld")
+sources/9 = SubResource("TileSetAtlasSource_h480d")
+sources/10 = SubResource("TileSetAtlasSource_ni26a")
+sources/11 = SubResource("TileSetAtlasSource_ay483")
+sources/12 = SubResource("TileSetAtlasSource_hwg3g")
+sources/1 = SubResource("TileSetAtlasSource_ddjlp")
+sources/6 = SubResource("TileSetAtlasSource_17fj0")
+sources/2 = SubResource("TileSetAtlasSource_ua0oy")
+sources/13 = SubResource("TileSetAtlasSource_u1i3c")
+sources/14 = SubResource("TileSetAtlasSource_dltd1")
+sources/15 = SubResource("TileSetAtlasSource_td7wt")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ixihg"]
+bg_color = Color(0, 0, 0, 0.43137255)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="Theme" id="Theme_6ow2y"]
+
+[sub_resource type="Theme" id="Theme_ddjlp"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ddjlp"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.9244893, 0.826784, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_17fj0"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.9426603, 0.65268576, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ow2y"]
+bg_color = Color(0, 0.11372549, 0.18431373, 0.17254902)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uukvf"]
+bg_color = Color(0.047019966, 0.14009342, 0.26304728, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0, 0.9112158, 0.92614794, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="BaseScene" type="Node2D"]
+metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
+
+[node name="Board" type="TileMapLayer" parent="." node_paths=PackedStringArray("camera")]
+tile_set = SubResource("TileSet_7e6gu")
+script = ExtResource("11_2mb0d")
+camera = NodePath("../Camera2D")
+capture_texture = ExtResource("15_u2j6w")
+white_fill_source_id = 14
+white_outline_source_id = 15
+piece_scene = ExtResource("12_01iy8")
+core_piece_scene = ExtResource("16_do6al")
+eye_piece_scene = ExtResource("14_17fj0")
+tower_piece_scene = ExtResource("13_jjdbg")
+hop_piece_scene = ExtResource("15_hwg3g")
+triangle_odd_piece_scene = ExtResource("20_gqdld")
+triangle_even_piece_scene = ExtResource("17_ddjlp")
+
+[node name="Pieces" type="Node2D" parent="Board"]
+
+[node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("14_01iy8")
+metadata/_custom_type_script = "uid://byauyvv4yigqx"
+
+[node name="HopPiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("17_ay483")
+metadata/_custom_type_script = "uid://ce1udyoosuvs4"
+
+[node name="TriangleOddPiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("20_h480d")
+metadata/_custom_type_script = "uid://bi2bkqvsov0p3"
+
+[node name="TriangleEvenPiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("21_h480d")
+metadata/_custom_type_script = "uid://yyorinitem65"
+
+[node name="EyePiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("22_ddjlp")
+
+[node name="CorePiece" type="Node2D" parent="Board/Pieces"]
+script = ExtResource("26_u1i3c")
+metadata/_custom_type_script = "uid://daqitf01c6qh3"
+
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
+script = ExtResource("13_2mb0d")
+board = NodePath("../Board")
+
+[node name="TurnLayer" type="CanvasLayer" parent="."]
+
+[node name="CaptureFeed" type="PanelContainer" parent="TurnLayer"]
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -36.0
+offset_right = 130.0
+offset_bottom = 36.0
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/CaptureFeed"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="FeedContent" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer"]
+layout_mode = 2
+
+[node name="FeedEntries" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer/FeedContent"]
+layout_mode = 2
+
+[node name="YourTurnLabel" type="Label" parent="TurnLayer"]
+visible = false
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.358
+offset_left = -65.0
+offset_top = 355.763
+offset_right = 65.0
+offset_bottom = 195.263
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 50
+text = "Your Turn
+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WinLabel" type="Label" parent="TurnLayer"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.5
+offset_top = -11.5
+offset_right = 60.5
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 30
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 50
+text = "PLAYER 1 WINS!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatMargin" type="MarginContainer" parent="TurnLayer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -500.0
+offset_bottom = 200.0
+grow_horizontal = 0
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin"]
+layout_mode = 2
+
+[node name="TurnLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer"]
+layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("30_ov3nv")
+theme_override_fonts/bold_font = ExtResource("30_ov3nv")
+theme_override_font_sizes/normal_font_size = 30
+theme_override_font_sizes/bold_font_size = 30
+theme_override_font_sizes/bold_italics_font_size = 30
+text = "Player 1's Turn"
+fit_content = true
+scroll_active = false
+horizontal_alignment = 2
+
+[node name="CoreLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer"]
+layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("30_ov3nv")
+theme_override_fonts/bold_font = ExtResource("30_ov3nv")
+theme_override_font_sizes/normal_font_size = 30
+theme_override_font_sizes/bold_font_size = 16
+theme_override_font_sizes/bold_italics_font_size = 16
+theme_override_font_sizes/italics_font_size = 16
+text = "Core Seen by 3 Pieces
+"
+horizontal_alignment = 2
+
+[node name="SelectionPanel" type="PanelContainer" parent="TurnLayer"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -348.0
+offset_top = -204.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+
+[node name="PieceName" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 25
+text = "Type: Core"
+
+[node name="Description" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 14
+text = "This is the core losing this will lose the game. You will lose if you lose sight of this piece"
+autowrap_mode = 3
+
+[node name="MoveRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+text = "Move Range = 10"
+
+[node name="VisionRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 16
+text = "Vision Range = 4"
+
+[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ixihg")
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer/MarginContainer"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+theme = SubResource("Theme_6ow2y")
+texture = ExtResource("31_ixihg")
+stretch_mode = 5
+
+[node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="TurnLayer/PlayerSwitchOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.18000486, 0.18000486, 0.18000486, 1)
+
+[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/PlayerSwitchOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -177.5
+offset_top = -157.5
+offset_right = 177.5
+offset_bottom = 157.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer"]
+layout_mode = 2
+theme = SubResource("Theme_ddjlp")
+
+[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_colors/icon_normal_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 50
+theme_override_styles/normal = SubResource("StyleBoxFlat_ddjlp")
+text = "Next Player
+(Normal Turn)"
+
+[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_font_sizes/font_size = 50
+theme_override_styles/normal = SubResource("StyleBoxFlat_17fj0")
+text = "Add Turn to 
+Current Player
+"
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer"]
+offset_right = 128.0
+offset_bottom = 128.0
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/MarginContainer"]
+layout_mode = 2
+
+[node name="Pause" type="Button" parent="TurnLayer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 50
+icon = ExtResource("32_uukvf")
+
+[node name="SettingsCover" type="Panel" parent="TurnLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_6ow2y")
+
+[node name="PausePanel" type="PanelContainer" parent="TurnLayer/SettingsCover"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -219.5
+offset_right = 150.0
+offset_bottom = 219.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SettingsCover/PausePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer"]
+custom_minimum_size = Vector2(300, 400)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 70
+text = "PAUSED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Panel" type="Panel" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(100, 200)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uukvf")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Settings" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 40
+text = "Settings"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CheckButton" type="CheckButton" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/outline_size = 10
+theme_override_constants/h_separation = 1
+theme_override_constants/icon_max_width = 0
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 30
+button_pressed = true
+text = "Music
+"
+alignment = 1
+
+[node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.54870695, 1, 0.49903375, 1)
+theme_override_font_sizes/font_size = 30
+text = "Continue"
+
+[node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.844336, 0, 0.17060888, 1)
+theme_override_font_sizes/font_size = 30
+text = "Quit"
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+volume_db = 8.0
+bus = &"Music"
+script = ExtResource("33_music_playlist")
+tracks = Array[AudioStream]([ExtResource("32_6ow2y"), ExtResource("34_funk1"), ExtResource("38_td7wt")])
+
+[node name="GameSounds" type="AudioStreamPlayer" parent="."]
+volume_db = -12.0
+bus = &"Effects"
+
+[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/NextButton" to="Board" method="_on_next_pressed"]
+[connection signal="pressed" from="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer/StayButton" to="Board" method="_on_stay_button_pressed"]
+[connection signal="pressed" from="TurnLayer/MarginContainer/VBoxContainer/Pause" to="Board" method="_on_pause_pressed"]
+[connection signal="toggled" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Panel/VBoxContainer/CheckButton" to="Board" method="_on_check_button_toggled"]
+[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Continue" to="Board" method="_on_continue_pressed"]
+[connection signal="pressed" from="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer/Quit" to="Board" method="_on_quit_pressed"]
