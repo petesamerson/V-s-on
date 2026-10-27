@@ -122,18 +122,21 @@ func draw_current_vision():
 var armed := false
 
 func _on_area_2d_input_event(viewport, event, shape_idx):
-	if event is InputEventMouseButton \
-	and event.button_index == MOUSE_BUTTON_LEFT \
-	and event.pressed:
-		if inspect_enemy_piece():
-			armed = false
-			get_viewport().set_input_as_handled()
-			return
+	pass
+	# if event.device == InputEvent.DEVICE_ID_EMULATION:
+	# 	return
+	# if event is InputEventMouseButton \
+	# and event.button_index == MOUSE_BUTTON_LEFT \
+	# and event.pressed:
+	# 	if inspect_enemy_piece():
+	# 		armed = false
+	# 		get_viewport().set_input_as_handled()
+	# 		return
 
-		on_clicked()
-		if board.tutorial_mode and selected and can_control_piece():
-			board.tutorial_piece_selected.emit(self)
-		armed = true
+	# 	on_clicked()
+	# 	if board.tutorial_mode and selected and can_control_piece():
+	# 		board.tutorial_piece_selected.emit(self)
+	# 	armed = true
 
 func inspect_enemy_piece() -> bool:
 	if not is_instance_valid(board):
@@ -279,32 +282,10 @@ func update_piece_color():
 			fposmod(float(owned_player - 1) * 0.17, 1.0)
 		)
 
-# func _input(event):
-# 	if not selected or not can_control_piece():
-# 		return
-
-# 	if (
-# 		event is InputEventMouseButton
-# 		and event.pressed
-# 		and event.button_index == MOUSE_BUTTON_LEFT
-# 	):
-# 		var mouse_cell: Vector2i = board.local_to_map(
-# 			board.to_local(board.camera.get_global_mouse_position())
-# 		)
-# 		var enemy := board.get_enemy_piece_at_cell(
-# 			mouse_cell, 3 - owned_player
-# 		) as Piece
-
-# 		# Legal capture clicks continue through normal move handling.
-# 		if is_instance_valid(enemy) and not cur_moves.has(mouse_cell):
-# 			# Restore existing highlights and deselect normally.
-# 			handle_move_input_event(event)
-# 			enemy.inspect_enemy_piece()
-# 			get_viewport().set_input_as_handled()
-# 			return
-# 		handle_move_input_event(event)
-# 		get_viewport().set_input_as_handled()
 func _unhandled_input(event: InputEvent) -> void:
+	pass
+
+func handle_board_click(event: InputEvent) -> void:
 	if not selected or not can_control_piece():
 		return
 
@@ -313,9 +294,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event.pressed or event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	var mouse_cell: Vector2i = board.local_to_map(
-		board.to_local(board.camera.get_global_mouse_position())
-	)
+	var mouse_cell: Vector2i = board.screen_to_board_cell(event.position)
 	# A selected tower's rotation markers take priority.
 	if self is TowerRotatePiece:
 		var tower := self as TowerRotatePiece
@@ -371,9 +350,7 @@ func handle_move_input_event(event):
 	if not can_control_piece():
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var global_mouse = board.camera.get_global_mouse_position()
-		var local_mouse = board.to_local(global_mouse)
-		var cell = board.local_to_map(local_mouse)
+		var cell: Vector2i = board.screen_to_board_cell(event.position)
 		var from_cell = board.local_to_map(position)
 		var moved = false
 
@@ -405,33 +382,6 @@ func handle_move_input_event(event):
 				})
 			end_turn()
 
-		# #debug
-		# print("Lines Arrive")
-		# for i in range(0,6):
-		# 	print(["line", i, 8 + i, "center", cell])
-		# 	board.draw_line_from_center(cell, i, 13, 9)
-
-# func move_piece(move: Vector2i):
-# 	moving = true
-# 	position = board.map_to_local(move)
-
-# 	var enemy_player = 1
-# 	if(board.current_player == 1):
-# 		enemy_player = 2
-# 	var enemy_piece = board.get_enemy_piece_at_cell(move, enemy_player)
-# 	if enemy_piece != null:
-# 		board.last_capture_capturer_ids[board.current_player - 1] = get_instance_id()
-# 		board.add_capture_feed_entry(self, enemy_piece)
-# 		board.remove_piece(enemy_piece)
-# 		for i in range(cur_moves.size()):
-# 			var old_move = cur_moves[i]
-# 			if(old_selected_tile_ids.size() > i):
-# 				board.set_cell(old_move, old_selected_tile_ids[i], Vector2i(0,0))
-
-# 	cur_moves = []
-# 	old_selected_tile_ids = []
-# 	selected = false
-# 	moving = false
 func move_piece(move: Vector2i):
 	moving = true
 

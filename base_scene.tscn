@@ -1,4 +1,4 @@
-[gd_scene load_steps=64 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=65 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -32,6 +32,7 @@
 [ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://EyePiece.gd" id="22_ddjlp"]
 [ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://CorePiece.gd" id="26_u1i3c"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="30_ov3nv"]
+[ext_resource type="Script" uid="uid://bqfypsffpebum" path="res://board_touch_input.gd" id="31_344q1"]
 [ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
@@ -177,6 +178,7 @@ metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
 [node name="Board" type="TileMapLayer" parent="." node_paths=PackedStringArray("camera")]
 tile_set = SubResource("TileSet_7e6gu")
 script = ExtResource("11_2mb0d")
+camera = NodePath("../Camera2D")
 capture_texture = ExtResource("15_u2j6w")
 white_fill_source_id = 14
 white_outline_source_id = 15
@@ -187,7 +189,6 @@ tower_piece_scene = ExtResource("13_jjdbg")
 hop_piece_scene = ExtResource("15_hwg3g")
 triangle_odd_piece_scene = ExtResource("20_gqdld")
 triangle_even_piece_scene = ExtResource("17_ddjlp")
-camera = NodePath("../Camera2D")
 
 [node name="Pieces" type="Node2D" parent="Board"]
 
@@ -213,6 +214,9 @@ script = ExtResource("22_ddjlp")
 [node name="CorePiece" type="Node2D" parent="Board/Pieces"]
 script = ExtResource("26_u1i3c")
 metadata/_custom_type_script = "uid://daqitf01c6qh3"
+
+[node name="TouchInput" type="Node" parent="Board"]
+script = ExtResource("31_344q1")
 
 [node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")

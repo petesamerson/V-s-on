@@ -38,6 +38,9 @@ var match_winner = 0
 
 var game_setup_complete := false
 var cpu_turn_in_progress := false
+var _cpu_feedback_active: bool = false
+var _cpu_feedback_timer: float = 0.0
+var _cpu_feedback_dots: int = 1
 
 var player_fills: Array[TileMapLayer] = []
 var player_powered_fills: Array[TileMapLayer] = []
@@ -366,17 +369,55 @@ func refresh_powered_vision() -> void:
 				)
 
 
-func update_turn_text():
-	var color_hex := GameColors.powered_color(current_player).to_html(false)
-
-	turn_label.text = \
-		"[outline_size=10][outline_color=black][b]" + \
-		"[color=#%s]Player %d's Turn[/color][/b]" % [
-			color_hex, current_player
-		]
-
+func update_turn_text() -> void:
+	_refresh_turn_label()
 	update_mobile_scale()
 	update_selection_panel_colors()
+
+
+func _cpu_is_thinking() -> bool:
+	return (
+		match_winner == 0
+		and not online_game
+		and is_instance_valid(cpu_player)
+		and current_player == cpu_player.player_number
+		and cpu_player.is_thinking()
+	)
+
+
+func _refresh_turn_label() -> void:
+	var color_hex := GameColors.powered_color(current_player).to_html(false)
+	var message := "Player %d's Turn" % current_player
+
+	if match_winner != 0:
+		message = "Game Over"
+	elif _cpu_is_thinking():
+		message = "CPU thinking" + ".".repeat(_cpu_feedback_dots)
+
+	turn_label.text = (
+		"[outline_size=10][outline_color=black][b]"
+		+ "[color=#%s]%s[/color][/b]" % [color_hex, message]
+	)
+
+
+func _update_cpu_feedback(delta: float) -> void:
+	var thinking: bool = _cpu_is_thinking()
+
+	if thinking != _cpu_feedback_active:
+		_cpu_feedback_active = thinking
+		_cpu_feedback_timer = 0.0
+		_cpu_feedback_dots = 1
+		_refresh_turn_label()
+
+	if not thinking:
+		return
+
+	_cpu_feedback_timer += delta
+
+	if _cpu_feedback_timer >= 0.4:
+		_cpu_feedback_timer = fmod(_cpu_feedback_timer, 0.4)
+		_cpu_feedback_dots = (_cpu_feedback_dots % 3) + 1
+		_refresh_turn_label()
 
 func display_turn_message():
 	var text_timer := Timer.new()
@@ -398,6 +439,7 @@ func display_winner(winner):
 		return
 
 	match_winner = winner
+	_refresh_turn_label()
 	if not online_game and not tutorial_mode:
 		OfflineSave.clear_match()
 	win_label.text = "Player %d WINS!" % winner
@@ -504,6 +546,7 @@ func _process(delta: float) -> void:
 	timer += delta
 	if timer >= interval:
 		timer = 0.0
+	_update_cpu_feedback(delta)
 		# animate_board()
 
 @onready var pieces_container = $Pieces
@@ -1782,6 +1825,57 @@ func resize_capture_feed_panel() -> void:
 	capture_feed_panel.offset_top = -panel_height / 2.0
 	capture_feed_panel.offset_bottom = panel_height / 2.0
 
+func screen_to_board_cell(screen_position: Vector2) -> Vector2i:
+	var local_position := (
+		get_global_transform_with_canvas().affine_inverse()
+		* screen_position
+	)
+	return local_to_map(local_position)
+
+func handle_touch_tap(screen_position: Vector2) -> void:
+	if not game_setup_complete:
+		return
+	if online_disconnected or match_winner != 0:
+		return
+	if settings_cover.visible or turn_menu.visible:
+		return
+	if get_tree().current_scene.has_node("SettingsOverlay"):
+		return
+
+	# Reuse the existing click logic only after confirming a tap.
+	var click := InputEventMouseButton.new()
+	click.position = screen_position
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+
+	for group in player_pieces:
+		for piece: Piece in group:
+			if piece.selected and piece.can_control_piece():
+				piece.handle_board_click(click)
+				return
+
+	# Nothing selected: select a friendly piece or inspect a visible enemy.
+	var cell := screen_to_board_cell(screen_position)
+
+	for group in player_pieces:
+		for piece: Piece in group:
+			if piece.get_cur_pos() != cell or not piece.visible:
+				continue
+
+			if piece.inspect_enemy_piece():
+				return
+
+			if not piece.can_control_piece():
+				return
+
+			piece.on_clicked()
+			piece.armed = true
+			update_selection_panel(piece)
+
+			if tutorial_mode and piece.selected:
+				tutorial_piece_selected.emit(piece)
+
+			return
 
 var cur_ani_x = 0
 var cur_ani_y = 0

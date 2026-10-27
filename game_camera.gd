@@ -81,46 +81,46 @@ func _unhandled_input(event: InputEvent) -> void:
 			_pan_camera(event.relative)
 			get_viewport().set_input_as_handled()
 
-	# Single Touch
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			touches[event.index] = event.position
-			# Start pinch tracking
-			if touches.size() == 2:
-				wasPinched = true
-				var positions = touches.values()
-				previous_pinch_distance = positions[0].distance_to(positions[1])
-		else:
-			touches.erase(event.index)
-			if touches.is_empty():
-				wasPinched = false
-				previous_pinch_distance = 0.0
-	# Touch Drag/Pinch
-	elif event is InputEventScreenDrag:
-		if not touches.has(event.index):
-			return
+	# # Single Touch
+	# elif event is InputEventScreenTouch:
+	# 	if event.pressed:
+	# 		touches[event.index] = event.position
+	# 		# Start pinch tracking
+	# 		if touches.size() == 2:
+	# 			wasPinched = true
+	# 			var positions = touches.values()
+	# 			previous_pinch_distance = positions[0].distance_to(positions[1])
+	# 	else:
+	# 		touches.erase(event.index)
+	# 		if touches.is_empty():
+	# 			wasPinched = false
+	# 			previous_pinch_distance = 0.0
+	# # Touch Drag/Pinch
+	# elif event is InputEventScreenDrag:
+	# 	if not touches.has(event.index):
+	# 		return
 
-		touches[event.index] = event.position
+	# 	touches[event.index] = event.position
 		
-		# Two fingers = pinch zoom
-		if touches.size() == 2:
-			wasPinched = true
-			var positions = touches.values()
-			var current_distance = positions[0].distance_to(
-				positions[1]
-			)
-			if previous_pinch_distance > 0:
-				var factor = current_distance / previous_pinch_distance
+	# 	# Two fingers = pinch zoom
+	# 	if touches.size() == 2:
+	# 		wasPinched = true
+	# 		var positions = touches.values()
+	# 		var current_distance = positions[0].distance_to(
+	# 			positions[1]
+	# 		)
+	# 		if previous_pinch_distance > 0:
+	# 			var factor = current_distance / previous_pinch_distance
 
-				_zoom_to_point(
-					factor,
-					(positions[0] + positions[1]) / 2.0
-				)
+	# 			_zoom_to_point(
+	# 				factor,
+	# 				(positions[0] + positions[1]) / 2.0
+	# 			)
 
-			previous_pinch_distance = current_distance
+	# 		previous_pinch_distance = current_distance
 
-		elif touches.size() == 1 and not wasPinched:
-			_pan_camera(event.relative)
+	# 	elif touches.size() == 1 and not wasPinched:
+	# 		_pan_camera(event.relative)
 
 
 func _pan_camera(screen_delta: Vector2) -> void:

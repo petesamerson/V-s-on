@@ -301,3 +301,6 @@ func _remap_saved_dictionary(
 	for saved_id in values:
 		result[_remap_saved_id(int(saved_id), id_map)] = values[saved_id]
 	return result
+
+func is_thinking() -> bool:
+	return _cpu_thread != null

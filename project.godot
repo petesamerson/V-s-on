@@ -33,10 +33,6 @@ window/handheld/orientation=6
 
 version_control/autoload_on_startup=true
 
-[input_devices]
-
-pointing/emulate_touch_from_mouse=true
-
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
