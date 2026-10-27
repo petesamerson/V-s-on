@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=18 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="1_06t4h"]
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://main_menu.gd" id="1_fu7sn"]
@@ -10,6 +10,7 @@
 [ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="5_glbon"]
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="6_0o4t1"]
 [ext_resource type="StyleBox" uid="uid://chm2dwi2ecr1v" path="res://dark_panel.tres" id="6_dy7ct"]
+[ext_resource type="Texture2D" uid="uid://1mt42upc0lm4" path="res://sprites/discord-white-icon.png" id="11_0k4wn"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jix8l"]
 bg_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
@@ -495,6 +496,24 @@ grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
 icon = ExtResource("4_jix8l")
 
+[node name="DiscordButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -826.0
+offset_top = -520.0
+grow_horizontal = 0
+grow_vertical = 0
+scale = Vector2(0.2, 0.2)
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 80
+text = "Discord"
+icon = ExtResource("11_0k4wn")
+
 [node name="MenuMusic" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("5_glbon")
 volume_db = 8.0
@@ -516,3 +535,4 @@ bus = &"Music"
 [connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/JoinGame" to="." method="_on_join_room_pressed"]
 [connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/HostGame" to="." method="_on_start_host_pressed"]
 [connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/CloseMultiSettings" to="." method="_on_close_multi_settings_pressed"]
+[connection signal="pressed" from="DiscordButton" to="." method="_on_discord_button_pressed"]

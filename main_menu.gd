@@ -53,6 +53,9 @@ func _ready() -> void:
 	)
 	get_viewport().size_changed.connect(_on_mobile_viewport_resized)
 
+	$DiscordButton.resized.connect(_update_discord_pivot)
+	_update_discord_pivot()
+
 func _on_mobile_viewport_resized() -> void:
 	update_mobile_scale()
 
@@ -113,6 +116,10 @@ func update_mobile_scale():
 		close_button.offset_top = 0.0
 		close_button.offset_right = 0.0
 		close_button.offset_bottom = side
+
+func _update_discord_pivot() -> void:
+	var discord_button := $DiscordButton as Button
+	discord_button.pivot_offset = discord_button.size
 
 func _on_new_game_pressed() -> void:
 	# get_tree().root.set_meta("play_vs_cpu", true)
@@ -308,3 +315,10 @@ func _on_close_multi_settings_pressed() -> void:
 
 func _on_how_to_play_pressed() -> void:
 	get_tree().change_scene_to_file("res://tutorial.tscn")
+
+
+func _on_discord_button_pressed() -> void:
+	var error := OS.shell_open("https://discord.gg/SQpMkV5UP")
+
+	if error != OK:
+		push_warning("Could not open Discord: " + error_string(error))
