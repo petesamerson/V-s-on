@@ -1,4 +1,4 @@
-[gd_scene load_steps=63 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=64 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -36,6 +36,7 @@
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
 [ext_resource type="Script" path="res://music_playlist.gd" id="33_music_playlist"]
+[ext_resource type="Script" uid="uid://cwbrxpf2rljtu" path="res://game_hub_scale.gd" id="33_vru47"]
 [ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="35_ixgyq"]
 [ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
@@ -176,7 +177,6 @@ metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
 [node name="Board" type="TileMapLayer" parent="." node_paths=PackedStringArray("camera")]
 tile_set = SubResource("TileSet_7e6gu")
 script = ExtResource("11_2mb0d")
-camera = NodePath("../Camera2D")
 capture_texture = ExtResource("15_u2j6w")
 white_fill_source_id = 14
 white_outline_source_id = 15
@@ -187,6 +187,7 @@ tower_piece_scene = ExtResource("13_jjdbg")
 hop_piece_scene = ExtResource("15_hwg3g")
 triangle_odd_piece_scene = ExtResource("20_gqdld")
 triangle_even_piece_scene = ExtResource("17_ddjlp")
+camera = NodePath("../Camera2D")
 
 [node name="Pieces" type="Node2D" parent="Board"]
 
@@ -227,6 +228,8 @@ offset_top = -36.0
 offset_right = 130.0
 offset_bottom = 36.0
 grow_vertical = 2
+script = ExtResource("33_vru47")
+scale_pivot = Vector2(0, 0.5)
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/CaptureFeed"]
 layout_mode = 2
@@ -259,6 +262,8 @@ text = "Your Turn
 "
 horizontal_alignment = 1
 vertical_alignment = 1
+script = ExtResource("33_vru47")
+scale_pivot = Vector2(0.5, 0.5)
 
 [node name="WinLabel" type="Label" parent="TurnLayer"]
 visible = false
@@ -280,6 +285,8 @@ theme_override_font_sizes/font_size = 50
 text = "PLAYER 1 WINS!"
 horizontal_alignment = 1
 vertical_alignment = 1
+script = ExtResource("33_vru47")
+scale_pivot = Vector2(0.5, 0.5)
 
 [node name="StatMargin" type="MarginContainer" parent="TurnLayer"]
 anchors_preset = 1
@@ -292,6 +299,8 @@ theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
+script = ExtResource("33_vru47")
+scale_pivot = Vector2(1, 0)
 
 [node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin"]
 layout_mode = 2
@@ -330,6 +339,8 @@ offset_left = -348.0
 offset_top = -204.0
 grow_horizontal = 0
 grow_vertical = 0
+script = ExtResource("33_vru47")
+scale_pivot = Vector2(1, 1)
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel"]
 layout_mode = 2

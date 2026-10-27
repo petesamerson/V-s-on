@@ -4,11 +4,25 @@ var board: Board
 var effects: Node2D
 
 
-func _ready() -> void:
-	var fog_material := ShaderMaterial.new()
-	fog_material.shader = preload("res://unseen_board.gdshader")
-	material = fog_material
+var fog_material: ShaderMaterial
 
+func _ready() -> void:
+	fog_material = ShaderMaterial.new()
+	fog_material.shader = preload("res://unseen_board.gdshader")
+
+	AppSettings.settings_changed.connect(_apply_graphics_settings)
+	_apply_graphics_settings()
+
+
+func _apply_graphics_settings() -> void:
+	if AppSettings.low_graphics:
+		material = null
+		self_modulate = Color(0.12, 0.15, 0.22, 0.65)
+	else:
+		material = fog_material
+		self_modulate = Color.WHITE
+
+	queue_redraw()
 
 func _process(_delta: float) -> void:
 	queue_redraw()

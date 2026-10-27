@@ -117,11 +117,7 @@ var ui_scale: float = 1.0
 
 
 func mobile_text_scale() -> float:
-	if not is_mobile_browser:
-		return 1.0
-
-	var screen_size := get_viewport().get_visible_rect().size
-	return 1.25 if screen_size.x > screen_size.y else 2.0
+	return UITextScale.current_factor(get_viewport())
 
 func update_mobile_scale():
 	is_mobile_browser = (
@@ -141,6 +137,7 @@ func update_mobile_scale():
 		# selection_panel.scale = Vector2(2.5,2.5)
 		# scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
 		scale_text_tree(get_tree().current_scene, mobile_text_scale())
+		resize_selection_image_to_text()
 		selection_panel.pivot_offset = selection_panel.size
 	else:
 		# scale_text_tree(get_tree().current_scene, 2.0 if true else 1.0)
@@ -171,37 +168,8 @@ func resize_selection_image_to_text() -> void:
 	image_rect.custom_minimum_size = Vector2(side*2/3, side*2/3)
 
 func scale_text_tree(node: Node, factor: float) -> void:
-	if node is RichTextLabel:
-		var label := node as RichTextLabel
+	UITextScale.apply(node, factor)
 
-		for size_name in ["normal_font_size", "bold_font_size"]:
-			var meta_name = "base_" + size_name
-			if not label.has_meta(meta_name):
-				label.set_meta(meta_name, label.get_theme_font_size(size_name))
-
-			var base_size: int = label.get_meta(meta_name)
-			label.add_theme_font_size_override(
-				size_name,
-				roundi(base_size * factor)
-			)
-	elif node is Label or node is Button or node is LineEdit or node is TextEdit:
-		var control := node as Control
-		if not control.has_meta("base_font_size"):
-			control.set_meta(
-				"base_font_size",
-				control.get_theme_font_size("font_size")
-			)
-
-		var base_size: int = control.get_meta("base_font_size")
-		control.add_theme_font_size_override(
-			"font_size",
-			roundi(base_size * factor)
-		)
-
-	for child in node.get_children():
-		scale_text_tree(child, factor)
-
-	resize_selection_image_to_text()
 
 func intialize_drawn_sprite_nodes():
 	rotate_sprites = Node2D.new()

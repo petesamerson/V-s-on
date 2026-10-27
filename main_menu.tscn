@@ -18,12 +18,14 @@ bg_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
 shader = ExtResource("3_8qtwp")
 shader_parameter/shimmer_strength = 0.2000000095
 shader_parameter/shimmer_speed = 0.800000038
+shader_parameter/reduce_animation = false
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8qtwp"]
 shader = ExtResource("4_qe12f")
 shader_parameter/fog_color = Color(0.2849079, 0.3059137, 0.3311225, 1)
 shader_parameter/fog_strength = 0.800000038
 shader_parameter/drift_speed = 0.10000000149012
+shader_parameter/reduce_animation = false
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu7sn"]
 bg_color = Color(0, 0, 0, 0.81960785)
@@ -121,6 +123,7 @@ bbcode_enabled = true
 text = "[center]V[color=#00CFFF]![/color]S[color=#FF1744]![/color]ON[/center]"
 fit_content = true
 scroll_active = false
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="Space" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
@@ -204,19 +207,20 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 100
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 100
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
 
 [node name="Panel" type="Panel" parent="CpuSettingsScreen/MarginContainer"]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_fu7sn")
 
 [node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen/MarginContainer/Panel"]
-layout_mode = 0
-offset_right = 952.0
-offset_bottom = 448.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 50
@@ -290,7 +294,6 @@ anchor_right = 1.0
 offset_left = -108.0
 offset_bottom = 108.0
 grow_horizontal = 0
-scale = Vector2(0.5, 0.5)
 icon = ExtResource("4_jix8l")
 
 [node name="StartCpuGame" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel"]

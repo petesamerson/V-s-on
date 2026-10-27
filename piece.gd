@@ -31,15 +31,12 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	area.input_event.connect(_on_area_2d_input_event)
 
-	# if(owned_player == 1):
-	# 	sprite.modulate = GameColors.PLAYER_BLUE
-	# else:
-	# 	sprite.modulate = GameColors.PLAYER_RED
-
 	sprite_rest_position = sprite.position
 	shimmer_material = ShaderMaterial.new()
 	shimmer_material.shader = preload("res://piece_shimmer.gdshader")
-	sprite.material = shimmer_material
+	if not AppSettings.settings_changed.is_connected(_apply_graphics_settings):
+		AppSettings.settings_changed.connect(_apply_graphics_settings)
+	_apply_graphics_settings()
 	update_piece_color()
 
 	if not is_instance_valid(effects):
@@ -67,6 +64,13 @@ func _process(delta: float) -> void:
 	# 	vision_drawn = true
 	pass
 
+func _apply_graphics_settings() -> void:
+	if AppSettings.low_graphics:
+		sprite.material = null
+	else:
+		sprite.material = shimmer_material
+
+	update_piece_color()
 
 var cur_moves : Array[Vector2i] = []
 var selected = false
@@ -97,26 +101,6 @@ func draw_vision_change():
 	if board.game_setup_complete:
 		board.call_deferred("update_all_piece_vision")
 
-# func draw_vision_change():
-
-	# var cur_pos = board.local_to_map(position)
-	# var raw_vision = board.get_hexagon_tiles(cur_pos, vision_range)
-	# var new_vision: Array[Vector2i] = []
-	
-	# for cell in raw_vision:
-	# 	if(board.cell_in_board(cell)):
-	# 		new_vision.append(cell)
-
-	# for cell in cur_vision:
-	# 	board.set_cell(cell,Tiles.BLACK, Vector2i(0,0))
-
-	# cur_vision = new_vision
-	# for cell in cur_vision:
-	# 	if(owned_player == 2):
-	# 		board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
-	# 	else:
-	# 		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
-
 func get_potential_vision(new_pos: Vector2i) -> Array[Vector2i]:
 	var cur_pos = board.local_to_map(position)
 	var raw_vision = board.get_hexagon_tiles(new_pos, vision_range)
@@ -133,11 +117,6 @@ func end_turn():
 func draw_current_vision():
 	for cell in cur_vision:
 		board.draw_player_vision(cell, owned_player)
-	# for cell in cur_vision:
-	# 	if(owned_player == 2):
-	# 		board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
-	# 	else:
-	# 		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
 	
 
 var armed := false

@@ -36,6 +36,7 @@ func _apply_animation_settings() -> void:
 		board_material.set_shader_parameter("reduce_animation", reduced)
 
 	var fog := get_node("Fog") as ColorRect
+	fog.visible = not settings.low_graphics
 	var fog_material := fog.material as ShaderMaterial
 	if fog_material != null:
 		fog_material.set_shader_parameter("reduce_animation", reduced)

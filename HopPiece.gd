@@ -86,7 +86,7 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 	return cur_moves
 
 func getTypeString() -> String:
-	return "Skirmisher";
+	return "Flake";
 
 func getTypedDescription() -> String:
 	return "This piece can move in the 6 directions but can only move 2 spaces away"

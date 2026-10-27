@@ -308,6 +308,8 @@ func _process(delta: float) -> void:
 
 
 func _play_discovery(cell: Vector2i, viewer: int) -> void:
+	if AppSettings.low_graphics:
+		return
 	var visual: Sprite2D = _tile_copy(cell)
 
 	if visual == null:
@@ -687,6 +689,9 @@ func _draw_tile_glint(
 	is_selected: bool,
 	phase_offset: float
 ) -> void:
+	if AppSettings.low_graphics:
+		return
+
 	var count: int = polygon.size()
 
 	if count < 3:

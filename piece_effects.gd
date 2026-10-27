@@ -11,6 +11,18 @@ var was_selected: bool = false
 var connection_age: float = 2.0
 const CONNECTION_DURATION: float = 1.6
 
+func _ready() -> void:
+	AppSettings.settings_changed.connect(_apply_graphics_settings)
+	_apply_graphics_settings()
+
+
+func _apply_graphics_settings() -> void:
+	if AppSettings.low_graphics:
+		trails.clear()
+		bursts.clear()
+
+	queue_redraw()
+
 func _process(delta: float) -> void:
 	elapsed += delta
 
@@ -43,6 +55,8 @@ func add_move(
 	to: Vector2,
 	capture: bool
 ) -> void:
+	if AppSettings.low_graphics:
+		return
 	trails.append({
 		"from": from,
 		"to": to,
@@ -66,8 +80,11 @@ func _draw() -> void:
 		piece.owned_player
 	)
 
-	if piece.selected or piece.powered:
-		draw_tile_shimmer(color)
+	if not AppSettings.low_graphics:
+		if piece.selected or piece.powered:
+			draw_tile_shimmer(color)
+	# if piece.selected or piece.powered:
+	# 	draw_tile_shimmer(color)
 
 	draw_selected_connections(color)
 

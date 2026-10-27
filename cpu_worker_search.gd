@@ -386,6 +386,10 @@ func _refresh() -> void:
 					piece.get_cur_pos()
 				)
 
+	_refresh_core_power()
+
+
+func _refresh_core_power() -> void:
 	for side in [1, 2]:
 		var core: Model.DataCorePiece = _core(side)
 
@@ -611,6 +615,7 @@ func _push(action: Dictionary) -> Dictionary:
 
 	var undo: Dictionary = {
 		"position": piece.position,
+		"vision": piece.cur_vision,
 		"player": simulation.current_player,
 		"captured": captured,
 		"captured_index": -1,
@@ -631,14 +636,19 @@ func _push(action: Dictionary) -> Dictionary:
 		simulation.pieces_container.remove_child(captured)
 
 	piece.position = simulation.map_to_local(destination)
-	_refresh()
 
+	# Other pieces' vision does not depend on this piece's position.
+	if not piece is Model.DataCorePiece:
+		piece.cur_vision = piece.get_potential_vision(piece.get_cur_pos())
+
+	_refresh_core_power()
 	return undo
 
 
 func _pop(action: Dictionary, undo: Dictionary) -> void:
 	var piece := action["piece"] as Model.DataPiece
 	piece.position = undo["position"]
+	piece.cur_vision = undo["vision"]
 
 	if piece is Model.DataTowerRotatePiece and undo.has("direction"):
 		(piece as Model.DataTowerRotatePiece).cur_direction = int(
@@ -657,7 +667,7 @@ func _pop(action: Dictionary, undo: Dictionary) -> void:
 		group.insert(int(undo["captured_index"]), captured)
 
 	simulation.current_player = int(undo["player"])
-	_refresh()
+	_refresh_core_power()
 
 
 func _terminal_score() -> float:
@@ -939,7 +949,7 @@ func _can_reach_core(attacker: Model.DataPiece, target: Vector2i) -> bool:
 					continue
 
 				var cross_line: Array[Vector2i] = (
-					simulation.hex_line(
+					simulation.cached_hex_line(
 						first_axis[i],
 						second_axis[i]
 					)

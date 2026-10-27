@@ -163,7 +163,7 @@ class DataTowerRotatePiece extends DataPiece:
 
 		for i in range(first_axis.size()):
 			if(i%2 == 0):
-				var connect_line = board.hex_line(first_axis[i], second_axis[i])
+				var connect_line = board.cached_hex_line(first_axis[i], second_axis[i])
 				var potential_new_move = connect_line[(connect_line.size())/2]
 				if(board.move_visible_and_unoccupied(potential_new_move, cur_location, self)):
 					cur_moves.append(potential_new_move)
@@ -176,7 +176,7 @@ class DataTowerRotatePiece extends DataPiece:
 			second_direction = (cur_direction - 1) % 6
 		second_axis = board.get_line_from_center(cur_location, second_direction, 10)
 		if(first_axis != null and second_axis != null):
-			var connect_line = board.hex_line(first_axis[2], second_axis[2])
+			var connect_line = board.cached_hex_line(first_axis[2], second_axis[2])
 			var potential_new_move = connect_line[(connect_line.size())/2]
 			if(board.cell_in_board(potential_new_move)):
 				if !board.does_rotate_unpower_core(self, true):
@@ -185,7 +185,7 @@ class DataTowerRotatePiece extends DataPiece:
 			first_axis = board.get_line_from_center(cur_location, (cur_direction + 1) % 6, 10)
 			second_axis = board.get_line_from_center(cur_location, (cur_direction + 2) % 6, 10)
 			if(first_axis != null and second_axis != null):
-				connect_line = board.hex_line(first_axis[2], second_axis[2])
+				connect_line = board.cached_hex_line(first_axis[2], second_axis[2])
 				potential_new_move = connect_line[(connect_line.size())/2]
 				if(board.cell_in_board(potential_new_move)):
 					if !board.does_rotate_unpower_core(self, false):
@@ -216,6 +216,7 @@ class DataTowerRotatePiece extends DataPiece:
 	func generate_turn_actions() -> Array[Dictionary]:
 		var actions: Array[Dictionary] = []
 
+		var original_vision: Array[Vector2i] = cur_vision
 		var original_direction: int = cur_direction
 		var original_player: int = board.current_player
 		var original_moves: Array[Vector2i] = cur_moves.duplicate()
@@ -235,7 +236,8 @@ class DataTowerRotatePiece extends DataPiece:
 			index += 1
 
 			cur_direction = direction
-			board.refresh_vision()
+			cur_vision = get_potential_vision(get_cur_pos())
+			board.update_all_core_power_counts()
 
 			clear_rotate_maps()
 			var destinations: Array[Vector2i] = (
@@ -268,7 +270,8 @@ class DataTowerRotatePiece extends DataPiece:
 
 		cur_direction = original_direction
 		board.current_player = original_player
-		board.refresh_vision()
+		cur_vision = original_vision
+		board.update_all_core_power_counts()
 
 		cur_moves = original_moves
 		cur_possible_rotate_moves = original_rotate_moves
@@ -302,7 +305,7 @@ class DataTowerRotatePiece extends DataPiece:
 				if i % 2 != 0:
 					continue
 
-				var connect_line := board.hex_line(first_axis[i], second_axis[i])
+				var connect_line := board.cached_hex_line(first_axis[i], second_axis[i])
 				var potential_move: Vector2i = connect_line[connect_line.size() / 2]
 				if potential_move == target and board.cell_in_board(target):
 					if not board.friendlyPieceExistsAtCell(owned_player, target):
@@ -322,6 +325,8 @@ class DataBoard extends RefCounted:
 	var _vision_cache: Dictionary = {}
 	var _line_cache: Dictionary = {}
 	var _tile_lookup: Dictionary = {}
+	var _cross_line_cache: Dictionary = {}
+
 	func potential_vision(cell: Vector2i, radius: int, direction: int = -1) -> Array[Vector2i]:
 		var key := Vector4i(cell.x, cell.y, radius, direction)
 		if not _vision_cache.has(key):
@@ -332,25 +337,32 @@ class DataBoard extends RefCounted:
 					result.append(tile)
 			_vision_cache[key] = result
 		return _vision_cache[key]
+
 	func cell_in_board(cell: Vector2i) -> bool:
 		if _tile_lookup.is_empty():
 			for tile in board_tiles:
 				_tile_lookup[tile] = true
 		return _tile_lookup.has(cell)
+
 	func get_line_from_center(center: Vector2i, direction: int, length: int):
 		var key := Vector4i(center.x, center.y, direction, length)
 		if not _line_cache.has(key):
 			_line_cache[key] = _uncached_line_from_center(center, direction, length)
 		return _line_cache[key]
+
 	func map_to_local(cell: Vector2i) -> Vector2:
 		return Vector2(cell)
+
 	func local_to_map(point: Vector2) -> Vector2i:
 		return Vector2i(point)
+
 	func get_children() -> Array:
 		return []
+
 	func dispose() -> void:
 		player_pieces = [[], []]
 		pieces_container.items.clear()
+
 	func refresh_vision() -> void:
 		for group in player_pieces:
 			for p: DataPiece in group:
@@ -359,6 +371,7 @@ class DataBoard extends RefCounted:
 				else:
 					p.cur_vision = p.get_potential_vision(p.get_cur_pos())
 		update_all_core_power_counts()
+
 	func get_possible_spawn_locations() -> Array[Vector2i]:
 		var locations: Array[Vector2i] = []
 
@@ -380,6 +393,14 @@ class DataBoard extends RefCounted:
 					return piece
 
 		return null
+
+	func cached_hex_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
+		var key := Vector4i(a.x, a.y, b.x, b.y)
+
+		if not _cross_line_cache.has(key):
+			_cross_line_cache[key] = hex_line(a, b)
+
+		return _cross_line_cache[key]
 
 	func hasEnemyPieceInVision(player: int, enemy: Vector2i) -> bool:
 		var enemy_player = 2 if player == 1 else 1

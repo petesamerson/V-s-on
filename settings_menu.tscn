@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://0h5iajc3fd7u"]
+[gd_scene load_steps=5 format=3 uid="uid://0h5iajc3fd7u"]
 
 [ext_resource type="StyleBox" uid="uid://chm2dwi2ecr1v" path="res://dark_panel.tres" id="1_0cmel"]
 [ext_resource type="Script" uid="uid://dr51xclc4nun5" path="res://settings_menu.gd" id="1_mlw3h"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="2_mlw3h"]
+[ext_resource type="Texture2D" uid="uid://jjya7x7mgw5a" path="res://sprites/close_icon.png" id="4_d0eu6"]
 
 [node name="SettingsMenu" type="CanvasLayer"]
 layer = 20
@@ -59,7 +60,7 @@ text = "Settings"
 [node name="MusicLabel" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_mlw3h")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 25
 text = "Music Volume"
 
 [node name="MusicSlider" type="HSlider" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
@@ -69,7 +70,7 @@ value = 100.0
 [node name="EffectsLabel" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_mlw3h")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 25
 text = "Sound Effects Volume"
 
 [node name="EffectsSlider" type="HSlider" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
@@ -79,11 +80,48 @@ value = 100.0
 [node name="ReduceAnimation" type="CheckButton" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_mlw3h")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 25
 text = "Reduce Background Animation"
 
-[node name="CloseButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="LowGraphics" type="CheckButton" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_mlw3h")
+theme_override_font_sizes/font_size = 25
+text = "Low Graphics "
+
+[node name="DisplayModeLabel" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_mlw3h")
+theme_override_font_sizes/font_size = 25
+text = "Display Mode"
+
+[node name="DisplayMode" type="OptionButton" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_mlw3h")
+theme_override_font_sizes/font_size = 25
+
+[node name="GameUISizeLabel" type="Label" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_mlw3h")
+theme_override_font_sizes/font_size = 25
+text = "In-Game UI Size 100%"
+
+[node name="GameUISizeSlider" type="HSlider" parent="Overlay/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PanelContent" type="Control" parent="Overlay/CenterContainer/PanelContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CloseButton" type="Button" parent="Overlay/CenterContainer/PanelContainer/PanelContent"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -108.0
+offset_bottom = 108.0
+grow_horizontal = 0
+scale = Vector2(0.5, 0.5)
+theme_override_fonts/font = ExtResource("2_mlw3h")
 theme_override_font_sizes/font_size = 20
-text = "Close"
+icon = ExtResource("4_d0eu6")

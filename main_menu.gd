@@ -97,7 +97,8 @@ func update_mobile_scale():
 		or OS.has_feature("web_ios")
 	)
 	if is_mobile_browser:
-		scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+		# scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+		UITextScale.apply(self, UITextScale.current_factor(get_viewport()))
 	# Size the control itself so its icon and hit area share the same bounds.
 	var control_scale := 2.0 if is_mobile_browser else 1.0
 	for close_button: Button in [
