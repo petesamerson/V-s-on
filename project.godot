@@ -21,6 +21,7 @@ boot_splash/minimum_display_time=2000
 
 NetworkManager="*res://network_manger.gd"
 AppSettings="*res://app_settings.gd"
+OfflineSave="*res://offline_save.gd"
 
 [display]
 

@@ -389,6 +389,8 @@ func _on_turn_message_timer_timeout():
 	your_turn_label.visible = false
 
 func display_winner(winner):
+	if not online_game and not tutorial_mode:
+		OfflineSave.clear_match()
 	win_label.text = "Player %d WINS!" % winner
 	win_label.modulate = GameColors.powered_color(winner)
 	win_label.visible = true
@@ -516,6 +518,15 @@ var capture_rows: Array[HFlowContainer] = []
 func spawn_all_pieces():
 	clear_all_power_lines()
 
+	if not online_game and not tutorial_mode:
+		if not OfflineSave.pending_resume.is_empty():
+			var saved: Dictionary = OfflineSave.pending_resume
+			OfflineSave.pending_resume = {}
+
+			if not restore_offline_checkpoint(saved):
+				push_error("The saved match could not be restored.")
+				get_tree().change_scene_to_file("res://main_menu.tscn")
+			return
 	var num1: int
 	var num2: int
 	if tutorial_mode:
@@ -543,6 +554,7 @@ func spawn_all_pieces():
 	game_setup_complete = true
 	update_core_power()
 	board_effects.play_setup()
+	save_offline_checkpoint()
 
 func get_possible_spawn_locations() -> Array[Vector2i]:
 	var locations: Array[Vector2i] = []
@@ -1497,6 +1509,11 @@ func end_turn(movedPiece: Piece):
 		tutorial_turn_completed.emit()
 		return
 
+	if not online_game:
+		if is_instance_valid(cpu_player):
+			save_offline_checkpoint(3 - current_player, false, movedPiece)
+		else:
+			save_offline_checkpoint(current_player, true, movedPiece)
 	var core_found = false
 	clear_captures()
 	displayed_warning_text = false
@@ -1543,9 +1560,13 @@ func get_viewer_player() -> int:
 	return current_player
 
 var enemy_turn_interrupt = false
+
 func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
+	await _continue_cpu_turn()
 
+
+func _continue_cpu_turn() -> void:
 	if current_player == cpu_player.player_number:
 		update_turn_text()
 		cpu_turn_in_progress = true
@@ -2333,6 +2354,7 @@ func _on_next_pressed() -> void:
 	update_all_piece_vision()
 	# move_camera_to_core()
 	turn_menu.hide()
+	save_offline_checkpoint()
 	var camera_sequence: int = camera.begin_auto_camera_sequence()
 	# if(player_last_moves.size() == player_pieces.size()):
 	# 	await update_move_camera(
@@ -2372,6 +2394,237 @@ func _on_next_pressed() -> void:
 
 	update_turn_text()
 	display_turn_message()
+
+
+func save_offline_checkpoint(
+	saved_player: int = -1,
+	handoff_pending: bool = false,
+	moved_piece: Piece = null
+) -> void:
+	if online_game or tutorial_mode or not game_setup_complete:
+		return
+
+	update_all_core_power_counts()
+	if determine_winner() != 0:
+		OfflineSave.clear_match()
+		return
+
+	var pieces: Array[Dictionary] = []
+	for group in player_pieces:
+		for piece: Piece in group:
+			pieces.append({
+				"id": piece.get_instance_id(),
+				"kind": piece.get_script().resource_path.get_file(),
+				"player": piece.owned_player,
+				"cell": piece.get_cur_pos(),
+				"direction": (
+					piece.cur_direction
+					if piece is TowerRotatePiece
+					else 0
+				),
+			})
+
+	var captures: Array = [[], []]
+	for side in range(2):
+		for record: Dictionary in player_captures[side]:
+			var texture := record.get("texture") as Texture2D
+			captures[side].append({
+				"name": record.get("name", ""),
+				"cell": record.get("cell", Vector2i.ZERO),
+				"texture_path": texture.resource_path if texture != null else "",
+			})
+
+	var last_moves: Array[int] = [-1, -1]
+	for side in range(mini(player_last_moves.size(), 2)):
+		if is_instance_valid(player_last_moves[side]):
+			last_moves[side] = player_last_moves[side].get_instance_id()
+
+	if is_instance_valid(moved_piece):
+		last_moves[moved_piece.owned_player - 1] = moved_piece.get_instance_id()
+
+	var data: Dictionary = {
+		"pieces": pieces,
+		"captures": captures,
+		"current_player": current_player if saved_player < 0 else saved_player,
+		"turn": turn,
+		"handoff_pending": handoff_pending,
+		"play_vs_cpu": play_vs_cpu,
+		"colors": GameColors.selected_color_indices.duplicate(),
+		"last_moves": last_moves,
+		"last_capturers": last_capture_capturer_ids.duplicate(),
+		"camera_position": camera.global_position,
+		"camera_zoom": camera.zoom,
+		"cpu": (
+			cpu_player.export_save_state()
+			if is_instance_valid(cpu_player)
+			else {}
+		),
+	}
+
+	var error = OfflineSave.write_match(data)
+	if error != OK:
+		push_error("Could not save offline match: " + error_string(error))
+	
+func _saved_piece_scenes() -> Dictionary:
+	return {
+		"Piece.gd": piece_scene,
+		"CorePiece.gd": core_piece_scene,
+		"EyePiece.gd": eye_piece_scene,
+		"TowerRotatePiece.gd": tower_piece_scene,
+		"HopPiece.gd": hop_piece_scene,
+		"TriangleOddPiece.gd": triangle_odd_piece_scene,
+		"TriangleEvenPiece.gd": triangle_even_piece_scene,
+	}
+
+
+func restore_offline_checkpoint(data: Dictionary) -> bool:
+	var scenes := _saved_piece_scenes()
+	var records: Array = data.get("pieces", [])
+	var captures: Array = data.get("captures", [])
+
+	if records.is_empty() or captures.size() != 2:
+		return false
+	if int(data.get("current_player", 0)) not in [1, 2]:
+		return false
+
+	# Validate before replacing any pieces.
+	for record in records:
+		if not record is Dictionary:
+			return false
+		if not scenes.has(record.get("kind", "")):
+			return false
+		if scenes[record["kind"]] == null:
+			return false
+		if int(record.get("player", 0)) not in [1, 2]:
+			return false
+		if not record.get("cell") is Vector2i:
+			return false
+		if not cell_in_board(record["cell"]):
+			return false
+		if not record.has("id"):
+			return false
+		if int(record.get("direction", -1)) not in range(6):
+			return false
+
+	for group in captures:
+		if not group is Array:
+			return false
+		for record in group:
+			if not record is Dictionary:
+				return false
+			var path := str(record.get("texture_path", ""))
+			if not path.is_empty():
+				if not path.begins_with("res://sprites/"):
+					return false
+				if not ResourceLoader.exists(path, "Texture2D"):
+					return false
+
+	game_setup_complete = false
+	current_player = int(data["current_player"])
+	turn = int(data.get("turn", 1))
+
+	for child in pieces_container.get_children():
+		pieces_container.remove_child(child)
+		child.queue_free()
+
+	player_pieces = [[], []]
+	var piece_map: Dictionary = {}
+	var id_map: Dictionary = {}
+
+	for record: Dictionary in records:
+		var scene: PackedScene = scenes[record["kind"]]
+		var piece := scene.instantiate() as Piece
+		piece.owned_player = int(record["player"])
+		player_pieces[piece.owned_player - 1].append(piece)
+		pieces_container.add_child(piece)
+		piece.setup(record["cell"], self)
+
+		if piece is TowerRotatePiece:
+			piece.cur_direction = int(record["direction"])
+			piece.update_sprite_rotation()
+
+		if piece is CorePiece:
+			piece.cur_vision.clear()
+		else:
+			piece.cur_vision = piece.get_potential_vision(piece.get_cur_pos())
+
+		var saved_id := int(record["id"])
+		piece_map[saved_id] = piece
+		id_map[saved_id] = piece.get_instance_id()
+
+	player_last_moves.clear()
+	for saved_id in data.get("last_moves", [-1, -1]):
+		player_last_moves.append(piece_map.get(int(saved_id)) as Piece)
+
+	last_capture_capturer_ids.clear()
+	for saved_id in data.get("last_capturers", [-1, -1]):
+		last_capture_capturer_ids.append(
+			int(id_map.get(int(saved_id), -1))
+		)
+
+	player_captures = [[], []]
+	for side in range(2):
+		for child in capture_rows[side].get_children():
+			capture_rows[side].remove_child(child)
+			child.queue_free()
+
+		for record: Dictionary in captures[side]:
+			var path := str(record.get("texture_path", ""))
+			var texture: Texture2D = null
+			if not path.is_empty():
+				texture = load(path) as Texture2D
+
+			player_captures[side].append({
+				"name": record.get("name", ""),
+				"cell": record.get("cell", Vector2i.ZERO),
+				"texture": texture,
+			})
+
+			var icon := TextureRect.new()
+			icon.texture = texture
+			icon.custom_minimum_size = Vector2.ONE * 32.0 * ui_scale
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.modulate = GameColors.player_color(2 - side)
+			icon.tooltip_text = str(record.get("name", ""))
+			capture_rows[side].add_child(icon)
+
+	if is_instance_valid(cpu_player):
+		cpu_player.import_save_state(data["cpu"], id_map, piece_map)
+
+	update_all_piece_vision()
+	update_all_core_power_counts()
+	game_setup_complete = true
+	update_core_power()
+	update_turn_text()
+
+	var core := get_current_core()
+	if is_instance_valid(core):
+		update_selection_panel(core)
+
+	turn_menu.visible = (
+		not play_vs_cpu
+		and bool(data.get("handoff_pending", false))
+	)
+	settings_cover.hide()
+
+	camera.interrupt_auto_camera()
+	camera.global_position = data.get(
+		"camera_position",
+		board_center
+	)
+	var saved_zoom: Vector2 = data.get("camera_zoom", Vector2.ONE)
+	camera.zoom = Vector2.ONE * clampf(saved_zoom.x, 0.4, 3.0)
+	camera.rebuild_map_bounds()
+	camera.force_update_scroll()
+	board_effects.start_resumed_game()
+
+	if is_instance_valid(cpu_player):
+		if current_player == cpu_player.player_number:
+			cpu_turn_in_progress = true
+			call_deferred("_continue_cpu_turn")
+
+	return true
 
 func _on_network_game_message(payload: Variant, from_player: int) -> void:
 	if not online_game or typeof(payload) != TYPE_DICTIONARY:
@@ -2420,6 +2673,7 @@ func _on_stay_button_pressed() -> void:
 	update_turn_text()
 	update_all_piece_vision()
 	turn_menu.hide()
+	save_offline_checkpoint()
 
 @onready var music_player: AudioStreamPlayer2D = $"../AudioStreamPlayer2D"
 @onready var game_sounds: AudioStreamPlayer =$"../GameSounds"

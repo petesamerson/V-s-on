@@ -195,3 +195,109 @@ func recover_turn() -> bool:
 
 	push_error("CPU recovery found no legal moves.")
 	return false
+
+
+const SAVE_MEMORY_FIELDS: Array[String] = [
+	"early_hop_move_count",
+	"early_tower_move_count",
+	"next_scout_piece_type",
+	"seen_by_player",
+	"cpu_turn_count",
+	"observed_enemy_capture_count",
+	"capture_danger",
+]
+
+const SAVE_ID_DICTIONARIES: Array[String] = [
+	"moved_piece_ids",
+	"enemy_last_seen",
+	"enemy_last_seen_turn",
+]
+
+
+func export_save_state() -> Dictionary:
+	var data: Dictionary = {}
+
+	for field in SAVE_MEMORY_FIELDS:
+		data[field] = get(field)
+
+	for field in SAVE_ID_DICTIONARIES:
+		data[field] = get(field)
+
+	data["difficulty"] = difficulty
+	data["recent_moves"] = recent_moves
+	data["recent_piece_ids"] = recent_piece_ids
+	data["last_enemy_capturer_id"] = last_enemy_capturer_id
+	data["last_moved_piece_id"] = (
+		last_moved_piece.get_instance_id()
+		if is_instance_valid(last_moved_piece)
+		else -1
+	)
+	data["rng_seed"] = rng.seed
+	data["rng_state"] = rng.state
+	data["knowledge"] = {
+		"models": spawn_knowledge.models,
+		"sightings": spawn_knowledge.sightings,
+		"forecast": spawn_knowledge.forecast,
+		"confidence": spawn_knowledge.confidence,
+	}
+
+	return data.duplicate(true)
+
+
+func import_save_state(
+	data: Dictionary,
+	id_map: Dictionary,
+	piece_map: Dictionary
+) -> void:
+	for field in SAVE_MEMORY_FIELDS:
+		if data.has(field):
+			set(field, data[field])
+
+	for field in SAVE_ID_DICTIONARIES:
+		set(field, _remap_saved_dictionary(data.get(field, {}), id_map))
+
+	recent_moves.clear()
+	for saved_move in data.get("recent_moves", []):
+		var record: Dictionary = saved_move.duplicate(true)
+		record["id"] = _remap_saved_id(int(record["id"]), id_map)
+		recent_moves.append(record)
+
+	recent_piece_ids.clear()
+	for saved_id in data.get("recent_piece_ids", []):
+		recent_piece_ids.append(_remap_saved_id(int(saved_id), id_map))
+
+	last_enemy_capturer_id = _remap_saved_id(
+		int(data.get("last_enemy_capturer_id", -1)),
+		id_map
+	)
+	last_moved_piece = piece_map.get(
+		int(data.get("last_moved_piece_id", -1))
+	) as Piece
+
+	difficulty = clampi(int(data.get("difficulty", 3)), 1, 6)
+	rng.seed = int(data.get("rng_seed", rng.seed))
+	rng.state = int(data.get("rng_state", rng.state))
+
+	var knowledge: Dictionary = data.get("knowledge", {})
+	spawn_knowledge.models.assign(knowledge.get("models", []))
+	spawn_knowledge.sightings = _remap_saved_dictionary(
+		knowledge.get("sightings", {}),
+		id_map
+	)
+	spawn_knowledge.forecast = knowledge.get("forecast", {})
+	spawn_knowledge.confidence = float(knowledge.get("confidence", 1.0))
+
+
+func _remap_saved_id(saved_id: int, id_map: Dictionary) -> int:
+	# Captured pieces retain distinct, non-live IDs in memory.
+	return int(id_map.get(saved_id, -absi(saved_id)))
+
+
+func _remap_saved_dictionary(
+	values: Dictionary,
+	id_map: Dictionary
+) -> Dictionary:
+	var result: Dictionary = {}
+	for saved_id in values:
+		result[_remap_saved_id(int(saved_id), id_map)] = values[saved_id]
+	return result

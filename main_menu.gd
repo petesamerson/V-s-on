@@ -6,6 +6,10 @@ class_name MainMenu
 @onready var multiplayer_settings: Control = $MutiplayerSettings
 @onready var difficulty_label: Label = $CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/CurrentDiff
 
+@onready var continue_game_button: Button = (
+	$MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/ContinueGame
+)
+
 const GameColors = preload("res://colors.gd")
 @onready var player_color_select: OptionButton = \
 	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player1Row/P1ColorSelect
@@ -18,6 +22,9 @@ func _ready() -> void:
 	update_mobile_scale()
 	cpu_settings_screen.mouse_filter = Control.MOUSE_FILTER_STOP
 	cpu_settings_screen.hide()
+
+	continue_game_button.disabled = OfflineSave.read_match().is_empty()
+	continue_game_button.pressed.connect(_on_continue_game_pressed)
 
 	NetworkManager.room_created.connect(_on_room_created)
 	NetworkManager.room_joined.connect(_on_room_joined)
@@ -88,6 +95,33 @@ func refresh_color_options() -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	pass
+
+func _on_continue_game_pressed() -> void:
+	var saved := OfflineSave.read_match()
+	if saved.is_empty():
+		continue_game_button.disabled = true
+		return
+
+	var colors: Array = saved.get("colors", [0, 1])
+	for side in range(mini(colors.size(), 2)):
+		GameColors.set_player_color(side + 1, int(colors[side]))
+
+	var cpu_data: Dictionary = saved.get("cpu", {})
+	get_tree().root.set_meta("online_game", false)
+	get_tree().root.set_meta(
+		"play_vs_cpu",
+		bool(saved.get("play_vs_cpu", false))
+	)
+	get_tree().root.set_meta(
+		"cpu_difficulty",
+		int(cpu_data.get("difficulty", 3))
+	)
+
+	OfflineSave.pending_resume = saved
+	var error := get_tree().change_scene_to_file("res://base_scene.tscn")
+	if error != OK:
+		OfflineSave.pending_resume.clear()
+		push_error("Could not open saved match: " + error_string(error))
 
 
 var is_mobile_browser = false

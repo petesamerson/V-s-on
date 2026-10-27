@@ -2,7 +2,6 @@ extends Camera2D
 
 
 @export var board: TileMapLayer
-@onready var turn_label: RichTextLabel = $"../CanvasLayer/TurnLabel"
 
 var is_mobile_browser: bool
 
@@ -13,9 +12,10 @@ func _ready() -> void:
 		or OS.has_feature("web_android") \
 		or OS.has_feature("web_ios")
 	)
-	position = board.map_to_local(
-		board.board_center
+	global_position = board.to_global(
+		board.map_to_local(board.board_center)
 	)
+	position_smoothing_enabled = false
 	call_deferred("rebuild_map_bounds")
 
 
@@ -36,33 +36,50 @@ var previous_pinch_distance := 0.0
 const MIN_ZOOM := 0.4
 const MAX_ZOOM := 3.0
 
-#--------TEST Values Touch Pinch
-# PC pinch testing
-var test_pinch := false
-var test_finger_offset := Vector2(200, 0)
-var test_previous_distance := 0.0
-#---------
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMagnifyGesture and not is_mobile_browser:
+		_zoom_to_point(event.factor, event.position)
+		get_viewport().set_input_as_handled()
 
-func _unhandled_input(event):
-	if event is InputEventMagnifyGesture:
-		_zoom_to_point(event.factor/4, event.position)
-	# Mouse Controls
-	elif event is InputEventMouseButton and is_mobile_browser == false:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom_to_mouse(1.05)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom_to_mouse(0.95)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			#-----More Test Touch Pinch
-			if event.pressed:
-				test_pinch = true
-				test_previous_distance = 0.0
-			else:
-				test_pinch = false
-	elif event is InputEventMouseMotion and dragging and is_mobile_browser == false:
-		interrupt_auto_camera()
-		position -= event.relative / zoom
-		_clamp_to_map()
+	elif event is InputEventPanGesture and not is_mobile_browser:
+		_pan_camera(-event.delta * 20.0)
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventMouseButton and not is_mobile_browser:
+		if event.button_index in [
+			MOUSE_BUTTON_RIGHT,
+			MOUSE_BUTTON_MIDDLE,
+		]:
+			dragging = event.pressed
+
+			if dragging:
+				interrupt_auto_camera()
+
+			get_viewport().set_input_as_handled()
+
+		elif event.pressed:
+			var wheel_steps = event.factor
+			if wheel_steps <= 0.0:
+				wheel_steps = 1.0
+
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				_zoom_to_point(
+					pow(1.1, wheel_steps),
+					event.position
+				)
+				get_viewport().set_input_as_handled()
+
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				_zoom_to_point(
+					pow(1.1, -wheel_steps),
+					event.position
+				)
+				get_viewport().set_input_as_handled()
+
+	elif event is InputEventMouseMotion and not is_mobile_browser:
+		if dragging:
+			_pan_camera(event.relative)
+			get_viewport().set_input_as_handled()
 
 	# Single Touch
 	elif event is InputEventScreenTouch:
@@ -80,6 +97,9 @@ func _unhandled_input(event):
 				previous_pinch_distance = 0.0
 	# Touch Drag/Pinch
 	elif event is InputEventScreenDrag:
+		if not touches.has(event.index):
+			return
+
 		touches[event.index] = event.position
 		
 		# Two fingers = pinch zoom
@@ -90,10 +110,7 @@ func _unhandled_input(event):
 				positions[1]
 			)
 			if previous_pinch_distance > 0:
-				var difference = current_distance \
-					- previous_pinch_distance
-
-				var factor = 1.0 + difference * 0.003
+				var factor = current_distance / previous_pinch_distance
 
 				_zoom_to_point(
 					factor,
@@ -103,18 +120,48 @@ func _unhandled_input(event):
 			previous_pinch_distance = current_distance
 
 		elif touches.size() == 1 and not wasPinched:
-			interrupt_auto_camera()
-			position -= event.relative / zoom.x
-			_clamp_to_map()
+			_pan_camera(event.relative)
+
+
+func _pan_camera(screen_delta: Vector2) -> void:
+	interrupt_auto_camera()
+	global_position -= screen_delta / zoom
+	_clamp_to_map()
+	force_update_scroll()
+
+func _input(event: InputEvent) -> void:
+	# Observe releases even when a UI control consumes them.
+	# Do not mark these events handled here.
+	if event is InputEventMouseButton:
+		if not event.pressed and event.button_index in [
+			MOUSE_BUTTON_RIGHT,
+			MOUSE_BUTTON_MIDDLE,
+		]:
+			dragging = false
+
+	elif event is InputEventScreenTouch:
+		if not event.pressed:
+			touches.erase(event.index)
+			previous_pinch_distance = 0.0
+
+			if touches.is_empty():
+				wasPinched = false
+
+
+func _notification(what: int) -> void:
+	if what in [
+		NOTIFICATION_APPLICATION_FOCUS_OUT,
+		NOTIFICATION_APPLICATION_PAUSED,
+	]:
+		dragging = false
+		touches.clear()
+		previous_pinch_distance = 0.0
+		wasPinched = false
+		interrupt_auto_camera()
 # =====================================
 # Zoom around mouse
 # =====================================
 
-# func _zoom_to_mouse(factor: float):
-
-# 	var mouse_screen = get_global_mouse_position)
-
-# 	_zoom_to_point(factor, mouse_screen)
 
 func _zoom_to_mouse(factor: float) -> void:
 	_zoom_to_point(factor, get_viewport().get_mouse_position())
@@ -123,29 +170,43 @@ func _zoom_to_mouse(factor: float) -> void:
 # Zoom around screen point
 # =====================================
 
-func _zoom_to_point(factor: float, screen_point: Vector2):
-	interrupt_auto_camera()
-	
-	var old_zoom = zoom.x
+func _zoom_to_point(
+	factor: float,
+	screen_point: Vector2
+) -> void:
+	if factor <= 0.0:
+		return
 
-	var new_zoom = clamp(
-		old_zoom * factor,
+	interrupt_auto_camera()
+
+	var new_zoom := clampf(
+		zoom.x * factor,
 		MIN_ZOOM,
 		MAX_ZOOM
 	)
 
-	factor = new_zoom / old_zoom
+	if is_equal_approx(new_zoom, zoom.x):
+		return
 
-	var viewport = get_viewport()
+	var viewport := get_viewport()
 
-	var world_before = viewport.get_canvas_transform().affine_inverse() * screen_point
+	force_update_scroll()
+	var world_before := (
+		viewport.get_canvas_transform().affine_inverse()
+		* screen_point
+	)
 
-	zoom = Vector2(new_zoom, new_zoom)
+	zoom = Vector2.ONE * new_zoom
+	force_update_scroll()
 
-	var world_after = viewport.get_canvas_transform().affine_inverse() * screen_point
+	var world_after := (
+		viewport.get_canvas_transform().affine_inverse()
+		* screen_point
+	)
 
-	position += world_before - world_after
+	global_position += world_before - world_after
 	_clamp_to_map()
+	force_update_scroll()
 
 var _auto_camera_sequence: int = 0
 var _auto_camera_interrupted: bool = false
@@ -177,6 +238,8 @@ func zoom_to_global_position(
 	target_zoom: float,
 	sequence_id: int = -1
 ) -> void:
+	if not is_inside_tree():
+		return
 	if sequence_id < 0:
 		sequence_id = _auto_camera_sequence
 
@@ -205,16 +268,23 @@ func zoom_to_global_position(
 
 	# Cancellation also releases any Board function awaiting this move.
 	while (
-		sequence_id == _auto_camera_sequence
+		is_inside_tree()
+		and sequence_id == _auto_camera_sequence
 		and _auto_camera_tween == tween
 		and tween.is_valid()
 		and tween.is_running()
 	):
-		await get_tree().process_frame
+		var tree := get_tree()
+		if tree == null:
+			break
+
+		await tree.process_frame
 
 	if _auto_camera_tween == tween:
 		_auto_camera_tween = null
 
+func _exit_tree() -> void:
+	interrupt_auto_camera()
 
 @export var map_camera_padding: float = 800.0
 

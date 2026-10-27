@@ -930,3 +930,26 @@ func _draw_enemy_selection_overlay(
 	var outline := points.duplicate()
 	outline.append(points[0])
 	draw_polyline(outline, Color(tint, edge_alpha), width, true)
+
+
+func start_resumed_game() -> void:
+	if started:
+		return
+
+	started = true
+	assembling = false
+
+	var fog = preload("res://unseen_board_effect.gd").new()
+	fog.name = "UnseenBoardMist"
+	fog.board = board
+	fog.effects = self
+	add_child(fog)
+
+	var viewer: int = _viewer()
+	last_viewer = viewer
+
+	var visible := _visible_cells(viewer)
+	discoveries[viewer] = visible.duplicate()
+	effect_visible = visible
+
+	queue_redraw()
