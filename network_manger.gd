@@ -62,8 +62,11 @@ func _process(_delta: float) -> void:
 
 	if socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
 		_was_open = true
-
-		while socket.get_available_packet_count() > 0:
+		while (
+			not _reported_closed
+			and socket.get_ready_state() == WebSocketPeer.STATE_OPEN
+			and socket.get_available_packet_count() > 0
+		):
 			var packet := socket.get_packet()
 			var parsed: Variant = JSON.parse_string(packet.get_string_from_utf8())
 
@@ -73,18 +76,23 @@ func _process(_delta: float) -> void:
 
 			_handle_server_message(parsed)
 
-	elif socket.get_ready_state() == WebSocketPeer.STATE_CLOSED and not _reported_closed:
+
+	elif socket.get_ready_state() == WebSocketPeer.STATE_CLOSED:
+		set_process(false)
+
+		if _reported_closed:
+			return
+
 		_reported_closed = true
 
-		if _was_open:
+		if socket.get_close_code() == 4001:
+			opponent_disconnected.emit()
+		elif _was_open:
 			connection_closed.emit()
 		else:
 			network_error.emit(
-				"Could not join that room. Check the code and make sure the server is running."
+				"Could not join that room. Check the code and try again."
 			)
-
-		set_process(false)
-
 
 func _connect_to_room(code: String, action: String) -> void:
 	socket = WebSocketPeer.new()
@@ -102,6 +110,14 @@ func _connect_to_room(code: String, action: String) -> void:
 
 	set_process(true)
 
+func leave_room() -> void:
+	# An intentional departure should not trigger an error message.
+	_reported_closed = true
+	room_code = ""
+
+	if socket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
+		socket.close(1000, "Player left")
+		set_process(true)
 
 func _handle_server_message(message: Dictionary) -> void:
 	match message.get("type", ""):
@@ -119,7 +135,10 @@ func _handle_server_message(message: Dictionary) -> void:
 				int(message.get("from_player", 0))
 			)
 		"opponent_disconnected":
-			opponent_disconnected.emit()
+			if not _reported_closed:
+				_reported_closed = true
+				opponent_disconnected.emit()
+
 		"error":
 			network_error.emit(str(message.get("message", "Server error.")))
 

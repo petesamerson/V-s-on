@@ -154,6 +154,8 @@ func inspect_enemy_piece() -> bool:
 func can_control_piece() -> bool:
 	if board == null or board.cpu_turn_in_progress:
 		return false
+	if board.online_game and board.online_disconnected:
+		return false	
 	if owned_player != board.current_player:
 		return false
 	if board.online_game and owned_player != board.local_player:
@@ -277,31 +279,93 @@ func update_piece_color():
 			fposmod(float(owned_player - 1) * 0.17, 1.0)
 		)
 
-func _input(event):
+# func _input(event):
+# 	if not selected or not can_control_piece():
+# 		return
+
+# 	if (
+# 		event is InputEventMouseButton
+# 		and event.pressed
+# 		and event.button_index == MOUSE_BUTTON_LEFT
+# 	):
+# 		var mouse_cell: Vector2i = board.local_to_map(
+# 			board.to_local(board.camera.get_global_mouse_position())
+# 		)
+# 		var enemy := board.get_enemy_piece_at_cell(
+# 			mouse_cell, 3 - owned_player
+# 		) as Piece
+
+# 		# Legal capture clicks continue through normal move handling.
+# 		if is_instance_valid(enemy) and not cur_moves.has(mouse_cell):
+# 			# Restore existing highlights and deselect normally.
+# 			handle_move_input_event(event)
+# 			enemy.inspect_enemy_piece()
+# 			get_viewport().set_input_as_handled()
+# 			return
+# 		handle_move_input_event(event)
+# 		get_viewport().set_input_as_handled()
+func _unhandled_input(event: InputEvent) -> void:
 	if not selected or not can_control_piece():
 		return
 
-	if (
-		event is InputEventMouseButton
-		and event.pressed
-		and event.button_index == MOUSE_BUTTON_LEFT
-	):
-		var mouse_cell: Vector2i = board.local_to_map(
-			board.to_local(board.camera.get_global_mouse_position())
-		)
-		var enemy := board.get_enemy_piece_at_cell(
-			mouse_cell, 3 - owned_player
-		) as Piece
+	if not event is InputEventMouseButton:
+		return
+	if not event.pressed or event.button_index != MOUSE_BUTTON_LEFT:
+		return
 
-		# Legal capture clicks continue through normal move handling.
-		if is_instance_valid(enemy) and not cur_moves.has(mouse_cell):
-			# Restore existing highlights and deselect normally.
-			handle_move_input_event(event)
-			enemy.inspect_enemy_piece()
-			get_viewport().set_input_as_handled()
-			return
-		handle_move_input_event(event)
+	var mouse_cell: Vector2i = board.local_to_map(
+		board.to_local(board.camera.get_global_mouse_position())
+	)
+	# A selected tower's rotation markers take priority.
+	if self is TowerRotatePiece:
+		var tower := self as TowerRotatePiece
+
+		for pivot in tower.rotate_map.values():
+			if board.cell_in_board(pivot) and mouse_cell == pivot:
+				get_viewport().set_input_as_handled()
+				tower.handle_move_input_event(event)
+				return
+
+	# Switch directly to another friendly piece.
+	for node in board.player_pieces[owned_player - 1]:
+		var friendly := node as Piece
+
+		if not is_instance_valid(friendly) or friendly == self:
+			continue
+		if friendly.get_cur_pos() != mouse_cell:
+			continue
+		if not friendly.can_control_piece():
+			continue
+
 		get_viewport().set_input_as_handled()
+
+		armed = false
+		board.deselect_all_pieces()
+		board.update_all_piece_vision()
+
+		friendly.on_clicked()
+		friendly.armed = true
+		board.update_selection_panel(friendly)
+
+		if board.tutorial_mode and friendly.selected:
+			board.tutorial_piece_selected.emit(friendly)
+
+		return
+
+	var enemy := board.get_enemy_piece_at_cell(
+		mouse_cell,
+		3 - owned_player
+	) as Piece
+
+	# Preserve inspection of enemies outside legal capture moves.
+	if is_instance_valid(enemy) and not cur_moves.has(mouse_cell):
+		handle_move_input_event(event)
+		enemy.inspect_enemy_piece()
+		get_viewport().set_input_as_handled()
+		return
+
+	handle_move_input_event(event)
+	get_viewport().set_input_as_handled()
 
 func handle_move_input_event(event):
 	if not can_control_piece():

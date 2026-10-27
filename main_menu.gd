@@ -31,6 +31,8 @@ func _ready() -> void:
 	NetworkManager.opponent_joined.connect(_on_opponent_joined)
 	NetworkManager.network_error.connect(_on_network_error)
 	NetworkManager.game_message_received.connect(_on_lobby_game_message)
+	NetworkManager.connection_closed.connect(_on_lobby_connection_closed)
+	NetworkManager.opponent_disconnected.connect(_on_lobby_opponent_disconnected)
 
 	for dropdown in [player_color_select, enemy_color_select]:
 		dropdown.clear()
@@ -201,6 +203,16 @@ func _on_difficulty_slider_value_changed(value: float) -> void:
 		selected_difficulty
 	)
 
+func _on_lobby_connection_closed() -> void:
+	host_code_input.editable = true
+	_on_network_error("Connection lost. Please create or join a room again.")
+
+
+func _on_lobby_opponent_disconnected() -> void:
+	NetworkManager.leave_room()
+	host_code_input.editable = true
+	_on_network_error("Your opponent left. Please create or join a room again.")
+
 func _on_start_cpu_game_pressed() -> void:
 	var slider := get_node(
 		"CpuSettingsScreen/MarginContainer/Panel/"
@@ -344,8 +356,9 @@ func _on_close_game_settings_pressed() -> void:
 
 
 func _on_close_multi_settings_pressed() -> void:
-	multiplayer_settings.visible = false
-
+	NetworkManager.leave_room()
+	host_code_input.editable = true
+	multiplayer_settings.hide()
 
 func _on_how_to_play_pressed() -> void:
 	get_tree().change_scene_to_file("res://tutorial.tscn")

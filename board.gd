@@ -32,7 +32,9 @@ var current_player: int = 1
 
 var play_vs_cpu: bool = false
 var online_game := false
+var online_disconnected: bool = false
 var local_player := 1
+var match_winner = 0
 
 var game_setup_complete := false
 var cpu_turn_in_progress := false
@@ -47,8 +49,8 @@ var core_attacker_highlights: TileMapLayer
 @export var white_fill_source_id: int
 @export var white_outline_source_id: int
 
-
 @export var tutorial_mode: bool = false
+
 signal tutorial_piece_selected(piece: Piece)
 signal tutorial_piece_moved(piece: Piece)
 signal tutorial_turn_completed
@@ -105,6 +107,9 @@ func _ready() -> void:
 
 	if online_game:
 		NetworkManager.game_message_received.connect(_on_network_game_message)
+		NetworkManager.opponent_disconnected.connect(_on_opponent_disconnected)
+		NetworkManager.connection_closed.connect(_on_connection_closed)
+		NetworkManager.network_error.connect(_on_online_network_error)
 	elif play_vs_cpu:
 		intialize_cpu_player(2)
 
@@ -389,6 +394,10 @@ func _on_turn_message_timer_timeout():
 	your_turn_label.visible = false
 
 func display_winner(winner):
+	if match_winner != 0:
+		return
+
+	match_winner = winner
 	if not online_game and not tutorial_mode:
 		OfflineSave.clear_match()
 	win_label.text = "Player %d WINS!" % winner
@@ -1501,6 +1510,8 @@ func deselect_all_pieces(excluded_pieces: Array[Piece] = []):
 	redraw_selected_highlights()
 
 func end_turn(movedPiece: Piece):
+	if online_disconnected:
+		return
 	if tutorial_mode:
 		clear_captures()
 		deselect_all_pieces()
@@ -1521,6 +1532,8 @@ func end_turn(movedPiece: Piece):
 		queue_game_sound(PLAYER_MOVE_SOUND)
 
 		await update_move_camera(movedPiece)
+		if online_disconnected:
+			return
 	for i in get_enemy_player_numbers():
 		for p in player_pieces[i - 1]:
 			if(p is CorePiece):
@@ -2627,6 +2640,8 @@ func restore_offline_checkpoint(data: Dictionary) -> bool:
 	return true
 
 func _on_network_game_message(payload: Variant, from_player: int) -> void:
+	if online_disconnected:
+		return
 	if not online_game or typeof(payload) != TYPE_DICTIONARY:
 		return
 	if from_player == local_player or from_player != current_player:
@@ -2668,6 +2683,77 @@ func _on_network_game_message(payload: Variant, from_player: int) -> void:
 			tower.cur_direction = direction
 			tower.update_sprite_rotation()
 			tower.draw_vision_change()
+
+func _on_opponent_disconnected() -> void:
+	_end_disconnected_match( 
+		"Your opponent left the match.\nYou win!",
+		true
+	)
+
+
+func _on_connection_closed() -> void:
+	_end_disconnected_match(
+		"The connection to the server was lost.\nThis match cannot continue."
+	)
+
+
+func _on_online_network_error(message: String) -> void:
+	_end_disconnected_match(
+		"An online connection error occurred:\n" + message
+	)
+
+
+func _end_disconnected_match(
+	message: String,
+	opponent_left: bool = false
+) -> void:
+	if not online_game or online_disconnected:
+		return
+
+	online_disconnected = true
+	camera.interrupt_auto_camera()
+	deselect_all_pieces()
+	clear_captures()
+	NetworkManager.leave_room()
+
+	# Preserve an existing result if the match already finished.
+	if match_winner != 0:
+		return
+
+	var title := "Match Disconnected"
+
+	if opponent_left:
+		display_winner(local_player)
+		title = "You Win!"
+		win_label.text = "You Win!\nOpponent left the match."
+
+	call_deferred("_show_disconnect_dialog", message, title)
+
+
+func _show_disconnect_dialog(
+	message: String,
+	title: String = "Match Disconnected"
+) -> void:
+	if not is_inside_tree():
+		return
+
+	var dialog := AcceptDialog.new()
+	dialog.title = title
+	dialog.dialog_text = message
+	dialog.ok_button_text = "Return to Main Menu"
+	dialog.exclusive = true
+	add_child(dialog)
+
+	dialog.confirmed.connect(_return_from_disconnected_match)
+	dialog.close_requested.connect(_return_from_disconnected_match)
+	dialog.popup_centered()
+
+func _return_from_disconnected_match() -> void:
+	NetworkManager.leave_room()
+	get_tree().call_deferred(
+		"change_scene_to_file",
+		"res://main_menu.tscn"
+	)
 
 func _on_stay_button_pressed() -> void:
 	update_turn_text()
@@ -2742,8 +2828,12 @@ func _on_settings_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	if online_game:
+		online_disconnected = true
+		NetworkManager.leave_room()
 
+	camera.interrupt_auto_camera()
+	get_tree().change_scene_to_file("res://main_menu.tscn")
 
 
 const CORE_CAPTURE_ENDGAME_PIECES := 3
