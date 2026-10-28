@@ -71,26 +71,66 @@ func setup(game_board: Board) -> void:
 const WorkerJob = preload("res://cpu_worker_job.gd")
 var _cpu_thread: Thread
 
+const Cancellation = preload("res://cpu_cancellation.gd")
+
+var _cancellation: Cancellation
+var _search_cancelled: bool = false
+
+
+func cancel_search() -> void:
+	_search_cancelled = true
+	if _cancellation != null:
+		_cancellation.cancel()
+
+
+func is_search_cancelled() -> bool:
+	return _search_cancelled
+
 func take_turn() -> void:
+	if _search_cancelled or not is_inside_tree():
+		return
 	if not is_instance_valid(board) or board.current_player != player_number:
 		return
 	if _cpu_thread != null:
 		return
+	_cancellation = Cancellation.new()
 
 	var job = WorkerJob.new()
+	job.cancellation = _cancellation
 	job.prepare(self)
-	_cpu_thread = Thread.new()
-	var start_error: Error = _cpu_thread.start(job.compute)
+
+	var thread := Thread.new()
+	_cpu_thread = thread
+
+	var start_error: Error = thread.start(job.compute)
 	if start_error != OK:
 		_cpu_thread = null
-		push_error("Could not start CPU worker: %s" % error_string(start_error))
+		_cancellation = null
+		push_error(
+			"Could not start CPU worker: %s"
+			% error_string(start_error)
+		)
 		return
 
-	while _cpu_thread.is_alive():
+	while true:
+		# _exit_tree() may already have joined and released this worker.
+		if _cpu_thread != thread:
+			return
+		if not thread.is_alive():
+			break
 		await get_tree().process_frame
 
-	var result: Dictionary = _cpu_thread.wait_to_finish()
+	var result: Dictionary = thread.wait_to_finish()
 	_cpu_thread = null
+	_cancellation = null
+
+	if (
+		_search_cancelled
+		or not is_inside_tree()
+		or bool(result.get("cancelled", false))
+	):
+		return
+
 	if not is_instance_valid(board) or board.current_player != player_number:
 		return
 
@@ -154,11 +194,13 @@ func _find_live_cpu_piece(id: int) -> Piece:
 	return null
 
 func _exit_tree() -> void:
-	# Join before releasing the Thread if the game closes mid-search.
+	cancel_search()
+
 	if _cpu_thread != null and _cpu_thread.is_started():
 		_cpu_thread.wait_to_finish()
-	_cpu_thread = null
 
+	_cpu_thread = null
+	_cancellation = null
 
 func recover_turn() -> bool:
 	if not is_instance_valid(board):

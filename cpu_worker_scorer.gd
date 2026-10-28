@@ -8,6 +8,7 @@ const CORE_CAPTURE_ENDGAME_PIECES := 3
 const EYE_MOVE_ENDGAME_PIECES_LEFT := 6
 const EYE_MOVE_ENDGAME_BONUS := 45.0
 const EYE_RECAPTURE_BONUS := 1200.0
+const EARLY_EYE_CAPTURE_LIMIT := 16
 
 const CORE_MOVE_ENDGAME_PIECES_LEFT := 4
 const CORE_MOVE_ENDGAME_BONUS := 60.0
@@ -47,6 +48,7 @@ var difficulty: int = 5
 
 const TacticalSearch = preload("res://cpu_worker_search.gd")
 const SpawnKnowledge = preload("res://cpu_worker_spawn.gd")
+
 var spawn_knowledge = SpawnKnowledge.new()
 
 var seen_by_player = false
@@ -65,6 +67,13 @@ var last_enemy_capturer_id := -1
 
 var cpu_slice_started_us: int = 0
 
+const Cancellation = preload("res://cpu_cancellation.gd")
+var cancellation: Cancellation
+
+
+func _cancelled() -> bool:
+	return cancellation != null and cancellation.is_cancelled()
+
 func setup(game_board: Model.DataBoard) -> void:
 	print("cpu created with difficulty " + str(difficulty))
 	rng.randomize()
@@ -72,6 +81,8 @@ func setup(game_board: Model.DataBoard) -> void:
 
 
 func take_turn() -> void:
+	if _cancelled():
+		return
 	if board == null or board.current_player != player_number:
 		return
 
@@ -102,7 +113,10 @@ func take_turn() -> void:
 		last_enemy_capturer_id = board.last_capture_capturer_ids[enemy_index]
 
 		for node in board.player_pieces[enemy_index]:
-			_yield_cpu_frame()
+
+			if _cancelled():
+				return
+
 			var capturer := node as Model.DataPiece
 			if (
 				capturer != null
@@ -127,7 +141,8 @@ func take_turn() -> void:
 	observed_enemy_capture_count = enemy_capture_count
 
 	for node in board.player_pieces[enemy_player - 1]:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 		var enemy := node as Model.DataPiece
 		if enemy != null and board.hasCellInVision(player_number, enemy.get_cur_pos()):
 			var enemy_id := enemy.get_instance_id()
@@ -148,7 +163,8 @@ func take_turn() -> void:
 
 	if core_under_attack and own_core != null:
 		for node in board.player_pieces[enemy_player - 1]:
-			_yield_cpu_frame()
+			if _cancelled():
+				return
 			var attacker := node as Model.DataPiece
 			if attacker == null:
 				continue
@@ -165,7 +181,9 @@ func take_turn() -> void:
 	var actions: Array[Dictionary] = []
 
 	for node in board.player_pieces[player_number - 1]:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
+
 		var piece := node as Model.DataPiece
 		if piece == null:
 			continue
@@ -181,7 +199,8 @@ func take_turn() -> void:
 		destinations = destinations.duplicate()
 
 		for destination in destinations:
-			_yield_cpu_frame()
+			if _cancelled():
+				return
 
 			if (
 				difficulty < 4
@@ -236,7 +255,8 @@ func take_turn() -> void:
 	var validated_actions: Array[Dictionary] = []
 
 	for action in actions:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 
 		var candidate := action["piece"] as Model.DataPiece
 
@@ -273,6 +293,7 @@ func take_turn() -> void:
 
 	if difficulty >= 4 and not actions.is_empty():
 		var search = TacticalSearch.new()
+		search.cancellation = cancellation
 		search.turn_deadline = turn_deadline
 		var captures_so_far: int = (
 			board.player_captures[0].size()
@@ -280,7 +301,7 @@ func take_turn() -> void:
 		)
 
 		search.early_eye_protection = 1.0 - clampf(
-			float(captures_so_far) / 12.0,
+			float(captures_so_far) / float(EARLY_EYE_CAPTURE_LIMIT),
 			0.0,
 			1.0
 		)
@@ -312,7 +333,8 @@ func take_turn() -> void:
 		var defensive_actions: Array[Dictionary] = []
 
 		for action in actions:
-			_yield_cpu_frame()
+			if(_cancelled()):
+				return
 			var resolves_threat := action["piece"] is Model.DataCorePiece
 
 			if (
@@ -341,7 +363,8 @@ func take_turn() -> void:
 
 	var safer_actions: Array[Dictionary] = []
 	for action in actions:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 		if not action["unprotected_danger"]:
 			safer_actions.append(action)
 
@@ -352,7 +375,8 @@ func take_turn() -> void:
 			var preferred_scout_actions: Array[Dictionary] = []
 
 			for action in actions:
-				_yield_cpu_frame()
+				if _cancelled():
+					return
 				if float(action["scout_score"]) <= 0.0:
 					continue
 
@@ -369,12 +393,14 @@ func take_turn() -> void:
 
 	var best_score: float = -INF
 	for action in actions:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 		best_score = maxf(best_score, action["score"])
 
 	var shortlist: Array[Dictionary] = []
 	for action in actions:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 		var tolerance_by_difficulty := [
 			500.0, 250.0, 90.0, 25.0, 8.0, 0.0
 		]
@@ -588,7 +614,7 @@ func score_move(piece: Model.DataPiece, destination: Vector2i, core_under_attack
 		0.0,
 		1.0
 	)
-	var protect_eyes_early := total_captures < 4
+	var protect_eyes_early := total_captures < EARLY_EYE_CAPTURE_LIMIT
 
 	var captured: Model.DataPiece = null
 	if board.hasCellInVision(player_number, destination):
@@ -1392,7 +1418,8 @@ func rotate_towers_for_turn() -> void:
 	var enemy_player := 1 if player_number == 2 else 2
 
 	for node in board.player_pieces[player_number - 1]:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 		var tower := node as Model.DataTowerRotatePiece
 		if tower == null:
 			continue
@@ -1537,6 +1564,7 @@ func _tower_rotation_tactical_bonus(
 		return 0.0
 
 	var probe = TacticalSearch.new()
+	probe.cancellation = cancellation
 	probe.cpu_player = player_number
 	probe.enemy_player = 3 - player_number
 	probe.deadline = mini(turn_deadline, now + 25)
@@ -1706,7 +1734,8 @@ func rebuild_cpu_cover_cache() -> void:
 	cpu_cover_by_piece.clear()
 
 	for node in board.player_pieces[player_number - 1]:
-		_yield_cpu_frame()
+		if _cancelled():
+			return
 
 		var piece := node as Model.DataPiece
 		if not is_instance_valid(piece) or piece is Model.DataCorePiece:
@@ -1745,6 +1774,8 @@ func _core_emergency_actions(
 	var winning_captures: Array[Dictionary] = []
 
 	for action in actions:
+		if _cancelled():
+			return []
 		var destination: Vector2i = action["destination"]
 		if board.hasCellInVision(player_number, destination):
 			var target := board.get_enemy_piece_at_cell(
@@ -1758,6 +1789,7 @@ func _core_emergency_actions(
 
 	# Preserve the existing emergency simulation's information policy.
 	var defense = TacticalSearch.new()
+	defense.cancellation = cancellation
 	defense.cpu_player = player_number
 	defense.enemy_player = opponent
 	defense._build_simulation(board, true)
@@ -1765,6 +1797,8 @@ func _core_emergency_actions(
 	var safe_responses: Array[Dictionary] = []
 
 	for action in actions:
+		if _cancelled():
+			break
 		var original_piece := action["piece"] as Model.DataPiece
 		var copied_piece := defense.clones.get(
 			original_piece.get_instance_id()

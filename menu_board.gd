@@ -5,8 +5,8 @@ const CORE = preload("res://sprites/core_piece.png")
 const EYE = preload("res://sprites/eye_piece.png")
 
 const GameColors = preload("res://colors.gd")
-const BLUE = Color("#007BFF")
-const RED = Color("#FF1744")
+const BLUE = GameColors.PLAYER_BLUE
+const RED = GameColors.PLAYER_RED
 
 @export_range(24.0, 100.0) var hex_radius: float = 48.0:
 	set(value):
@@ -99,15 +99,16 @@ func _draw() -> void:
 			outline.append(points[0])
 			draw_polyline(outline, edge, 1.0, true)
 
-			# Decorative pieces using the gameplay palette.
+			# Keep the decorative board independent of the last game's palette.
 			if territory and posmod(column * 3 + row * 5, 13) == 0:
 				var is_core := variation % 2 == 0
 				var texture: Texture2D = CORE if is_core else EYE
-				var player_id := 1 if blue_distance < 0.22 else 2
-
-				var tint: Color = GameColors.player_color(player_id)
+				var tint: Color = team
 				if is_core:
-					tint = GameColors.powered_color(player_id)
+					tint = (
+						GameColors.PLAYER_BLUE_POWER if team == BLUE
+						else GameColors.PLAYER_RED_POWER
+					)
 
 				# Match the eye's smaller scale in its gameplay scene.
 				var piece_scale := 1.0 if is_core else 0.8

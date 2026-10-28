@@ -17,6 +17,9 @@ var live_to_worker: Dictionary = {}
 var worker_to_live: Dictionary = {}
 var initial_directions: Dictionary = {}
 
+const Cancellation = preload("res://cpu_cancellation.gd")
+var cancellation: Cancellation
+
 # Call this on the main thread, before starting compute().
 func prepare(cpu: Node) -> void:
 	var source_board: Variant = cpu.get("board")
@@ -109,7 +112,13 @@ func compute() -> Dictionary:
 	var started: int = Time.get_ticks_msec()
 	var budgets: Array[int] = [750, 1000, 1250, 2000, 5000, 10000]
 	engine.turn_deadline = started + budgets[clampi(engine.difficulty - 1, 0, 5)]
+	engine.cancellation = cancellation
 	engine.take_turn()
+	if cancellation != null and cancellation.is_cancelled():
+		engine.chosen_action.clear()
+		engine.last_moved_piece = null
+		engine.board.dispose()
+		return {"cancelled": true}
 
 	var result: Dictionary = {"piece_id": -1, "rotations": []}
 	if not engine.chosen_action.is_empty():

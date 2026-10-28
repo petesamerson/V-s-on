@@ -32,6 +32,9 @@ var aggression: float = 1.0
 const SEARCH_SLICE_US: int = 4000
 const EXCHANGE_EXTENSION_DEPTH: int = 1
 
+const Cancellation = preload("res://cpu_cancellation.gd")
+var cancellation: Cancellation
+
 func choose(
 	live_board: Model.DataBoard,
 	player_id: int,
@@ -915,7 +918,9 @@ func _search_exchanges(
 	return best
 
 func _expired() -> bool:
-	if Time.get_ticks_msec() >= deadline:
+	if cancellation != null and cancellation.is_cancelled():
+		timed_out = true
+	elif Time.get_ticks_msec() >= deadline:
 		timed_out = true
 
 	return timed_out

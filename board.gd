@@ -1621,22 +1621,43 @@ func end_turn_vs_cpu() -> void:
 	current_player = 2 if current_player == 1 else 1
 	await _continue_cpu_turn()
 
+func _cpu_turn_should_stop() -> bool:
+	return (
+		not is_inside_tree()
+		or is_queued_for_deletion()
+		or not is_instance_valid(cpu_player)
+		or cpu_player.is_search_cancelled()
+	)
 
 func _continue_cpu_turn() -> void:
+	if _cpu_turn_should_stop():
+		return
 	if current_player == cpu_player.player_number:
 		update_turn_text()
 		cpu_turn_in_progress = true
 
-		await get_tree().process_frame
+		await get_tree().process_frame	
+		if _cpu_turn_should_stop():
+			cpu_turn_in_progress = false
+			return
 
 		await cpu_player.take_turn()
+		if _cpu_turn_should_stop():
+			cpu_turn_in_progress = false
+			return
 
 		# Retry once using a fresh snapshot if no move was completed.
 		if current_player == cpu_player.player_number:
 			push_warning("CPU did not complete its turn; retrying once.")
 			await get_tree().process_frame
+			if _cpu_turn_should_stop():
+				cpu_turn_in_progress = false
+				return
 			enemy_captured_this_turn = false
 			await cpu_player.take_turn()
+			if _cpu_turn_should_stop():
+				cpu_turn_in_progress = false
+				return
 
 		# If normal selection still failed, use the live legal fallback.
 		if current_player == cpu_player.player_number:
@@ -1692,8 +1713,14 @@ func _continue_cpu_turn() -> void:
 				)
 			else:
 				await move_camera_to_core(camera_sequence)
+				if _cpu_turn_should_stop():
+					cpu_turn_in_progress = false
+					return
 		else:
 			await move_camera_to_core(camera_sequence)
+			if _cpu_turn_should_stop():
+				cpu_turn_in_progress = false
+				return
 		display_turn_message()
 
 func update_move_camera(movedPiece: Piece):
@@ -2925,6 +2952,9 @@ func _on_quit_pressed() -> void:
 	if online_game:
 		online_disconnected = true
 		NetworkManager.leave_room()
+
+	if is_instance_valid(cpu_player):
+		cpu_player.cancel_search()
 
 	camera.interrupt_auto_camera()
 	get_tree().change_scene_to_file("res://main_menu.tscn")
