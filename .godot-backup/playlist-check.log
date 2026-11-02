@@ -1,0 +1,4 @@
+Godot Engine v4.5.2.stable.official.6ce3de25a - https://godotengine.org
+
+ERROR: Non-existing or invalid boot splash at 'res://Hitbox I.jpg'. The only supported format is PNG. Loading default splash.
+   at: setup_boot_logo (main/main.cpp:3796)

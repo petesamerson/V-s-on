@@ -1,0 +1,14 @@
+res://base_scene.tscn::c0c5f4560bdff3dc6c27df8424eca720::1793643292::res://.godot/exported/133200997/export-3310a53f9dae93655ca02aeca2de0354-base_scene.scn
+res://HopPiece.tscn::9e1d93b1b624e340bf717bf9c5845cc5::1792786858::res://.godot/exported/133200997/export-35564e87ace0fdcc3ecbe1e8b57eacfe-HopPiece.scn
+res://Piece.tscn::c0d8ee52f407667035c01c70900c1cf9::1789995702::res://.godot/exported/133200997/export-a395e1fd5fd419ea68529e735f941556-Piece.scn
+res://TowerRotatePiece.tscn::a96e4db4088cff86475fa70eaf5870db::1789679984::res://.godot/exported/133200997/export-5418fa163ddf40465d9e461217609894-TowerRotatePiece.scn
+res://TriangleOddPiece.tscn::9db40c79568f1b102b51bce51e03bf60::1791990026::res://.godot/exported/133200997/export-1a51dba71907d1d7b5aa10394405df4b-TriangleOddPiece.scn
+res://triangle_even_piece.tscn::b9b6ee26fa14b0ecd89a1bd14fbe9889::1789995737::res://.godot/exported/133200997/export-a826a9fdad4a12a36d6d16ca64cce912-triangle_even_piece.scn
+res://eye_piece.tscn::4447788b56a0750104d47df114f1667a::1792509406::res://.godot/exported/133200997/export-4e445eb2e16c5b8258ac70b5595880ba-eye_piece.scn
+res://core_piece.tscn::10cf6f5b698d0d9399cffa7b4456ab70::1790000146::res://.godot/exported/133200997/export-7ee3fa50614c1b5122636fb9f5e6914a-core_piece.scn
+res://main_menu.tscn::64f1907858978b3eba0bf06a3044c6f9::1793122642::res://.godot/exported/133200997/export-8b03550a1e82db90fe95208a9e9dbb82-main_menu.scn
+res://tutorial.tscn::4b3c6709333ab229e192cc7ece9bcd16::1793632472::res://.godot/exported/133200997/export-7d2e871219e9bd7bcea6e0a9676cd88c-tutorial.scn
+res://dark_panel.tres::8552d205ae47eac8433294720880d7e1::1793037997::res://.godot/exported/133200997/export-8d62177988750e620b8182864f492d27-dark_panel.res
+res://default_bus_layout.tres::090c584f2396efc97a3d7899a72b9b54::1793026649::res://.godot/exported/133200997/export-19246414aa9fb561ced4b8dce477acec-default_bus_layout.res
+res://main_theme.tres::cd67856a8084595b2bf3a25c6f2996b6::1793632472::res://.godot/exported/133200997/export-20b5b92c2f817caccb6dc24c0a7175e7-main_theme.res
+res://settings_menu.tscn::c289a5e8e6b7323ae9faca8aaf55a88a::1793111663::res://.godot/exported/133200997/export-ed75ec62f7a09791727b81987409fab8-settings_menu.scn
