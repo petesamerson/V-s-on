@@ -2,8 +2,8 @@ extends Node2D
 class_name Piece
 
 
-var Tiles = preload("res://tiles.gd")
-const GameColors = preload("res://colors.gd")
+var Tiles = preload("res://board/tiles.gd")
+const GameColors = preload("res://utils/colors.gd")
 
 var board: Board
 var owned_player: int = 1
@@ -33,14 +33,14 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 
 	sprite_rest_position = sprite.position
 	shimmer_material = ShaderMaterial.new()
-	shimmer_material.shader = preload("res://piece_shimmer.gdshader")
+	shimmer_material.shader = preload("res://pieces/piece_shimmer.gdshader")
 	if not AppSettings.settings_changed.is_connected(_apply_graphics_settings):
 		AppSettings.settings_changed.connect(_apply_graphics_settings)
 	_apply_graphics_settings()
 	update_piece_color()
 
 	if not is_instance_valid(effects):
-		effects = preload("res://piece_effects.gd").new()
+		effects = preload("res://pieces/piece_effects.gd").new()
 		effects.piece = self
 		board.add_child(effects)
 		effects.z_index = 3

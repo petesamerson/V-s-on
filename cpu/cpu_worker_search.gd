@@ -1,5 +1,5 @@
 extends RefCounted
-const Model = preload("res://cpu_worker_model.gd")
+const Model = preload("res://cpu/cpu_worker_model.gd")
 
 const WIN_SCORE: float = 1000000.0
 
@@ -32,7 +32,7 @@ var aggression: float = 1.0
 const SEARCH_SLICE_US: int = 4000
 const EXCHANGE_EXTENSION_DEPTH: int = 1
 
-const Cancellation = preload("res://cpu_cancellation.gd")
+const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
 
 func choose(
@@ -241,6 +241,7 @@ func choose(
 				)
 
 			_pop(action, undo)
+
 			if absf(value) < WIN_SCORE * 0.5:
 				value += _legacy_preference(action)
 

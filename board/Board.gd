@@ -17,8 +17,8 @@ class_name Board
 
 const CAPTURE_FEED_TEXTURE: Texture2D = preload("res://sprites/capturefeed.png")
 
-var Tiles = preload("res://tiles.gd")
-const GameColors = preload("res://colors.gd")
+var Tiles = preload("res://board/tiles.gd")
+const GameColors = preload("res://utils/colors.gd")
 
 var board_center = Vector2i(10, 10)
 var board_size = 10
@@ -66,7 +66,7 @@ func _ready() -> void:
 	for c in board_tiles:
 		set_cell(c, Tiles.BLACK, Vector2i(0,0))
 
-	board_effects = preload("res://board_effects.gd").new()
+	board_effects = preload("res://board/board_effects.gd").new()
 	board_effects.board = self
 	board_effects.name = "BoardEffects"
 	add_child(board_effects)
@@ -2943,7 +2943,7 @@ func _on_settings_pressed() -> void:
 	if get_tree().current_scene.has_node("SettingsOverlay"):
 		return
 
-	var settings := preload("res://settings_menu.tscn").instantiate()
+	var settings := preload("res://menus/settings_menu.tscn").instantiate()
 	settings.name = "SettingsOverlay"
 	get_tree().current_scene.add_child(settings)
 
@@ -2961,5 +2961,3 @@ func _on_quit_pressed() -> void:
 
 
 const CORE_CAPTURE_ENDGAME_PIECES := 3
-
-

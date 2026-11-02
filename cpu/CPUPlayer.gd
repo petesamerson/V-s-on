@@ -43,7 +43,7 @@ var recent_moves: Array[Dictionary] = []
 @export var player_number: int = 2
 @export_range(1,6) var difficulty: int = 5
 
-const SpawnKnowledge = preload("res://cpu_spawn_knowledge.gd")
+const SpawnKnowledge = preload("res://cpu/cpu_spawn_knowledge.gd")
 var spawn_knowledge = SpawnKnowledge.new()
 
 var seen_by_player = false
@@ -68,10 +68,10 @@ func setup(game_board: Board) -> void:
 	board = game_board
 
 
-const WorkerJob = preload("res://cpu_worker_job.gd")
+const WorkerJob = preload("res://cpu/cpu_worker_job.gd")
 var _cpu_thread: Thread
 
-const Cancellation = preload("res://cpu_cancellation.gd")
+const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 
 var _cancellation: Cancellation
 var _search_cancelled: bool = false

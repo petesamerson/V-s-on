@@ -1,28 +1,28 @@
 [gd_scene load_steps=18 format=3 uid="uid://b8rp2ul3q0ef7"]
 
-[ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="1_06t4h"]
-[ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://main_menu.gd" id="1_fu7sn"]
-[ext_resource type="Shader" uid="uid://bdk0iny516uf4" path="res://menu_board_shimmer.gdshader" id="3_8qtwp"]
-[ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="3_jix8l"]
-[ext_resource type="Script" uid="uid://dbune3u03vuuy" path="res://menu_board.gd" id="3_nlkkf"]
-[ext_resource type="Texture2D" uid="uid://jjya7x7mgw5a" path="res://sprites/close_icon.png" id="4_jix8l"]
-[ext_resource type="Shader" uid="uid://ev24kqop6eoj" path="res://menu_fog.gdshader" id="4_qe12f"]
-[ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="5_glbon"]
-[ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="6_0o4t1"]
-[ext_resource type="StyleBox" uid="uid://chm2dwi2ecr1v" path="res://dark_panel.tres" id="6_dy7ct"]
-[ext_resource type="Texture2D" uid="uid://1mt42upc0lm4" path="res://sprites/discord-white-icon.png" id="11_0k4wn"]
+[ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://menus/main_menu.gd" id="1_nc6jr"]
+[ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="2_kk4mm"]
+[ext_resource type="Shader" uid="uid://bdk0iny516uf4" path="res://menus/menu_board_shimmer.gdshader" id="3_rx1ud"]
+[ext_resource type="Script" uid="uid://dbune3u03vuuy" path="res://menus/menu_board.gd" id="4_wcdpt"]
+[ext_resource type="Shader" uid="uid://ev24kqop6eoj" path="res://menus/menu_fog.gdshader" id="5_u3dsk"]
+[ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="6_ygrj5"]
+[ext_resource type="StyleBox" uid="uid://chm2dwi2ecr1v" path="res://dark_panel.tres" id="7_lgqab"]
+[ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="8_ysfef"]
+[ext_resource type="Texture2D" uid="uid://jjya7x7mgw5a" path="res://sprites/close_icon.png" id="9_kqtkm"]
+[ext_resource type="Texture2D" uid="uid://1mt42upc0lm4" path="res://sprites/discord-white-icon.png" id="10_68bju"]
+[ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="11_047xs"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jix8l"]
 bg_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dy7ct"]
-shader = ExtResource("3_8qtwp")
+shader = ExtResource("3_rx1ud")
 shader_parameter/shimmer_strength = 0.2000000095
 shader_parameter/shimmer_speed = 0.800000038
 shader_parameter/reduce_animation = false
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8qtwp"]
-shader = ExtResource("4_qe12f")
+shader = ExtResource("5_u3dsk")
 shader_parameter/fog_color = Color(0.2849079, 0.3059137, 0.3311225, 1)
 shader_parameter/fog_strength = 0.800000038
 shader_parameter/drift_speed = 0.10000000149012
@@ -43,7 +43,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_fu7sn")
+script = ExtResource("1_nc6jr")
 
 [node name="Background" type="Panel" parent="."]
 layout_mode = 1
@@ -69,7 +69,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("1_06t4h")
+texture = ExtResource("2_kk4mm")
 expand_mode = 1
 stretch_mode = 5
 
@@ -82,7 +82,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("3_nlkkf")
+script = ExtResource("4_wcdpt")
 
 [node name="Fog" type="ColorRect" parent="MainScreen/MenuBoard"]
 material = SubResource("ShaderMaterial_8qtwp")
@@ -106,8 +106,8 @@ grow_vertical = 2
 [node name="StartPanelContainer" type="PanelContainer" parent="MainScreen/CenterContainer"]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
-theme = ExtResource("6_0o4t1")
-theme_override_styles/panel = ExtResource("6_dy7ct")
+theme = ExtResource("6_ygrj5")
+theme_override_styles/panel = ExtResource("7_lgqab")
 
 [node name="MarginContainer" type="MarginContainer" parent="MainScreen/CenterContainer/StartPanelContainer"]
 layout_mode = 2
@@ -118,7 +118,7 @@ theme_override_constants/separation = 12
 
 [node name="GameTitle" type="RichTextLabel" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/normal_font = ExtResource("3_jix8l")
+theme_override_fonts/normal_font = ExtResource("8_ysfef")
 theme_override_font_sizes/normal_font_size = 80
 bbcode_enabled = true
 text = "[center]V[color=#00CFFF]![/color]S[color=#FF1744]![/color]ON[/center]"
@@ -133,25 +133,25 @@ layout_mode = 2
 
 [node name="ContinueGame" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Continue"
 
 [node name="CpuPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Play vs Cpu"
 
 [node name="OnlinePlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Play Online"
 
 [node name="PassAndPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Pass & Play"
 
@@ -161,19 +161,19 @@ layout_mode = 2
 
 [node name="How to Play" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "How to Play"
 
 [node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Settings"
 
 [node name="QuitButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Quit"
 
@@ -241,13 +241,13 @@ theme_override_constants/separation = 20
 
 [node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 60
 text = "Game Settings"
 
 [node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "CPU Difficulty:"
 
@@ -265,7 +265,7 @@ tick_count = 6
 
 [node name="CurrentDiff" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Normal"
 
@@ -274,7 +274,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player1Row"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Player 1"
 
@@ -286,7 +286,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player2Row"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Player 2 / CPU"
 
@@ -301,7 +301,7 @@ anchor_right = 1.0
 offset_left = -108.0
 offset_bottom = 108.0
 grow_horizontal = 0
-icon = ExtResource("4_jix8l")
+icon = ExtResource("9_kqtkm")
 
 [node name="StartCpuGame" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel"]
 layout_mode = 1
@@ -315,7 +315,7 @@ offset_top = -43.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Start Game"
@@ -363,20 +363,20 @@ theme_override_constants/separation = 20
 
 [node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 text = "Online Multiplayer"
 
 [node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/outline_size = 20
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Join Room with Code"
 
 [node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Host Game"
 
@@ -398,14 +398,14 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 50
 text = "Join Game"
 
 [node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Join with the 6 digit code the game host provided"
 autowrap_mode = 2
@@ -424,14 +424,14 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_glbon")
 [node name="JoinCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer"]
 layout_mode = 2
 theme = SubResource("Theme_nlkkf")
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 max_length = 6
 
 [node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Join!"
@@ -454,14 +454,14 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 text = "Host Game"
 
 [node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 text = "Choose 6 digit Room Code use to Join"
 autowrap_mode = 2
 
@@ -479,14 +479,14 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_glbon")
 [node name="HostCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.6436958, 0.73559934, 1)
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 80
 max_length = 6
 
 [node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Start Hosting!"
@@ -500,7 +500,7 @@ offset_left = -108.0
 offset_bottom = 108.0
 grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
-icon = ExtResource("4_jix8l")
+icon = ExtResource("9_kqtkm")
 
 [node name="DiscordButton" type="Button" parent="."]
 layout_mode = 1
@@ -515,13 +515,13 @@ grow_horizontal = 0
 grow_vertical = 0
 scale = Vector2(0.2, 0.2)
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
-theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 80
 text = "Discord"
-icon = ExtResource("11_0k4wn")
+icon = ExtResource("10_68bju")
 
 [node name="MenuMusic" type="AudioStreamPlayer2D" parent="."]
-stream = ExtResource("5_glbon")
+stream = ExtResource("11_047xs")
 volume_db = 8.0
 autoplay = true
 bus = &"Music"

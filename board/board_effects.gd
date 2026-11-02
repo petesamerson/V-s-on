@@ -1,6 +1,6 @@
 extends Node2D
 
-const GameColors = preload("res://colors.gd")
+const GameColors = preload("res://utils/colors.gd")
 
 var board: Board
 var started: bool = false

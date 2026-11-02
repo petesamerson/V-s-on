@@ -1,5 +1,5 @@
 extends RefCounted
-const Model = preload("res://cpu_worker_model.gd")
+const Model = preload("res://cpu/cpu_worker_model.gd")
 var chosen_action: Dictionary = {}
 var turn_deadline: int = 0
 
@@ -46,8 +46,8 @@ var reversal_origins: Dictionary = {}
 var player_number: int = 2
 var difficulty: int = 5
 
-const TacticalSearch = preload("res://cpu_worker_search.gd")
-const SpawnKnowledge = preload("res://cpu_worker_spawn.gd")
+const TacticalSearch = preload("res://cpu/cpu_worker_search.gd")
+const SpawnKnowledge = preload("res://cpu/cpu_worker_spawn.gd")
 
 var spawn_knowledge = SpawnKnowledge.new()
 
@@ -67,7 +67,7 @@ var last_enemy_capturer_id := -1
 
 var cpu_slice_started_us: int = 0
 
-const Cancellation = preload("res://cpu_cancellation.gd")
+const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
 
 

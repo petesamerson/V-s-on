@@ -10,7 +10,7 @@ class_name MainMenu
 	$MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/ContinueGame
 )
 
-const GameColors = preload("res://colors.gd")
+const GameColors = preload("res://utils/colors.gd")
 @onready var player_color_select: OptionButton = \
 	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player1Row/P1ColorSelect
 
@@ -170,7 +170,7 @@ func _on_settings_button_pressed() -> void:
 	if get_tree().current_scene.has_node("SettingsOverlay"):
 		return
 
-	var settings := preload("res://settings_menu.tscn").instantiate()
+	var settings := preload("res://menus/settings_menu.tscn").instantiate()
 	settings.name = "SettingsOverlay"
 	get_tree().current_scene.add_child(settings)
 

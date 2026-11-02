@@ -1,6 +1,6 @@
 extends Node2D
 
-const GameColors = preload("res://colors.gd")
+const GameColors = preload("res://utils/colors.gd")
 
 var piece: Piece
 var elapsed: float = 0.0

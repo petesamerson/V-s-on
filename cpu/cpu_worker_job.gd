@@ -1,7 +1,7 @@
 extends RefCounted
 
-const Model = preload("res://cpu_worker_model.gd")
-const Scorer = preload("res://cpu_worker_scorer.gd")
+const Model = preload("res://cpu/cpu_worker_model.gd")
+const Scorer = preload("res://cpu/cpu_worker_scorer.gd")
 
 const MEMORY_FIELDS: Array[String] = [
 	"early_hop_move_count", "early_tower_move_count",
@@ -17,7 +17,7 @@ var live_to_worker: Dictionary = {}
 var worker_to_live: Dictionary = {}
 var initial_directions: Dictionary = {}
 
-const Cancellation = preload("res://cpu_cancellation.gd")
+const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
 
 # Call this on the main thread, before starting compute().

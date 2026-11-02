@@ -4,7 +4,7 @@ extends Control
 const CORE = preload("res://sprites/core_piece.png")
 const EYE = preload("res://sprites/eye_piece.png")
 
-const GameColors = preload("res://colors.gd")
+const GameColors = preload("res://utils/colors.gd")
 const BLUE = GameColors.PLAYER_BLUE
 const RED = GameColors.PLAYER_RED
 

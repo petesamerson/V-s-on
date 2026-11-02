@@ -1,5 +1,5 @@
 extends RefCounted
-const Model = preload("res://cpu_worker_model.gd")
+const Model = preload("res://cpu/cpu_worker_model.gd")
 
 var models: Array[Dictionary] = []
 var sightings: Dictionary = {}

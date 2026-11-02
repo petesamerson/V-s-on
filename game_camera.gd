@@ -117,6 +117,7 @@ func _notification(what: int) -> void:
 		previous_pinch_distance = 0.0
 		wasPinched = false
 		interrupt_auto_camera()
+
 # =====================================
 # Zoom around mouse
 # =====================================
