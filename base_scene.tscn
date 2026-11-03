@@ -233,6 +233,7 @@ offset_right = 130.0
 offset_bottom = 36.0
 grow_vertical = 2
 script = ExtResource("33_vru47")
+respect_mobile_safe_area = true
 scale_pivot = Vector2(0, 0.5)
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/CaptureFeed"]
@@ -305,6 +306,7 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 script = ExtResource("33_vru47")
+respect_mobile_safe_area = true
 scale_pivot = Vector2(1, 0)
 
 [node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin"]
@@ -346,6 +348,7 @@ offset_top = -204.0
 grow_horizontal = 0
 grow_vertical = 0
 script = ExtResource("33_vru47")
+respect_mobile_safe_area = true
 scale_pivot = Vector2(1, 1)
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel"]

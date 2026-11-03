@@ -227,7 +227,6 @@ theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
 [node name="CpuSettingsScreen" type="Control" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -242,10 +241,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 100
 
 [node name="Panel" type="Panel" parent="CpuSettingsScreen/MarginContainer"]
 layout_mode = 2
@@ -270,7 +269,7 @@ theme_override_constants/separation = 20
 [node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
-theme_override_font_sizes/font_size = 60
+theme_override_font_sizes/font_size = 50
 text = "Game Settings"
 
 [node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer"]

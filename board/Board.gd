@@ -134,8 +134,9 @@ func update_mobile_scale():
 		or OS.has_feature("web_android") \
 		or OS.has_feature("web_ios")
 	)
+
 	var pause_button := get_node("../TurnLayer/MarginContainer/VBoxContainer/Pause") as Button
-	var pause_side := 80.0 * (2.0 if is_mobile_browser else 1.0)
+	var pause_side := 80.0 * (2.0 if is_mobile_browser else 0.8)
 	pause_button.expand_icon = true
 	pause_button.custom_minimum_size = Vector2(pause_side, pause_side)
 	pause_button.add_theme_constant_override("icon_max_width", roundi(pause_side - 16.0))

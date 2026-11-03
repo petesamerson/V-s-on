@@ -77,11 +77,11 @@ func get_game_ui_scale() -> float:
 
 
 func get_game_ui_scale_min() -> float:
-	return 1.0 if is_mobile_platform() else 0.75
+	return 0.75 if is_mobile_platform() else 0.6
 
 
 func get_game_ui_scale_max() -> float:
-	return 1.25 if is_mobile_platform() else 1.5
+	return 1.25 if is_mobile_platform() else 1.1
 
 
 func set_game_ui_scale(value: float) -> void:
