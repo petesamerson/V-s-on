@@ -54,7 +54,7 @@ func _ready() -> void:
 		)
 		mobile_game_ui_scale = clampf(
 			float(config.get_value("ui", "mobile_game_scale", 1.0)),
-			1.0,
+			0.75,
 			1.25
 		)
 

@@ -3,7 +3,7 @@ render_mode unshaded;
 
 uniform vec4 fog_color : source_color = vec4(0.26, 0.28, 0.30, 1.0);
 uniform float fog_strength : hint_range(0.0, 1.0) = 0.8;
-uniform float drift_speed : hint_range(0.0, 0.1) = 0.1;
+uniform float drift_speed : hint_range(0.0, 0.1) = 0.3;
 
 uniform bool reduce_animation = false;
 

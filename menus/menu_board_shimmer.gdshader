@@ -1,8 +1,8 @@
 shader_type canvas_item;
 render_mode unshaded;
 
-uniform float shimmer_strength : hint_range(0.0, 0.4) = 0.12;
-uniform float shimmer_speed : hint_range(0.0, 2.0) = 0.8;
+uniform float shimmer_strength : hint_range(0.0, 0.4) = 0.32;
+uniform float shimmer_speed : hint_range(0.0, 2.0) = 1.0;
 
 uniform bool reduce_animation = false;
 

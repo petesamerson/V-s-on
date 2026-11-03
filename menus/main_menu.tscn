@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=19 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://menus/main_menu.gd" id="1_nc6jr"]
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="2_kk4mm"]
@@ -23,10 +23,17 @@ shader_parameter/reduce_animation = false
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8qtwp"]
 shader = ExtResource("5_u3dsk")
-shader_parameter/fog_color = Color(0.2849079, 0.3059137, 0.3311225, 1)
-shader_parameter/fog_strength = 0.800000038
-shader_parameter/drift_speed = 0.10000000149012
+shader_parameter/fog_color = Color(0, 0, 0, 1)
+shader_parameter/fog_strength = 0.5550000263625
+shader_parameter/drift_speed = 0.3
 shader_parameter/reduce_animation = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nc6jr"]
+content_margin_left = 80.0
+content_margin_top = 80.0
+content_margin_right = 80.0
+content_margin_bottom = 80.0
+bg_color = Color(0.16455176, 0.00022931896, 0.26400796, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu7sn"]
 bg_color = Color(0, 0, 0, 0.81960785)
@@ -93,7 +100,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.5019608, 0.5647059, 0.6, 1)
 
 [node name="CenterContainer" type="CenterContainer" parent="MainScreen"]
 layout_mode = 1
@@ -176,6 +182,28 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Quit"
+
+[node name="DiscordContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1225.0
+offset_top = -620.0
+grow_horizontal = 0
+grow_vertical = 0
+scale = Vector2(0.15, 0.15)
+theme_override_styles/panel = SubResource("StyleBoxFlat_nc6jr")
+
+[node name="DiscordButton" type="Button" parent="DiscordContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_fonts/font = ExtResource("8_ysfef")
+theme_override_font_sizes/font_size = 159
+text = "Discord"
+icon = ExtResource("10_68bju")
 
 [node name="SettingsScreen" type="Control" parent="."]
 visible = false
@@ -502,24 +530,6 @@ grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
 icon = ExtResource("9_kqtkm")
 
-[node name="DiscordButton" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -826.0
-offset_top = -520.0
-grow_horizontal = 0
-grow_vertical = 0
-scale = Vector2(0.2, 0.2)
-theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
-theme_override_fonts/font = ExtResource("8_ysfef")
-theme_override_font_sizes/font_size = 80
-text = "Discord"
-icon = ExtResource("10_68bju")
-
 [node name="MenuMusic" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("11_047xs")
 volume_db = 8.0
@@ -532,6 +542,7 @@ bus = &"Music"
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/How to Play" to="." method="_on_how_to_play_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
 [connection signal="pressed" from="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+[connection signal="pressed" from="DiscordContainer/DiscordButton" to="." method="_on_discord_button_pressed"]
 [connection signal="drag_ended" from="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/Difficulty Slider" to="." method="_on_difficulty_slider_drag_ended"]
 [connection signal="value_changed" from="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/Difficulty Slider" to="." method="_on_difficulty_slider_value_changed"]
 [connection signal="pressed" from="CpuSettingsScreen/MarginContainer/Panel/CloseGameSettings" to="." method="_on_close_game_settings_pressed"]
@@ -541,4 +552,3 @@ bus = &"Music"
 [connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/JoinGame" to="." method="_on_join_room_pressed"]
 [connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/HostGame" to="." method="_on_start_host_pressed"]
 [connection signal="pressed" from="MutiplayerSettings/MarginContainer/Panel/CloseMultiSettings" to="." method="_on_close_multi_settings_pressed"]
-[connection signal="pressed" from="DiscordButton" to="." method="_on_discord_button_pressed"]

@@ -62,7 +62,7 @@ func _ready() -> void:
 	)
 	get_viewport().size_changed.connect(_on_mobile_viewport_resized)
 
-	$DiscordButton.resized.connect(_update_discord_pivot)
+	$DiscordContainer/DiscordButton.resized.connect(_update_discord_pivot)
 	_update_discord_pivot()
 
 func _on_mobile_viewport_resized() -> void:
@@ -154,8 +154,8 @@ func update_mobile_scale():
 		close_button.offset_bottom = side
 
 func _update_discord_pivot() -> void:
-	var discord_button := $DiscordButton as Button
-	discord_button.pivot_offset = discord_button.size
+	var discord_button_container := $DiscordContainer as PanelContainer
+	discord_button_container.pivot_offset = discord_button_container.size
 
 func _on_new_game_pressed() -> void:
 	# get_tree().root.set_meta("play_vs_cpu", true)
