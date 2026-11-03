@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene load_steps=21 format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://menus/main_menu.gd" id="1_nc6jr"]
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="2_kk4mm"]
@@ -8,7 +8,9 @@
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="6_ygrj5"]
 [ext_resource type="StyleBox" uid="uid://chm2dwi2ecr1v" path="res://dark_panel.tres" id="7_lgqab"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="8_ysfef"]
+[ext_resource type="Script" uid="uid://qi8nse0mky8u" path="res://menus/menu_safe_area.gd" id="9_kk4mm"]
 [ext_resource type="Texture2D" uid="uid://jjya7x7mgw5a" path="res://sprites/close_icon.png" id="9_kqtkm"]
+[ext_resource type="Script" uid="uid://b6llevmqao3fn" path="res://menus/version_label.gd" id="9_rx1ud"]
 [ext_resource type="Texture2D" uid="uid://1mt42upc0lm4" path="res://sprites/discord-white-icon.png" id="10_68bju"]
 [ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="11_047xs"]
 
@@ -183,6 +185,20 @@ theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Quit"
 
+[node name="VersionContainer" type="Container" parent="MainScreen"]
+layout_mode = 1
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("9_kk4mm")
+
+[node name="VersionLabel" type="Label" parent="MainScreen/VersionContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("8_ysfef")
+theme_override_font_sizes/font_size = 30
+text = "Te"
+script = ExtResource("9_rx1ud")
+
 [node name="DiscordContainer" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 3
@@ -196,6 +212,7 @@ grow_horizontal = 0
 grow_vertical = 0
 scale = Vector2(0.15, 0.15)
 theme_override_styles/panel = SubResource("StyleBoxFlat_nc6jr")
+script = ExtResource("9_kk4mm")
 
 [node name="DiscordButton" type="Button" parent="DiscordContainer"]
 layout_mode = 2
