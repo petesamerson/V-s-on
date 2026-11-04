@@ -120,7 +120,7 @@ func _on_mobile_viewport_resized() -> void:
 	update_mobile_scale()
 	
 
-var is_mobile_browser: bool = false
+var is_mobile: bool = false
 var ui_scale: float = 1.0
 
 
@@ -128,7 +128,7 @@ func mobile_text_scale() -> float:
 	return UITextScale.current_factor(get_viewport())
 
 func update_mobile_scale():
-	is_mobile_browser = (
+	is_mobile = (
 		OS.has_feature("android") \
 		or OS.has_feature("ios") \
 		or OS.has_feature("web_android") \
@@ -136,21 +136,21 @@ func update_mobile_scale():
 	)
 
 	var pause_button := get_node("../TurnLayer/MarginContainer/VBoxContainer/Pause") as Button
-	var pause_side := 80.0 * (2.0 if is_mobile_browser else 0.8)
+	var scale_pause = false
+	var viewport_size = get_viewport().get_visible_rect().size
+	if is_mobile and (viewport_size.y > viewport_size.x):
+		scale_pause = true
+	var pause_side := 80.0 * (2.0 if scale_pause else 0.8)
 	pause_button.expand_icon = true
 	pause_button.custom_minimum_size = Vector2(pause_side, pause_side)
 	pause_button.add_theme_constant_override("icon_max_width", roundi(pause_side - 16.0))
 	pause_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	
-	if is_mobile_browser:
-		# selection_panel.scale = Vector2(2.5,2.5)
-		# scale_text_tree(get_tree().current_scene, 2.0 if is_mobile_browser else 1.0)
+	if is_mobile:
 		scale_text_tree(get_tree().current_scene, mobile_text_scale())
 		resize_selection_image_to_text()
 		selection_panel.pivot_offset = selection_panel.size
 	else:
-		# scale_text_tree(get_tree().current_scene, 2.0 if true else 1.0)
-		# selection_panel.scale = Vector2(0.8,0.8)
 		selection_panel.pivot_offset = selection_panel.size
 		resize_selection_image_to_text()
 

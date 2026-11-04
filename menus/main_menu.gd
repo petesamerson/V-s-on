@@ -62,7 +62,7 @@ func _ready() -> void:
 	)
 	get_viewport().size_changed.connect(_on_mobile_viewport_resized)
 
-	$DiscordContainer/DiscordButton.resized.connect(_update_discord_pivot)
+	$DiscordContainer.resized.connect(_update_discord_pivot)
 	_update_discord_pivot()
 
 func _on_mobile_viewport_resized() -> void:

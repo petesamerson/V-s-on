@@ -1,14 +1,16 @@
 extends Control
 
 @export var respect_mobile_safe_area := false
+@export var fit_to_mobile_safe_area := false
 
 var _base_offsets: Vector4
-# (0, 0) = top-left; (1, 1) = bottom-right.
+var _mobile_safe_rect := Rect2()
+
 @export var scale_pivot: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
-	resized.connect(_update_scale_pivot)
+	resized.connect(_apply_ui_scale)
 	AppSettings.game_ui_scale_changed.connect(_apply_ui_scale)
 	_apply_ui_scale()
 
@@ -25,12 +27,16 @@ func _apply_mobile_safe_area() -> void:
 	var safe := DisplayServer.get_display_safe_area()
 	var shift := Vector2.ZERO
 
+
 	if safe.has_area():
 		var viewport := get_viewport()
 		var pixels_to_ui := viewport.get_screen_transform().affine_inverse()
 		var window_origin := Vector2(DisplayServer.window_get_position())
 		var safe_start := pixels_to_ui * (Vector2(safe.position) - window_origin)
 		var safe_end := pixels_to_ui * (Vector2(safe.end) - window_origin)
+		_mobile_safe_rect = Rect2(safe_start, safe_end - safe_start).intersection(
+			viewport.get_visible_rect()
+		)
 		var viewport_size := viewport.get_visible_rect().size
 
 		if is_zero_approx(scale_pivot.x) and is_zero_approx(anchor_left):
