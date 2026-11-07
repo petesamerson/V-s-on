@@ -1,4 +1,4 @@
-[gd_scene load_steps=65 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene load_steps=69 format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_57xsf"]
 [ext_resource type="Texture2D" uid="uid://dc121jprbdp75" path="res://sprites/hex_grey_chrome.png" id="2_jvre3"]
@@ -41,6 +41,10 @@
 [ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="35_ixgyq"]
 [ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
+[ext_resource type="AudioStream" uid="uid://dvs5wq8c1btgv" path="res://audio/funk2.wav" id="42_4sx66"]
+[ext_resource type="AudioStream" uid="uid://dgforc7vpf23u" path="res://audio/zonk1.wav" id="43_8eufx"]
+[ext_resource type="AudioStream" uid="uid://2ypk12uqw5nd" path="res://audio/clanked.wav" id="44_bt4m2"]
+[ext_resource type="AudioStream" uid="uid://bjspejp8oa21w" path="res://audio/trailjam.wav" id="45_f4ytx"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qcxwf"]
 texture = ExtResource("1_57xsf")
@@ -555,7 +559,7 @@ text = "Quit"
 volume_db = 8.0
 bus = &"Music"
 script = ExtResource("33_music_playlist")
-tracks = Array[AudioStream]([ExtResource("32_6ow2y"), ExtResource("34_funk1"), ExtResource("38_td7wt")])
+tracks = Array[AudioStream]([ExtResource("32_6ow2y"), ExtResource("34_funk1"), ExtResource("38_td7wt"), ExtResource("42_4sx66"), ExtResource("43_8eufx"), ExtResource("44_bt4m2"), ExtResource("45_f4ytx"), null])
 
 [node name="GameSounds" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0

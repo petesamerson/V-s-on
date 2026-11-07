@@ -2898,6 +2898,16 @@ var sound_queue: Array[AudioStream] = []
 
 
 func queue_game_sound(sound: AudioStream, clearQueue: bool = false) -> void:
+	if sound == CORE_ATTACK_SOUND:
+		# Core warnings immediately replace pending and playing move effects.
+		sound_queue.clear()
+		game_sounds.stop()
+		game_sounds.stream = sound
+		game_sounds.play()
+		if not game_sounds.finished.is_connected(_play_next_sound):
+			game_sounds.finished.connect(_play_next_sound)
+		return
+
 	if clearQueue:
 		# Preserve any core warning waiting in the queue.
 		sound_queue = sound_queue.filter(
@@ -2958,7 +2968,7 @@ func _on_quit_pressed() -> void:
 		cpu_player.cancel_search()
 
 	camera.interrupt_auto_camera()
-	get_tree().change_scene_to_file("res://main_menu.tscn")
+	get_tree().change_scene_to_file("res://menus/main_menu.tscn")
 
 
 const CORE_CAPTURE_ENDGAME_PIECES := 3
