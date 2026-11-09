@@ -24,8 +24,8 @@ func get_spawn_cells() -> Array[Vector2i]:
 	var cells: Array[Vector2i] = []
 	var count := spawns.get_child_count()
 
-	if count != 2 and count != 6:
-		push_error("Maps must have two or six spawn markers.")
+	if count < 2 or count > 6:
+		push_error("Maps must have between two and six spawn markers.")
 		return cells
 
 	for index in range(count):

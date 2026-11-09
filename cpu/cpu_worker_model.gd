@@ -317,6 +317,7 @@ class DataBoard extends RefCounted:
 	var board_center: Vector2i = Vector2i(10, 10)
 	var board_size: int = 10
 	var board_tiles: Array[Vector2i] = []
+	var wall_cells: Dictionary = {}
 	var map_spawn_cells: Array[Vector2i] = []
 	var current_player: int = 1
 	var player_pieces: Array = [[], []]
@@ -334,10 +335,22 @@ class DataBoard extends RefCounted:
 			var raw: Array = get_hexagon_tiles(cell, radius) if direction < 0 else get_triangle_tiles_from_center(cell, radius, direction)
 			var result: Array[Vector2i] = []
 			for tile: Vector2i in raw:
-				if cell_in_board(tile):
+				if can_see_cell(cell, tile):
 					result.append(tile)
 			_vision_cache[key] = result
 		return _vision_cache[key]
+
+	func can_see_cell(origin: Vector2i, target: Vector2i) -> bool:
+		if not cell_in_board(target):
+			return false
+		for cell in cached_hex_line(origin, target):
+			if cell == origin:
+				continue
+			if cell == target:
+				return true
+			if wall_cells.has(cell):
+				return false
+		return true
 
 	func cell_in_board(cell: Vector2i) -> bool:
 		if _tile_lookup.is_empty():
@@ -744,7 +757,7 @@ class DataBoard extends RefCounted:
 
 			if (center.y + i) % 2 == 0:
 				offset_pos += 1
-			if (center.y + i) % 2 == 1:
+			if posmod(center.y + i, 2) == 1:
 				offset_neg += 1
 
 		triangle_tiles.append(center)
@@ -812,7 +825,7 @@ class DataBoard extends RefCounted:
 
 			if (center.y + i) % 2 == 0:
 				offset_pos += 1
-			if (center.y + i) % 2 == 1:
+			if posmod(center.y + i, 2) == 1:
 				offset_neg += 1
 
 		hexagon_tiles.append(center)

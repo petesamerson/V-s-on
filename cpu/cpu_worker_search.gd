@@ -311,6 +311,7 @@ func _build_simulation(
 	simulation.board_center = live_board.board_center
 	simulation.board_size = live_board.board_size
 	simulation.board_tiles = live_board.board_tiles.duplicate()
+	simulation.wall_cells = live_board.wall_cells.duplicate()
 	simulation.current_player = cpu_player
 	simulation.player_pieces = [[], []]
 

@@ -8,11 +8,15 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="V!s!on"
 run/main_scene="uid://b8rp2ul3q0ef7"
-config/features=PackedStringArray("4.5", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 boot_splash/image="uid://bb56cxu85pn2k"
 config/icon="res://icon.svg"
 boot_splash/minimum_display_time=2000
@@ -36,4 +40,4 @@ version_control/autoload_on_startup=true
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
-environment/defaults/default_clear_color=Color(0.14406255, 0.14406255, 0.14406255, 1)
+environment/defaults/default_clear_color=Color(0.14044744, 0.14044747, 0.14044738, 1)

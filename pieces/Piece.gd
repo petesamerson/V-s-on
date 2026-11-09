@@ -95,7 +95,7 @@ func draw_vision_change():
 	cur_vision.clear()
 
 	for cell in raw_vision:
-		if board.cell_in_board(cell):
+		if board.can_see_cell(cur_pos, cell):
 			cur_vision.append(cell)
 
 	if board.game_setup_complete:
@@ -107,7 +107,7 @@ func get_potential_vision(new_pos: Vector2i) -> Array[Vector2i]:
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:
-		if(board.cell_in_board(cell)):
+		if board.can_see_cell(new_pos, cell):
 			new_vision.append(cell)
 	return new_vision
 

@@ -23,10 +23,13 @@ const GameColors = preload("res://utils/colors.gd")
 const MAP_SCENES: Dictionary = {
 	"classic": preload("res://maps/classic.tscn"),
 	"bridge": preload("res://maps/bridge.tscn"),
+	"tri": preload("res://maps/tri.tscn"),
 }
 
 var map_id: String = "classic"
 var map_spawn_cells: Array[Vector2i] = []
+var wall_cells: Dictionary = {}
+var map_walls: TileMapLayer
 
 var board_center = Vector2i(10, 10)
 var board_size = 10
@@ -226,7 +229,8 @@ func load_map_layout() -> bool:
 
 	var valid := (
 		not cells.is_empty()
-		and spawn_cells.size() in [2, 6]
+		and spawn_cells.size() >= 2
+		and spawn_cells.size() <= 6
 	)
 
 	for cell in spawn_cells:
@@ -234,7 +238,7 @@ func load_map_layout() -> bool:
 			valid = false
 
 	if not valid:
-		push_error("Map needs ground and either two or six distinct spawns on ground.")
+		push_error("Map needs ground and two to six distinct spawns on ground.")
 		layout.free()
 		return false
 
@@ -252,7 +256,32 @@ func load_map_layout() -> bool:
 			layout.ground.get_cell_alternative_tile(cell)
 		)
 
+	wall_cells.clear()
+	if is_instance_valid(map_walls):
+		map_walls.free()
+	map_walls = layout.walls
+	layout.remove_child(map_walls)
+	add_child(map_walls)
+	map_walls.show()
+	map_walls.z_index = 4
+	for cell in map_walls.get_used_cells():
+		wall_cells[cell] = true
+
 	layout.free()
+	return true
+
+
+func can_see_cell(origin: Vector2i, target: Vector2i) -> bool:
+	if not cell_in_board(target):
+		return false
+	for cell in hex_line(origin, target):
+		if cell == origin:
+			continue
+		# Reveal the wall itself, but hide cells behind it.
+		if cell == target:
+			return true
+		if wall_cells.has(cell):
+			return false
 	return true
 
 
@@ -660,7 +689,7 @@ func spawn_all_pieces():
 	var locations := get_possible_spawn_locations()
 	var spawn_count := locations.size()
 
-	if spawn_count != 2 and spawn_count != 6:
+	if spawn_count < 2 and spawn_count > 6:
 		push_error("Unsupported spawn count.")
 		return
 
@@ -676,13 +705,14 @@ func spawn_all_pieces():
 	else:
 		num1 = randi_range(0, spawn_count - 1)
 
-		if spawn_count == 2:
-			# Use the other spawn.
-			num2 = 1 - num1
-		else:
-			# Preserve the six-spawn rule: no neighboring opponents.
+		if spawn_count == 6:
+			# Preserve the existing non-neighboring spawn rule.
 			num2 = (num1 + randi_range(2, 4)) % spawn_count
-
+		else:
+			# Choose any different spawn on maps with 2–5 positions.
+			num2 = (
+				num1 + randi_range(1, spawn_count - 1)
+			) % spawn_count
 	if (
 		num1 < 0 or num1 >= spawn_count
 		or num2 < 0 or num2 >= spawn_count
@@ -2404,7 +2434,9 @@ func get_triangle_tiles_from_center(center: Vector2i, hex_radius: int, direction
 
 		if (center.y + i) % 2 == 0:
 			offset_pos += 1
-		if (center.y + i) % 2 == 1:
+		# if (center.y + i) % 2 == 1:
+		# 	offset_neg += 1
+		if posmod(center.y + i, 2) == 1:
 			offset_neg += 1
 		
 	triangle_tiles.append(center)
@@ -2475,7 +2507,7 @@ func get_hexagon_tiles(center: Vector2i, hex_radius: int):
 
 		if (center.y + i) % 2 == 0:
 			offset_pos += 1
-		if (center.y + i) % 2 == 1:
+		if posmod(center.y + i, 2) == 1:
 			offset_neg += 1
 		
 	hexagon_tiles.append(center)

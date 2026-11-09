@@ -23,6 +23,7 @@ const MAP_CARD_SCENE := preload("res://menus/map_card.tscn")
 const MAP_CHOICES: Array[Dictionary] = [
 	{"id": "classic", "name": "Classic"},
 	{"id": "bridge", "name": "Bridge"},
+	{"id": "tri", "name": "Tri"}
 ]
 
 @onready var settings_layout: BoxContainer = (

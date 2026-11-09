@@ -22,10 +22,8 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 	
 var cur_direction: int = 5
 var cur_rotate: Array[Vector2i] = []
-var rotate_map: Dictionary = {
-	"pivot1": Vector2i(-1,0),
-	"pivot2": Vector2i(-1,0)
-}
+var rotate_map: Dictionary = {}
+
 var old_selected_rotate_tile_ids: Array[int]= []
 var old_rotate_tile_ids: Dictionary = {
 	"pivot1": -1,
@@ -38,37 +36,40 @@ func update_sprite_rotation():
 	sprite.rotation_degrees = (cur_direction + 1)*60 - 30
 
 func clear_rotate_maps():
-	rotate_map= {
-		"pivot1": Vector2i(-1,0),
-		"pivot2": Vector2i(-1,0)
-	}
-	old_rotate_tile_ids= {
-		"pivot1": -1,
-		"pivot2": -1
-	}
+	rotate_map.clear()
+	old_rotate_tile_ids.clear()
 
 func draw_vision_change():
-	var cur_pos = board.local_to_map(position)
-	var raw_vision = board.get_triangle_tiles_from_center(cur_pos, vision_range, cur_direction)
-	var new_vision: Array[Vector2i] = []
-	
-	for cell in raw_vision:
-		if(board.cell_in_board(cell)):
-			new_vision.append(cell)
+	cur_vision = get_potential_vision(get_cur_pos())
+	update_sprite_rotation()
 
-	for cell in cur_vision:
-		board.set_cell(cell,Tiles.BLACK, Vector2i(0,0))
+	if board.game_setup_complete:
+		board.update_all_piece_vision()
 
-	cur_vision = new_vision
-	for cell in cur_vision:
-		if(owned_player == 2):
-			board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
-		else:
-			board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
-			
-	board.update_all_piece_vision([])
-	if(selected):
+	if selected:
 		select_piece()
+# func draw_vision_change():
+	# var cur_pos = board.local_to_map(position)
+	# var raw_vision = board.get_triangle_tiles_from_center(cur_pos, vision_range, cur_direction)
+	# var new_vision: Array[Vector2i] = []
+	
+	# for cell in raw_vision:
+	# 	if board.can_see_cell(cur_pos, cell):
+	# 		new_vision.append(cell)
+
+	# for cell in cur_vision:
+	# 	board.set_cell(cell,Tiles.BLACK, Vector2i(0,0))
+
+	# cur_vision = new_vision
+	# for cell in cur_vision:
+	# 	if(owned_player == 2):
+	# 		board.set_cell(cell,Tiles.DARK_RED, Vector2i(0,0))
+	# 	else:
+	# 		board.set_cell(cell,Tiles.DARK_BLUE, Vector2i(0,0))
+			
+	# board.update_all_piece_vision([])
+	# if(selected):
+	# 	select_piece()
 
 func get_potential_vision(new_pos: Vector2i, direction: int = cur_direction) -> Array[Vector2i]:
 	var cur_pos = board.local_to_map(position)
@@ -76,7 +77,7 @@ func get_potential_vision(new_pos: Vector2i, direction: int = cur_direction) -> 
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:
-		if(board.cell_in_board(cell)):
+		if board.can_see_cell(new_pos, cell):
 			new_vision.append(cell)
 	return new_vision
 
@@ -126,6 +127,7 @@ func on_clicked():
 func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 	cur_moves = []
 	cur_rotate = []
+	clear_rotate_maps()
 	if(board == null or position == null):
 		return []
 	# if owned_player != board.current_player:

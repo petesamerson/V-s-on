@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=32 format=3 uid="uid://cs1fj2ln4ry8b"]
+[gd_resource type="TileSet" format=3 uid="uid://cs1fj2ln4ry8b"]
 
 [ext_resource type="Texture2D" uid="uid://ccyaa137j257j" path="res://sprites/hex1.png" id="1_1s03l"]
 [ext_resource type="Texture2D" uid="uid://capls38okfmy1" path="res://sprites/rotate1.png" id="2_ftu6t"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://dfou01ionon02" path="res://sprites/hex_white_fill.png" id="6_i6e3a"]
 [ext_resource type="Texture2D" uid="uid://bls0un01edh3g" path="res://sprites/hex_white_outline.png" id="7_tmqea"]
 [ext_resource type="Texture2D" uid="uid://dq4qbep4elc11" path="res://sprites/hex_dark_blue_light_outline.png" id="8_81vvd"]
+[ext_resource type="Texture2D" uid="uid://dxhuaml1jc3k0" path="res://sprites/wall1.png" id="8_ftu6t"]
 [ext_resource type="Texture2D" uid="uid://0yf4wg5too3j" path="res://sprites/hexOut2.png" id="9_elwfx"]
 [ext_resource type="Texture2D" uid="uid://dwllv78itts6c" path="res://sprites/HexStar2.png" id="10_la7tl"]
 [ext_resource type="Texture2D" uid="uid://7wmfy8td1y4v" path="res://sprites/HexStar3.png" id="11_ed77w"]
@@ -52,6 +53,11 @@ texture_region_size = Vector2i(100, 100)
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_td7wt"]
 texture = ExtResource("7_tmqea")
+texture_region_size = Vector2i(100, 100)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_0osua"]
+texture = ExtResource("8_ftu6t")
 texture_region_size = Vector2i(100, 100)
 0:0/0 = 0
 
@@ -115,3 +121,4 @@ sources/2 = SubResource("TileSetAtlasSource_ua0oy")
 sources/13 = SubResource("TileSetAtlasSource_u1i3c")
 sources/14 = SubResource("TileSetAtlasSource_dltd1")
 sources/15 = SubResource("TileSetAtlasSource_td7wt")
+sources/16 = SubResource("TileSetAtlasSource_0osua")

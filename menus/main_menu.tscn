@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://b8rp2ul3q0ef7"]
+[gd_scene format=3 uid="uid://b8rp2ul3q0ef7"]
 
 [ext_resource type="Script" uid="uid://bili43mcjbckj" path="res://menus/main_menu.gd" id="1_nc6jr"]
 [ext_resource type="Texture2D" uid="uid://bb56cxu85pn2k" path="res://Hitbox I.jpg" id="2_kk4mm"]
@@ -45,7 +45,7 @@ bg_color = Color(0.2665752, 0.26657522, 0.26657513, 1)
 
 [sub_resource type="Theme" id="Theme_nlkkf"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=765296806]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -54,7 +54,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_nc6jr")
 
-[node name="Background" type="Panel" parent="."]
+[node name="Background" type="Panel" parent="." unique_id=1285391038]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -63,7 +63,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_jix8l")
 
-[node name="MainScreen" type="Control" parent="."]
+[node name="MainScreen" type="Control" parent="." unique_id=809928421]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -71,7 +71,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TextureRect" type="TextureRect" parent="MainScreen"]
+[node name="TextureRect" type="TextureRect" parent="MainScreen" unique_id=1756786235]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -82,7 +82,7 @@ texture = ExtResource("2_kk4mm")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="MenuBoard" type="Control" parent="MainScreen"]
+[node name="MenuBoard" type="Control" parent="MainScreen" unique_id=33099978]
 material = SubResource("ShaderMaterial_dy7ct")
 layout_mode = 1
 anchors_preset = 15
@@ -93,7 +93,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_wcdpt")
 
-[node name="Fog" type="ColorRect" parent="MainScreen/MenuBoard"]
+[node name="Fog" type="ColorRect" parent="MainScreen/MenuBoard" unique_id=289646967]
 material = SubResource("ShaderMaterial_8qtwp")
 layout_mode = 1
 anchors_preset = 15
@@ -103,7 +103,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="MainScreen"]
+[node name="CenterContainer" type="CenterContainer" parent="MainScreen" unique_id=435918091]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -111,20 +111,20 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="StartPanelContainer" type="PanelContainer" parent="MainScreen/CenterContainer"]
+[node name="StartPanelContainer" type="PanelContainer" parent="MainScreen/CenterContainer" unique_id=1242354612]
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
 theme = ExtResource("6_ygrj5")
 theme_override_styles/panel = ExtResource("7_lgqab")
 
-[node name="MarginContainer" type="MarginContainer" parent="MainScreen/CenterContainer/StartPanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MainScreen/CenterContainer/StartPanelContainer" unique_id=2083150877]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer" unique_id=2062954974]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="GameTitle" type="RichTextLabel" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="GameTitle" type="RichTextLabel" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=378580151]
 layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("8_ysfef")
 theme_override_font_sizes/normal_font_size = 80
@@ -135,63 +135,63 @@ scroll_active = false
 autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="Space" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="Space" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=856542418]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="ContinueGame" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="ContinueGame" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=1627851549]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Continue"
 
-[node name="CpuPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="CpuPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=334746199]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Play vs Cpu"
 
-[node name="OnlinePlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="OnlinePlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=449942905]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Play Online"
 
-[node name="PassAndPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="PassAndPlay" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=2022841671]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Pass & Play"
 
-[node name="Space2" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="Space2" type="Control" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=181548851]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="How to Play" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="How to Play" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=710829084]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "How to Play"
 
-[node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="SettingsButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=1222197404]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Settings"
 
-[node name="QuitButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuitButton" type="Button" parent="MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer" unique_id=626341164]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Quit"
 
-[node name="VersionContainer" type="Container" parent="MainScreen"]
+[node name="VersionContainer" type="Container" parent="MainScreen" unique_id=287686821]
 layout_mode = 1
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("9_kk4mm")
 
-[node name="VersionLabel" type="Label" parent="MainScreen/VersionContainer"]
+[node name="VersionLabel" type="Label" parent="MainScreen/VersionContainer" unique_id=196291445]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("8_ysfef")
@@ -199,7 +199,7 @@ theme_override_font_sizes/font_size = 30
 text = "Te"
 script = ExtResource("9_rx1ud")
 
-[node name="DiscordContainer" type="PanelContainer" parent="."]
+[node name="DiscordContainer" type="PanelContainer" parent="." unique_id=1875814807]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -214,7 +214,7 @@ scale = Vector2(0.15, 0.15)
 theme_override_styles/panel = SubResource("StyleBoxFlat_nc6jr")
 script = ExtResource("9_kk4mm")
 
-[node name="DiscordButton" type="Button" parent="DiscordContainer"]
+[node name="DiscordButton" type="Button" parent="DiscordContainer" unique_id=2033366550]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
 theme_override_fonts/font = ExtResource("8_ysfef")
@@ -222,7 +222,7 @@ theme_override_font_sizes/font_size = 159
 text = "Discord"
 icon = ExtResource("10_68bju")
 
-[node name="SettingsScreen" type="Control" parent="."]
+[node name="SettingsScreen" type="Control" parent="." unique_id=461391223]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -231,7 +231,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="SettingsScreen"]
+[node name="MarginContainer" type="MarginContainer" parent="SettingsScreen" unique_id=559252203]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -243,7 +243,7 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="CpuSettingsScreen" type="Control" parent="."]
+[node name="CpuSettingsScreen" type="Control" parent="." unique_id=298421756]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -251,7 +251,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen"]
+[node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen" unique_id=1438469437]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -263,11 +263,11 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 50
 
-[node name="Panel" type="Panel" parent="CpuSettingsScreen/MarginContainer"]
+[node name="Panel" type="Panel" parent="CpuSettingsScreen/MarginContainer" unique_id=1631738398]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_fu7sn")
 
-[node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen/MarginContainer/Panel"]
+[node name="MarginContainer" type="MarginContainer" parent="CpuSettingsScreen/MarginContainer/Panel" unique_id=672733458]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -279,31 +279,31 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="HBoxContainer" type="BoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer"]
+[node name="HBoxContainer" type="BoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer" unique_id=1337789874]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer" unique_id=199485750]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer" unique_id=768481679]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 text = "Game Settings"
 
-[node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="CpuDifficulty" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer" unique_id=1432216713]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "CPU Difficulty:"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer" unique_id=842949778]
 layout_mode = 2
 theme_override_constants/separation = 30
 
-[node name="Difficulty Slider" type="HSlider" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="Difficulty Slider" type="HSlider" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer" unique_id=1479350370]
 custom_minimum_size = Vector2(350, 30)
 layout_mode = 2
 min_value = 1.0
@@ -311,57 +311,60 @@ max_value = 6.0
 value = 3.0
 tick_count = 6
 
-[node name="CurrentDiff" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="CurrentDiff" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer" unique_id=1485194488]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Normal"
 
-[node name="Player1Row" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="Player1Row" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer" unique_id=417670901]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player1Row"]
+[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player1Row" unique_id=1171766776]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Player 1"
 
-[node name="P1ColorSelect" type="OptionButton" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player1Row"]
+[node name="P1ColorSelect" type="OptionButton" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player1Row" unique_id=199679775]
 layout_mode = 2
 
-[node name="Player2Row" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="Player2Row" type="HBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer" unique_id=664258031]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player2Row"]
+[node name="Label" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player2Row" unique_id=402871129]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Player 2 / CPU"
 
-[node name="P2ColorSelect" type="OptionButton" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player2Row"]
+[node name="P2ColorSelect" type="OptionButton" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player2Row" unique_id=1012727019]
 layout_mode = 2
 
-[node name="VBoxMapContainer" type="VBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer"]
+[node name="VBoxMapContainer" type="VBoxContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer" unique_id=1789932054]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 24
 
-[node name="MapLabel" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxMapContainer"]
+[node name="MapLabel" type="Label" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxMapContainer" unique_id=217667866]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Map"
 
-[node name="MapScroll" type="ScrollContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxMapContainer"]
+[node name="MapScroll" type="ScrollContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxMapContainer" unique_id=975534132]
 custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
+size_flags_vertical = 3
 
-[node name="MapGrid" type="GridContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxMapContainer/MapScroll"]
+[node name="MapGrid" type="GridContainer" parent="CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxMapContainer/MapScroll" unique_id=2071588981]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 0
 columns = 2
 
-[node name="CloseGameSettings" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel"]
+[node name="CloseGameSettings" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel" unique_id=25983573]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -371,7 +374,7 @@ offset_bottom = 108.0
 grow_horizontal = 0
 icon = ExtResource("9_kqtkm")
 
-[node name="StartCpuGame" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel"]
+[node name="StartCpuGame" type="Button" parent="CpuSettingsScreen/MarginContainer/Panel" unique_id=819934405]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -388,7 +391,7 @@ theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Start Game"
 
-[node name="MutiplayerSettings" type="Control" parent="."]
+[node name="MutiplayerSettings" type="Control" parent="." unique_id=1232686323]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -397,7 +400,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings"]
+[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings" unique_id=804739091]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -409,11 +412,11 @@ theme_override_constants/margin_top = 100
 theme_override_constants/margin_right = 100
 theme_override_constants/margin_bottom = 100
 
-[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer"]
+[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer" unique_id=186875504]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_fu7sn")
 
-[node name="JoinHost" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
+[node name="JoinHost" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel" unique_id=2112855043]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -425,30 +428,30 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 50
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost" unique_id=1571853962]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
+[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer" unique_id=810539730]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 text = "Online Multiplayer"
 
-[node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
+[node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer" unique_id=630922200]
 layout_mode = 2
 theme_override_constants/outline_size = 20
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Join Room with Code"
 
-[node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer"]
+[node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinHost/VBoxContainer" unique_id=2005585076]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 30
 text = "Host Game"
 
-[node name="JoinCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
+[node name="JoinCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel" unique_id=203032980]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -461,16 +464,16 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode" unique_id=10627507]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer" unique_id=549752336]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 50
 text = "Join Game"
 
-[node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+[node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer" unique_id=1054454127]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
@@ -478,25 +481,25 @@ theme_override_font_sizes/font_size = 30
 text = "Join with the 6 digit code the game host provided"
 autowrap_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer" unique_id=346645887]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer"]
+[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer" unique_id=947219568]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_glbon")
 
-[node name="JoinCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer"]
+[node name="JoinCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer/MarginContainer" unique_id=1372379086]
 layout_mode = 2
 theme = SubResource("Theme_nlkkf")
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 max_length = 6
 
-[node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer"]
+[node name="JoinGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/JoinCode/VBoxContainer" unique_id=32507918]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
 theme_override_fonts/font = ExtResource("8_ysfef")
@@ -504,7 +507,7 @@ theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Join!"
 
-[node name="HostCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel"]
+[node name="HostCode" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel" unique_id=1450860766]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -517,41 +520,41 @@ theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode" unique_id=879406388]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+[node name="Label" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer" unique_id=23009597]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 40
 text = "Host Game"
 
-[node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+[node name="Label2" type="Label" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer" unique_id=1351808716]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_ysfef")
 text = "Choose 6 digit Room Code use to Join"
 autowrap_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer" unique_id=335768008]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer"]
+[node name="Panel" type="Panel" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer" unique_id=1772167060]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_glbon")
 
-[node name="HostCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer"]
+[node name="HostCodeEdit" type="LineEdit" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer/MarginContainer" unique_id=1453970508]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.6436958, 0.73559934, 1)
 theme_override_fonts/font = ExtResource("8_ysfef")
 theme_override_font_sizes/font_size = 80
 max_length = 6
 
-[node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer"]
+[node name="HostGame" type="Button" parent="MutiplayerSettings/MarginContainer/Panel/HostCode/VBoxContainer" unique_id=2077788179]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.78039217, 1, 1)
 theme_override_fonts/font = ExtResource("8_ysfef")
@@ -559,7 +562,7 @@ theme_override_font_sizes/font_size = 60
 action_mode = 0
 text = "Start Hosting!"
 
-[node name="CloseMultiSettings" type="Button" parent="MutiplayerSettings/MarginContainer/Panel"]
+[node name="CloseMultiSettings" type="Button" parent="MutiplayerSettings/MarginContainer/Panel" unique_id=16699540]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -570,7 +573,7 @@ grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
 icon = ExtResource("9_kqtkm")
 
-[node name="MenuMusic" type="AudioStreamPlayer2D" parent="."]
+[node name="MenuMusic" type="AudioStreamPlayer2D" parent="." unique_id=946384862]
 stream = ExtResource("11_047xs")
 volume_db = 8.0
 autoplay = true

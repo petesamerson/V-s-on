@@ -24,7 +24,7 @@ func draw_vision_change():
 	var new_vision: Array[Vector2i] = []
 	
 	for cell in raw_vision:
-		if(board.cell_in_board(cell)):
+		if board.can_see_cell(cur_pos, cell):
 			new_vision.append(cell)
 
 	for cell in cur_vision:

@@ -27,6 +27,7 @@ func prepare(cpu: Node) -> void:
 	engine.board.board_center = source_board.board_center
 	engine.board.board_size = source_board.board_size
 	engine.board.board_tiles = source_board.board_tiles.duplicate()
+	engine.board.wall_cells = source_board.wall_cells.duplicate()
 	engine.board.map_spawn_cells = (
 		source_board.get_possible_spawn_locations()
 	)

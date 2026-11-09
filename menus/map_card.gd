@@ -7,7 +7,7 @@ extends Button
 	$MarginContainer/VBoxContainer/MapName
 )
 
-@export var preview_background: Color = Color("#AAAAAA")
+@export var preview_background: Color = Color("#00456d")
 
 @onready var preview: SubViewportContainer = (
 	$MarginContainer/VBoxContainer/Preview
@@ -81,9 +81,9 @@ func _update_label(selected: bool) -> void:
 	)
 
 func _resize_card() -> void:
-	# Width comes from the grid. Height follows a 4:3 preview.
+	# Keep previews compact even when the grid has wide columns.
 	var preview_width := maxf(size.x - 20.0, 1.0)
-	var preview_height := maxf(preview_width * 0.75, 100.0)
+	var preview_height := clampf(preview_width * 0.5625, 100.0, 160.0)
 
 	preview.custom_minimum_size = Vector2(0, preview_height)
 
