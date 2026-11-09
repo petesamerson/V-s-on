@@ -317,6 +317,7 @@ class DataBoard extends RefCounted:
 	var board_center: Vector2i = Vector2i(10, 10)
 	var board_size: int = 10
 	var board_tiles: Array[Vector2i] = []
+	var map_spawn_cells: Array[Vector2i] = []
 	var current_player: int = 1
 	var player_pieces: Array = [[], []]
 	var player_captures: Array[Array] = [[], []]
@@ -373,14 +374,7 @@ class DataBoard extends RefCounted:
 		update_all_core_power_counts()
 
 	func get_possible_spawn_locations() -> Array[Vector2i]:
-		var locations: Array[Vector2i] = []
-
-		for direction in range(6):
-			var line: Array[Vector2i] = get_line_from_center(Vector2i(10, 10), direction, 6)
-			if not line.is_empty():
-				locations.append(line[line.size() - 1])
-
-		return locations
+		return map_spawn_cells.duplicate()
 
 	func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> DataPiece:
 		for node in pieces_container.get_children():

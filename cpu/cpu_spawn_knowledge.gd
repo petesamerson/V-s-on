@@ -30,14 +30,24 @@ func initialize(board: Board, player: int) -> void:
 		return
 
 	# Same spawn and adjacent spawns are forbidden.
-	for offset in [2, 3, 4]:
-		var index: int = posmod(own_index + int(offset), 6)
+	var candidates: Array[int] = []
+
+	if centers.size() == 2:
+		candidates.append(1 - own_index)
+	elif centers.size() == 6:
+		for offset in [2, 3, 4]:
+			candidates.append((own_index + offset) % centers.size())
+	else:
+		push_error("Unsupported spawn count for CPU.")
+		return
+
+	for index in candidates:
 		var center: Vector2i = centers[index]
 
 		models.append({
 			"center": center,
 			"layout": _make_layout(board, center),
-			"weight": 1.0 / 3.0,
+			"weight": 1.0 / float(candidates.size()),
 		})
 
 

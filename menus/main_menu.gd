@@ -4,7 +4,7 @@ class_name MainMenu
 @onready var start_panel_container = $MainScreen/CenterContainer/StartPanelContainer
 @onready var cpu_settings_screen: Control = $CpuSettingsScreen
 @onready var multiplayer_settings: Control = $MutiplayerSettings
-@onready var difficulty_label: Label = $CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/CurrentDiff
+@onready var difficulty_label: Label = $CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/CurrentDiff
 
 @onready var continue_game_button: Button = (
 	$MainScreen/CenterContainer/StartPanelContainer/MarginContainer/VBoxContainer/ContinueGame
@@ -12,10 +12,35 @@ class_name MainMenu
 
 const GameColors = preload("res://utils/colors.gd")
 @onready var player_color_select: OptionButton = \
-	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player1Row/P1ColorSelect
+	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player1Row/P1ColorSelect
 
 @onready var enemy_color_select: OptionButton = \
-	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/VBoxContainer/Player2Row/P2ColorSelect
+	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer/Player2Row/P2ColorSelect
+
+
+const MAP_CARD_SCENE := preload("res://menus/map_card.tscn")
+
+const MAP_CHOICES: Array[Dictionary] = [
+	{"id": "classic", "name": "Classic"},
+	{"id": "bridge", "name": "Bridge"},
+]
+
+@onready var settings_layout: BoxContainer = (
+	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer
+)
+
+@onready var map_scroll: ScrollContainer = get_node(
+	"CpuSettingsScreen/MarginContainer/Panel/"
+	+ "MarginContainer/HBoxContainer/VBoxMapContainer/MapScroll"
+)
+
+@onready var map_grid: GridContainer = get_node(
+	"CpuSettingsScreen/MarginContainer/Panel/"
+	+ "MarginContainer/HBoxContainer/VBoxMapContainer/MapScroll/MapGrid"
+)
+
+var selected_map_id: String = "classic"
+var map_button_group := ButtonGroup.new()
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -64,9 +89,20 @@ func _ready() -> void:
 
 	$DiscordContainer.resized.connect(_update_discord_pivot)
 	_update_discord_pivot()
+	_setup_map_cards()
+	_update_settings_layout()
 
 func _on_mobile_viewport_resized() -> void:
 	update_mobile_scale()
+	_update_settings_layout()
+
+func _update_settings_layout() -> void:
+	var window_size := get_viewport_rect().size
+	var aspect_ratio := window_size.x / maxf(window_size.y, 1.0)
+
+	# Wide: settings beside maps.
+	# Tall or square: settings above maps.
+	settings_layout.vertical = aspect_ratio <= 1.0
 
 func _on_player_color_selected(index: int) -> void:
 	GameColors.set_player_color(1, index)
@@ -93,6 +129,54 @@ func refresh_color_options() -> void:
 					break
 
 			dropdown.set_item_disabled(color_index, taken)
+
+
+func _setup_map_cards() -> void:
+	map_button_group.allow_unpress = false
+
+	var previous_id := str(
+		get_tree().root.get_meta("selected_map", "classic")
+	)
+
+	selected_map_id = "classic"
+
+	for choice in MAP_CHOICES:
+		if str(choice["id"]) == previous_id:
+			selected_map_id = previous_id
+			break
+
+	for choice in MAP_CHOICES:
+		var id := str(choice["id"])
+		var card = MAP_CARD_SCENE.instantiate()
+
+		card.button_group = map_button_group
+		map_grid.add_child(card)
+
+		# Reuse the same scene registry as gameplay.
+		var scene: PackedScene = Board.MAP_SCENES[id]
+		card.configure(str(choice["name"]), scene)
+
+		card.pressed.connect(_on_map_card_pressed.bind(id))
+		card.button_pressed = id == selected_map_id
+
+	map_scroll.resized.connect(_update_map_columns)
+	call_deferred("_update_map_columns")
+
+
+func _on_map_card_pressed(id: String) -> void:
+	selected_map_id = id
+
+
+func _update_map_columns() -> void:
+	# Leave room for the scrollbar.
+	var available_width := maxf(map_scroll.size.x - 20.0, 1.0)
+	var columns := int(floor((available_width + 12.0) / 192.0))
+
+	map_grid.columns = clampi(
+		columns,
+		1,
+		maxi(MAP_CHOICES.size(), 1)
+	)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
@@ -178,8 +262,8 @@ func _on_settings_button_pressed() -> void:
 func _on_pass_and_play_pressed() -> void:
 	get_tree().root.set_meta("online_game", false)
 	get_tree().root.set_meta("play_vs_cpu", false)
+	get_tree().root.set_meta("selected_map", "bridge")
 	get_tree().change_scene_to_file("res://base_scene.tscn")
-
 
 
 func _on_difficulty_slider_value_changed(value: float) -> void:
@@ -216,14 +300,15 @@ func _on_lobby_opponent_disconnected() -> void:
 func _on_start_cpu_game_pressed() -> void:
 	var slider := get_node(
 		"CpuSettingsScreen/MarginContainer/Panel/"
-		+ "MarginContainer/VBoxContainer/HBoxContainer/"
-		+ "Difficulty Slider"
+		+ "MarginContainer/HBoxContainer/VBoxContainer/"
+		+ "HBoxContainer/Difficulty Slider"
 	) as HSlider
 
 	_on_difficulty_slider_value_changed(slider.value)
 
 	get_tree().root.set_meta("play_vs_cpu", true)
 	get_tree().root.set_meta("online_game", false)
+	get_tree().root.set_meta("selected_map", selected_map_id)
 	get_tree().change_scene_to_file("res://base_scene.tscn")
 
 
@@ -336,6 +421,7 @@ func _start_online_game(local_player: int, spawn1: int, spawn2: int) -> void:
 	get_tree().root.set_meta("local_player", local_player)
 	get_tree().root.set_meta("online_spawn1", spawn1)
 	get_tree().root.set_meta("online_spawn2", spawn2)
+	get_tree().root.set_meta("selected_map", "classic")
 	get_tree().change_scene_to_file("res://base_scene.tscn")
 
 

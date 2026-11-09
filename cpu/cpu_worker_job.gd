@@ -27,6 +27,9 @@ func prepare(cpu: Node) -> void:
 	engine.board.board_center = source_board.board_center
 	engine.board.board_size = source_board.board_size
 	engine.board.board_tiles = source_board.board_tiles.duplicate()
+	engine.board.map_spawn_cells = (
+		source_board.get_possible_spawn_locations()
+	)
 	engine.board.current_player = source_board.current_player
 	engine.player_number = cpu.get("player_number")
 	engine.difficulty = cpu.get("difficulty")

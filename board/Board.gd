@@ -20,6 +20,14 @@ const CAPTURE_FEED_TEXTURE: Texture2D = preload("res://sprites/capturefeed.png")
 var Tiles = preload("res://board/tiles.gd")
 const GameColors = preload("res://utils/colors.gd")
 
+const MAP_SCENES: Dictionary = {
+	"classic": preload("res://maps/classic.tscn"),
+	"bridge": preload("res://maps/bridge.tscn"),
+}
+
+var map_id: String = "classic"
+var map_spawn_cells: Array[Vector2i] = []
+
 var board_center = Vector2i(10, 10)
 var board_size = 10
 var board_tiles: Array[Vector2i] = []
@@ -62,9 +70,15 @@ signal tutorial_turn_completed
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	self.z_index = 0
-	board_tiles = get_hexagon_tiles(board_center, board_size)
-	for c in board_tiles:
-		set_cell(c, Tiles.BLACK, Vector2i(0,0))
+
+	if tutorial_mode:
+		# Preserve the tutorial's original layout.
+		board_tiles = get_hexagon_tiles(board_center, board_size)
+		for cell in board_tiles:
+			set_cell(cell, Tiles.BLACK, Vector2i.ZERO)
+	else:
+		if not load_map_layout():
+			return
 
 	board_effects = preload("res://board/board_effects.gd").new()
 	board_effects.board = self
@@ -178,6 +192,68 @@ func resize_selection_image_to_text() -> void:
 
 func scale_text_tree(node: Node, factor: float) -> void:
 	UITextScale.apply(node, factor)
+
+func load_map_layout() -> bool:
+	var root := get_tree().root
+
+	map_id = str(root.get_meta("selected_map", "classic"))
+
+	if not bool(root.get_meta("online_game", false)):
+		if not OfflineSave.pending_resume.is_empty():
+			map_id = str(
+				OfflineSave.pending_resume.get("map_id", "classic")
+			)
+
+	if not MAP_SCENES.has(map_id):
+		push_error("Unknown map: %s" % map_id)
+		return false
+
+	var scene: PackedScene = MAP_SCENES[map_id]
+	var layout := scene.instantiate() as PlayableMap
+
+	if layout == null:
+		push_error("Map root needs the PlayableMap script.")
+		return false
+
+	# The map scene is an authoring template.
+	# Board renders its ground using the existing game logic.
+	layout.hide()
+	add_child(layout)
+
+	var cells := layout.ground.get_used_cells()
+	var spawn_cells := layout.get_spawn_cells()
+	var center_cell := layout.get_center_cell()
+
+	var valid := (
+		not cells.is_empty()
+		and spawn_cells.size() in [2, 6]
+	)
+
+	for cell in spawn_cells:
+		if not cells.has(cell) or spawn_cells.count(cell) != 1:
+			valid = false
+
+	if not valid:
+		push_error("Map needs ground and either two or six distinct spawns on ground.")
+		layout.free()
+		return false
+
+	board_center = center_cell
+	board_tiles.assign(cells)
+	map_spawn_cells.assign(spawn_cells)
+
+	clear()
+
+	for cell in board_tiles:
+		set_cell(
+			cell,
+			layout.ground.get_cell_source_id(cell),
+			layout.ground.get_cell_atlas_coords(cell),
+			layout.ground.get_cell_alternative_tile(cell)
+		)
+
+	layout.free()
+	return true
 
 
 func intialize_drawn_sprite_nodes():
@@ -580,27 +656,43 @@ func spawn_all_pieces():
 				push_error("The saved match could not be restored.")
 				get_tree().change_scene_to_file("res://main_menu.tscn")
 			return
+
+	var locations := get_possible_spawn_locations()
+	var spawn_count := locations.size()
+
+	if spawn_count != 2 and spawn_count != 6:
+		push_error("Unsupported spawn count.")
+		return
+
 	var num1: int
 	var num2: int
+
 	if tutorial_mode:
 		num1 = 0
 		num2 = 3
 	elif online_game:
 		num1 = int(get_tree().root.get_meta("online_spawn1", 0))
-		num2 = int(get_tree().root.get_meta("online_spawn2", 3))
+		num2 = int(get_tree().root.get_meta("online_spawn2", 1))
 	else:
-		num1 = randi_range(0, 5)
-		num2 = randi_range(0, 5)
-		while num2 == num1 or abs(num2 - num1) == 1 or abs(num2 - num1) == 5:
-			num2 = randi_range(0, 5)
-	# num1 = 0
-	# num2 = 3
-	var spawn1 = get_line_from_center(Vector2i(10,10), num1, 6)
-	var spawn2 = get_line_from_center(Vector2i(10,10), num2, 6)
+		num1 = randi_range(0, spawn_count - 1)
 
-	
-	spawn_player_location(spawn1.get(spawn1.size() - 1), 1)
-	spawn_player_location(spawn2.get(spawn2.size() - 1), 2)
+		if spawn_count == 2:
+			# Use the other spawn.
+			num2 = 1 - num1
+		else:
+			# Preserve the six-spawn rule: no neighboring opponents.
+			num2 = (num1 + randi_range(2, 4)) % spawn_count
+
+	if (
+		num1 < 0 or num1 >= spawn_count
+		or num2 < 0 or num2 >= spawn_count
+		or num1 == num2
+	):
+		push_error("Invalid player spawn indices for this map.")
+		return
+
+	spawn_player_location(locations[num1], 1)
+	spawn_player_location(locations[num2], 2)
 
 	update_all_piece_vision()
 	move_camera_to_core()
@@ -609,13 +701,26 @@ func spawn_all_pieces():
 	board_effects.play_setup()
 	save_offline_checkpoint()
 
+# func get_possible_spawn_locations() -> Array[Vector2i]:
+# 	var locations: Array[Vector2i] = []
+
+# 	for direction in range(6):
+# 		var line: Array[Vector2i] = get_line_from_center(Vector2i(10, 10), direction, 6)
+# 		if not line.is_empty():
+# 			locations.append(line[line.size() - 1])
+
+# 	return locations
 func get_possible_spawn_locations() -> Array[Vector2i]:
+	if not tutorial_mode:
+		return map_spawn_cells.duplicate()
+
 	var locations: Array[Vector2i] = []
 
 	for direction in range(6):
-		var line: Array[Vector2i] = get_line_from_center(Vector2i(10, 10), direction, 6)
-		if not line.is_empty():
-			locations.append(line[line.size() - 1])
+		var line: Array[Vector2i] = get_line_from_center(
+			Vector2i(10, 10), direction, 6
+		)
+		locations.append(line.back())
 
 	return locations
 
@@ -2585,6 +2690,7 @@ func save_offline_checkpoint(
 		"handoff_pending": handoff_pending,
 		"play_vs_cpu": play_vs_cpu,
 		"colors": GameColors.selected_color_indices.duplicate(),
+		"map_id": map_id,
 		"last_moves": last_moves,
 		"last_capturers": last_capture_capturer_ids.duplicate(),
 		"camera_position": camera.global_position,
