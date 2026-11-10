@@ -26,6 +26,19 @@ const MAP_CHOICES: Array[Dictionary] = [
 	{"id": "tri", "name": "Tri"}
 ]
 
+enum SetupMode { CPU, PASS_AND_PLAY, HOST }
+
+var setup_mode: SetupMode = SetupMode.CPU
+
+@onready var setup_options: VBoxContainer = (
+	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer/VBoxContainer
+)
+
+@onready var setup_start_button: Button = (
+	$CpuSettingsScreen/MarginContainer/Panel/StartCpuGame
+)
+
+
 @onready var settings_layout: BoxContainer = (
 	$CpuSettingsScreen/MarginContainer/Panel/MarginContainer/HBoxContainer
 )
@@ -105,6 +118,35 @@ func _update_settings_layout() -> void:
 	# Tall or square: settings above maps.
 	settings_layout.vertical = aspect_ratio <= 1.0
 
+func open_game_setup(mode: SetupMode) -> void:
+	setup_mode = mode
+	var is_cpu := mode == SetupMode.CPU
+
+	setup_options.get_node("CpuDifficulty").visible = is_cpu
+	setup_options.get_node("HBoxContainer").visible = is_cpu
+
+	var title := setup_options.get_node("Label") as Label
+	var player_two_label := (
+		setup_options.get_node("Player2Row/Label") as Label
+	)
+
+	player_two_label.text = "Player 2 / CPU" if is_cpu else "Player 2"
+
+	match mode:
+		SetupMode.CPU:
+			title.text = "CPU Game Settings"
+		SetupMode.PASS_AND_PLAY:
+			title.text = "Pass and Play Settings"
+		SetupMode.HOST:
+			title.text = "Host Game Settings"
+
+	setup_start_button.text = (
+		"Continue" if mode == SetupMode.HOST else "Start Game"
+	)
+
+	multiplayer_settings.hide()
+	cpu_settings_screen.show()
+
 func _on_player_color_selected(index: int) -> void:
 	GameColors.set_player_color(1, index)
 	refresh_color_options()
@@ -163,15 +205,47 @@ func _setup_map_cards() -> void:
 	map_scroll.resized.connect(_update_map_columns)
 	call_deferred("_update_map_columns")
 
+func get_map_spawn_count(id: String) -> int:
+	if not Board.MAP_SCENES.has(id):
+		return 0
+
+	var scene: PackedScene = Board.MAP_SCENES[id]
+	var layout := scene.instantiate()
+	var spawns := layout.get_node_or_null("Spawns")
+
+	var count := 0
+	if spawns != null:
+		count = spawns.get_child_count()
+
+	layout.free()
+	return count
+
 
 func _on_map_card_pressed(id: String) -> void:
 	selected_map_id = id
 
 
 func _update_map_columns() -> void:
-	# Leave room for the scrollbar.
 	var available_width := maxf(map_scroll.size.x - 20.0, 1.0)
-	var columns := int(floor((available_width + 12.0) / 192.0))
+	var separation := float(
+		map_grid.get_theme_constant("h_separation")
+	)
+	var minimum_card_width := 180.0
+
+	var columns := maxi(
+		1,
+		int(floor(
+			(available_width + separation)
+			/ (minimum_card_width + separation)
+		))
+	)
+
+	var viewport_size := get_viewport_rect().size
+	var is_portrait := viewport_size.y >= viewport_size.x
+
+	if is_portrait:
+		# Two cards per row, or one when space is tight.
+		columns = mini(columns, 2)
 
 	map_grid.columns = clampi(
 		columns,
@@ -243,9 +317,15 @@ func _update_discord_pivot() -> void:
 	discord_button_container.pivot_offset = discord_button_container.size
 
 func _on_new_game_pressed() -> void:
-	# get_tree().root.set_meta("play_vs_cpu", true)
-	# get_tree().change_scene_to_file("res://base_scene.tscn")
-	cpu_settings_screen.show()
+	open_game_setup(SetupMode.CPU)
+
+
+func _on_pass_and_play_pressed() -> void:
+	open_game_setup(SetupMode.PASS_AND_PLAY)
+
+
+func _on_host_game_pressed() -> void:
+	open_game_setup(SetupMode.HOST)
 
 func _on_quit_button_pressed() -> void:
 	get_tree().quit()
@@ -259,12 +339,6 @@ func _on_settings_button_pressed() -> void:
 	settings.name = "SettingsOverlay"
 	get_tree().current_scene.add_child(settings)
 
-
-func _on_pass_and_play_pressed() -> void:
-	get_tree().root.set_meta("online_game", false)
-	get_tree().root.set_meta("play_vs_cpu", false)
-	get_tree().root.set_meta("selected_map", "bridge")
-	get_tree().change_scene_to_file("res://base_scene.tscn")
 
 
 func _on_difficulty_slider_value_changed(value: float) -> void:
@@ -299,17 +373,27 @@ func _on_lobby_opponent_disconnected() -> void:
 	_on_network_error("Your opponent left. Please create or join a room again.")
 
 func _on_start_cpu_game_pressed() -> void:
-	var slider := get_node(
-		"CpuSettingsScreen/MarginContainer/Panel/"
-		+ "MarginContainer/HBoxContainer/VBoxContainer/"
-		+ "HBoxContainer/Difficulty Slider"
-	) as HSlider
+	if setup_mode == SetupMode.HOST:
+		cpu_settings_screen.hide()
+		multiplayer_settings.show()
+		join_host_container.hide()
+		join_code_container.hide()
+		host_code_container.show()
+		return
 
-	_on_difficulty_slider_value_changed(slider.value)
+	var is_cpu := setup_mode == SetupMode.CPU
 
-	get_tree().root.set_meta("play_vs_cpu", true)
-	get_tree().root.set_meta("online_game", false)
-	get_tree().root.set_meta("selected_map", selected_map_id)
+	if is_cpu:
+		var slider := setup_options.get_node(
+			"HBoxContainer/Difficulty Slider"
+		) as HSlider
+		_on_difficulty_slider_value_changed(slider.value)
+
+	var root := get_tree().root
+	root.set_meta("play_vs_cpu", is_cpu)
+	root.set_meta("online_game", false)
+	root.set_meta("selected_map", selected_map_id)
+
 	get_tree().change_scene_to_file("res://base_scene.tscn")
 
 
@@ -368,12 +452,6 @@ func _on_join_game_pressed() -> void:
 	pass # Replace with function body.
 
 
-func _on_host_game_pressed() -> void:
-	join_host_container.visible = false
-	host_code_container.visible = true
-	pass # Replace with function body.
-
-
 func _on_join_room_pressed() -> void:
 	join_status_label.text = "Connecting..."
 	NetworkManager.join_room(join_code_input.text)
@@ -393,21 +471,31 @@ func _on_room_created(code: String) -> void:
 func _on_room_joined(_code: String) -> void:
 	join_status_label.text = "Joined room. Waiting for host to start..."
 
-
 func _on_opponent_joined() -> void:
-	var spawn1 := randi_range(0, 5)
-	var spawn2 := randi_range(0, 5)
+	var count := get_map_spawn_count(selected_map_id)
 
-	while spawn2 == spawn1 or abs(spawn2 - spawn1) == 1 or abs(spawn2 - spawn1) == 5:
-		spawn2 = randi_range(0, 5)
+	if count < 2 or count > 6:
+		host_status_label.text = "This map needs 2–6 spawn markers."
+		return
+
+	var spawn1 := randi_range(0, count - 1)
+	var spawn2: int
+
+	if count == 6:
+		# Preserve the existing non-neighboring spawn rule.
+		spawn2 = (spawn1 + randi_range(2, 4)) % count
+	else:
+		spawn2 = (spawn1 + randi_range(1, count - 1)) % count
 
 	NetworkManager.send_game_message({
 		"action": "start_game",
+		"map_id": selected_map_id,
+		"colors": GameColors.selected_color_indices.duplicate(),
 		"spawn1": spawn1,
-		"spawn2": spawn2
+		"spawn2": spawn2,
 	})
 
-	_start_online_game(1, spawn1, spawn2)
+	_start_online_game(1, spawn1, spawn2, selected_map_id)
 
 func _on_network_error(message: String) -> void:
 	if host_code_container.visible:
@@ -416,30 +504,79 @@ func _on_network_error(message: String) -> void:
 		join_status_label.text = message
 
 
-func _start_online_game(local_player: int, spawn1: int, spawn2: int) -> void:
-	get_tree().root.set_meta("play_vs_cpu", false)
-	get_tree().root.set_meta("online_game", true)
-	get_tree().root.set_meta("local_player", local_player)
-	get_tree().root.set_meta("online_spawn1", spawn1)
-	get_tree().root.set_meta("online_spawn2", spawn2)
-	get_tree().root.set_meta("selected_map", "classic")
+func _start_online_game(
+	local_player: int,
+	spawn1: int,
+	spawn2: int,
+	chosen_map: String
+) -> void:
+	var root := get_tree().root
+	root.set_meta("play_vs_cpu", false)
+	root.set_meta("online_game", true)
+	root.set_meta("local_player", local_player)
+	root.set_meta("online_spawn1", spawn1)
+	root.set_meta("online_spawn2", spawn2)
+	root.set_meta("selected_map", chosen_map)
+
 	get_tree().change_scene_to_file("res://base_scene.tscn")
 
-
-func _on_lobby_game_message(payload: Variant, from_player: int) -> void:
+func _on_lobby_game_message(
+	payload: Variant,
+	from_player: int
+) -> void:
 	if from_player != 1 or typeof(payload) != TYPE_DICTIONARY:
 		return
 	if payload.get("action") != "start_game":
 		return
 
-	_start_online_game(
-		2,
-		int(payload.get("spawn1", 0)),
-		int(payload.get("spawn2", 3))
-	)
+	var chosen_map := str(payload.get("map_id", ""))
+	var count := get_map_spawn_count(chosen_map)
+	var spawn1 := int(payload.get("spawn1", -1))
+	var spawn2 := int(payload.get("spawn2", -1))
+	var colors: Variant = payload.get("colors", [])
+
+	if (
+		count < 2 or count > 6
+		or spawn1 < 0 or spawn1 >= count
+		or spawn2 < 0 or spawn2 >= count
+		or spawn1 == spawn2
+	):
+		join_status_label.text = "Host sent invalid map settings."
+		return
+
+	if typeof(colors) != TYPE_ARRAY:
+		join_status_label.text = "Host sent invalid player colors."
+		return
+
+	if colors.size() != 2:
+		join_status_label.text = "Host sent invalid player colors."
+		return
+
+	var color1 := int(colors[0])
+	var color2 := int(colors[1])
+	var palette_size := GameColors.PLAYER_PALETTE.size()
+
+	if (
+		color1 < 0 or color1 >= palette_size
+		or color2 < 0 or color2 >= palette_size
+		or color1 == color2
+	):
+		join_status_label.text = "Host sent invalid player colors."
+		return
+
+	GameColors.set_player_color(1, color1)
+	GameColors.set_player_color(2, color2)
+
+	_start_online_game(2, spawn1, spawn2, chosen_map)
 
 func _on_close_game_settings_pressed() -> void:
-	cpu_settings_screen.visible = false
+	cpu_settings_screen.hide()
+
+	if setup_mode == SetupMode.HOST:
+		multiplayer_settings.show()
+		join_host_container.show()
+		join_code_container.hide()
+		host_code_container.hide()	
 
 
 func _on_close_multi_settings_pressed() -> void:

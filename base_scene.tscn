@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3 uid="uid://br3rtq2rlri2y"]
+[gd_scene format=3 uid="uid://br3rtq2rlri2y"]
 
 [ext_resource type="TileSet" uid="uid://cs1fj2ln4ry8b" path="res://maps/board_tileset.tres" id="1_ixihg"]
 [ext_resource type="Script" uid="uid://calvtyfnhirjj" path="res://board/Board.gd" id="11_2mb0d"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://oicaiahgfjhr" path="res://pieces/triangle_even_piece.tscn" id="17_ddjlp"]
 [ext_resource type="PackedScene" uid="uid://dgqhmggiljsm5" path="res://pieces/TriangleOddPiece.tscn" id="20_gqdld"]
 [ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://pieces/TriangleOddPiece.gd" id="20_h480d"]
+[ext_resource type="Script" uid="uid://d0rfp5t7r56a8" path="res://menus/game_hub_scale.gd" id="21_6ow2y"]
 [ext_resource type="Script" uid="uid://yyorinitem65" path="res://pieces/TriangleEvenPiece.gd" id="21_h480d"]
 [ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://pieces/EyePiece.gd" id="22_ddjlp"]
 [ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://pieces/CorePiece.gd" id="26_u1i3c"]
@@ -23,7 +24,7 @@
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
 [ext_resource type="Script" uid="uid://b05po3p6ykkd4" path="res://music_playlist.gd" id="33_music_playlist"]
-[ext_resource type="Script" uid="uid://cwbrxpf2rljtu" path="res://game_hub_scale.gd" id="33_vru47"]
+[ext_resource type="Script" path="res://game_hub_scale.gd" id="33_vru47"]
 [ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="35_ixgyq"]
 [ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
@@ -62,10 +63,10 @@ border_color = Color(0, 0.9426603, 0.65268576, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ow2y"]
 bg_color = Color(0, 0.11372549, 0.18431373, 0.17254902)
 
-[node name="BaseScene" type="Node2D"]
+[node name="BaseScene" type="Node2D" unique_id=1867268430]
 metadata/_edit_horizontal_guides_ = [-6.0, 36.0, -55.0, -65.0, -271.0]
 
-[node name="Board" type="TileMapLayer" parent="." node_paths=PackedStringArray("camera")]
+[node name="Board" type="TileMapLayer" parent="." unique_id=1821467116 node_paths=PackedStringArray("camera")]
 tile_set = ExtResource("1_ixihg")
 script = ExtResource("11_2mb0d")
 camera = NodePath("../Camera2D")
@@ -80,41 +81,41 @@ hop_piece_scene = ExtResource("15_hwg3g")
 triangle_odd_piece_scene = ExtResource("20_gqdld")
 triangle_even_piece_scene = ExtResource("17_ddjlp")
 
-[node name="Pieces" type="Node2D" parent="Board"]
+[node name="Pieces" type="Node2D" parent="Board" unique_id=1222516599]
 
-[node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces"]
+[node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces" unique_id=88187508]
 script = ExtResource("14_01iy8")
 metadata/_custom_type_script = "uid://byauyvv4yigqx"
 
-[node name="HopPiece" type="Node2D" parent="Board/Pieces"]
+[node name="HopPiece" type="Node2D" parent="Board/Pieces" unique_id=1626373803]
 script = ExtResource("17_ay483")
 metadata/_custom_type_script = "uid://ce1udyoosuvs4"
 
-[node name="TriangleOddPiece" type="Node2D" parent="Board/Pieces"]
+[node name="TriangleOddPiece" type="Node2D" parent="Board/Pieces" unique_id=1407374514]
 script = ExtResource("20_h480d")
 metadata/_custom_type_script = "uid://bi2bkqvsov0p3"
 
-[node name="TriangleEvenPiece" type="Node2D" parent="Board/Pieces"]
+[node name="TriangleEvenPiece" type="Node2D" parent="Board/Pieces" unique_id=298132480]
 script = ExtResource("21_h480d")
 metadata/_custom_type_script = "uid://yyorinitem65"
 
-[node name="EyePiece" type="Node2D" parent="Board/Pieces"]
+[node name="EyePiece" type="Node2D" parent="Board/Pieces" unique_id=841509770]
 script = ExtResource("22_ddjlp")
 
-[node name="CorePiece" type="Node2D" parent="Board/Pieces"]
+[node name="CorePiece" type="Node2D" parent="Board/Pieces" unique_id=375656741]
 script = ExtResource("26_u1i3c")
 metadata/_custom_type_script = "uid://daqitf01c6qh3"
 
-[node name="TouchInput" type="Node" parent="Board"]
+[node name="TouchInput" type="Node" parent="Board" unique_id=626583005]
 script = ExtResource("31_344q1")
 
-[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("board")]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=2060294498 node_paths=PackedStringArray("board")]
 script = ExtResource("13_2mb0d")
 board = NodePath("../Board")
 
-[node name="TurnLayer" type="CanvasLayer" parent="."]
+[node name="TurnLayer" type="CanvasLayer" parent="." unique_id=100198329]
 
-[node name="CaptureFeed" type="PanelContainer" parent="TurnLayer"]
+[node name="CaptureFeed" type="PanelContainer" parent="TurnLayer" unique_id=159156434]
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
@@ -126,20 +127,20 @@ script = ExtResource("33_vru47")
 respect_mobile_safe_area = true
 scale_pivot = Vector2(0, 0.5)
 
-[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/CaptureFeed"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/CaptureFeed" unique_id=317550833]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="FeedContent" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer"]
+[node name="FeedContent" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer" unique_id=451575343]
 layout_mode = 2
 
-[node name="FeedEntries" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer/FeedContent"]
+[node name="FeedEntries" type="VBoxContainer" parent="TurnLayer/CaptureFeed/MarginContainer/FeedContent" unique_id=1790230434]
 layout_mode = 2
 
-[node name="YourTurnLabel" type="Label" parent="TurnLayer"]
+[node name="YourTurnLabel" type="Label" parent="TurnLayer" unique_id=558353930]
 visible = false
 anchors_preset = -1
 anchor_left = 0.5
@@ -160,7 +161,7 @@ vertical_alignment = 1
 script = ExtResource("33_vru47")
 scale_pivot = Vector2(0.5, 0.5)
 
-[node name="WinLabel" type="Label" parent="TurnLayer"]
+[node name="WinLabel" type="Label" parent="TurnLayer" unique_id=1056515297]
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
@@ -183,7 +184,7 @@ vertical_alignment = 1
 script = ExtResource("33_vru47")
 scale_pivot = Vector2(0.5, 0.5)
 
-[node name="StatMargin" type="MarginContainer" parent="TurnLayer"]
+[node name="StatMargin" type="MarginContainer" parent="TurnLayer" unique_id=450287040]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -199,10 +200,10 @@ script = ExtResource("33_vru47")
 respect_mobile_safe_area = true
 scale_pivot = Vector2(1, 0)
 
-[node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin"]
+[node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin" unique_id=649822847]
 layout_mode = 2
 
-[node name="TurnLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer"]
+[node name="TurnLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer" unique_id=384107744]
 layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("30_ov3nv")
 theme_override_fonts/bold_font = ExtResource("30_ov3nv")
@@ -215,7 +216,7 @@ scroll_active = false
 autowrap_mode = 0
 horizontal_alignment = 2
 
-[node name="CoreLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer"]
+[node name="CoreLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer" unique_id=1375365711]
 layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("30_ov3nv")
 theme_override_fonts/bold_font = ExtResource("30_ov3nv")
@@ -227,7 +228,7 @@ text = "Core Seen by 3 Pieces
 "
 horizontal_alignment = 2
 
-[node name="SelectionPanel" type="PanelContainer" parent="TurnLayer"]
+[node name="SelectionPanel" type="PanelContainer" parent="TurnLayer" unique_id=295050125]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -237,35 +238,34 @@ offset_left = -348.0
 offset_top = -204.0
 grow_horizontal = 0
 grow_vertical = 0
-script = ExtResource("33_vru47")
+script = ExtResource("21_6ow2y")
 respect_mobile_safe_area = true
 fit_to_mobile_safe_area = true
-scale_pivot = Vector2(1, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel" unique_id=228685583]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer" unique_id=1475764038]
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer" unique_id=1776708019]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=558433225]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 
-[node name="PieceName" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="PieceName" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=1662642103]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 25
 text = "Type: Core"
 
-[node name="Description" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="Description" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=919843517]
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
@@ -273,37 +273,37 @@ theme_override_font_sizes/font_size = 14
 text = "This is the core losing this will lose the game. You will lose if you lose sight of this piece"
 autowrap_mode = 3
 
-[node name="MoveRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="MoveRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=1269350342]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 text = "Move Range = 10"
 
-[node name="VisionRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="VisionRange" type="Label" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=1035319245]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 16
 text = "Vision Range = 4"
 
-[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1646102835]
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_ixihg")
 
-[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer" unique_id=513313234]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer/MarginContainer"]
+[node name="TextureRect" type="TextureRect" parent="TurnLayer/SelectionPanel/MarginContainer/VBoxContainer/HBoxContainer/PanelContainer/MarginContainer" unique_id=291480782]
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 theme = SubResource("Theme_6ow2y")
 texture = ExtResource("31_ixihg")
 stretch_mode = 5
 
-[node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer"]
+[node name="PlayerSwitchOverlay" type="Control" parent="TurnLayer" unique_id=515184986]
 visible = false
 layout_mode = 3
 anchors_preset = 15
@@ -312,7 +312,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ColorRect" type="ColorRect" parent="TurnLayer/PlayerSwitchOverlay"]
+[node name="ColorRect" type="ColorRect" parent="TurnLayer/PlayerSwitchOverlay" unique_id=1158933411]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -321,7 +321,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.18000486, 0.18000486, 0.18000486, 1)
 
-[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/PlayerSwitchOverlay"]
+[node name="PanelContainer" type="PanelContainer" parent="TurnLayer/PlayerSwitchOverlay" unique_id=84071822]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -335,11 +335,11 @@ offset_bottom = 157.5
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer" unique_id=1324602517]
 layout_mode = 2
 theme = SubResource("Theme_ddjlp")
 
-[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
+[node name="NextButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer" unique_id=1615684773]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
 theme_override_colors/icon_normal_color = Color(0, 0, 0, 1)
@@ -348,10 +348,10 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_ddjlp")
 text = "Next Player
 (Normal Turn)"
 
-[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer" unique_id=276171641]
 layout_mode = 2
 
-[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer"]
+[node name="StayButton" type="Button" parent="TurnLayer/PlayerSwitchOverlay/PanelContainer/VBoxContainer" unique_id=1525041160]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
 theme_override_font_sizes/font_size = 50
@@ -360,7 +360,7 @@ text = "Add Turn to
 Current Player
 "
 
-[node name="MarginContainer" type="MarginContainer" parent="TurnLayer"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer" unique_id=2133467993]
 offset_right = 128.0
 offset_bottom = 128.0
 theme_override_constants/margin_left = 10
@@ -370,17 +370,16 @@ theme_override_constants/margin_bottom = 10
 script = ExtResource("33_vru47")
 respect_mobile_safe_area = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/MarginContainer" unique_id=1234970578]
 layout_mode = 2
 
-[node name="Pause" type="Button" parent="TurnLayer/MarginContainer/VBoxContainer"]
+[node name="Pause" type="Button" parent="TurnLayer/MarginContainer/VBoxContainer" unique_id=1994161796]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 50
 icon = ExtResource("32_uukvf")
 
-[node name="SettingsCover" type="Panel" parent="TurnLayer"]
-visible = false
+[node name="SettingsCover" type="Panel" parent="TurnLayer" unique_id=580833331]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -388,7 +387,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_6ow2y")
 
-[node name="PausePanel" type="PanelContainer" parent="TurnLayer/SettingsCover"]
+[node name="PausePanel" type="PanelContainer" parent="TurnLayer/SettingsCover" unique_id=480224231]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -403,19 +402,19 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("35_ixgyq")
 
-[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SettingsCover/PausePanel"]
+[node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SettingsCover/PausePanel" unique_id=753644903]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer" unique_id=633888941]
 custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer" unique_id=520609655]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 70
@@ -423,31 +422,36 @@ text = "PAUSED"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+[node name="MatchInfo" type="Label" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer" unique_id=64256498]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("30_ov3nv")
+theme_override_font_sizes/font_size = 20
+
+[node name="Continue" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer" unique_id=872475038]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.54870695, 1, 0.49903375, 1)
 theme_override_font_sizes/font_size = 30
 text = "Continue"
 
-[node name="Settings" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+[node name="Settings" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer" unique_id=2101394490]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("30_ov3nv")
 theme_override_font_sizes/font_size = 30
 text = "Settings"
 
-[node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer"]
+[node name="Quit" type="Button" parent="TurnLayer/SettingsCover/PausePanel/MarginContainer/VBoxContainer" unique_id=497719929]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.844336, 0, 0.17060888, 1)
 theme_override_font_sizes/font_size = 30
 text = "Quit"
 
-[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="." unique_id=1863260961]
 volume_db = 8.0
 bus = &"Music"
 script = ExtResource("33_music_playlist")
 tracks = Array[AudioStream]([ExtResource("32_6ow2y"), ExtResource("34_funk1"), ExtResource("38_td7wt"), ExtResource("42_4sx66"), ExtResource("43_8eufx"), ExtResource("44_bt4m2"), ExtResource("45_f4ytx"), null])
 
-[node name="GameSounds" type="AudioStreamPlayer" parent="."]
+[node name="GameSounds" type="AudioStreamPlayer" parent="." unique_id=1367855772]
 volume_db = -12.0
 bus = &"Effects"
 

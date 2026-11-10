@@ -12,6 +12,7 @@ var _mobile_safe_rect := Rect2()
 func _ready() -> void:
 	resized.connect(_apply_ui_scale)
 	AppSettings.game_ui_scale_changed.connect(_apply_ui_scale)
+	get_viewport().size_changed.connect(_apply_ui_scale)
 	_apply_ui_scale()
 
 	if respect_mobile_safe_area and (
@@ -55,11 +56,30 @@ func _apply_mobile_safe_area() -> void:
 	offset_right = _base_offsets.z + shift.x
 	offset_top = _base_offsets.y + shift.y
 	offset_bottom = _base_offsets.w + shift.y
+	_apply_ui_scale()
 
 func _apply_ui_scale() -> void:
 	_update_scale_pivot()
-	scale = Vector2.ONE * AppSettings.get_game_ui_scale()
 
+	var factor := AppSettings.get_game_ui_scale()
+
+	if fit_to_mobile_safe_area:
+		var available := get_viewport().get_visible_rect()
+
+		if _mobile_safe_rect.has_area():
+			available = _mobile_safe_rect
+
+		# Keep the panel inside the available screen area.
+		var available_size := available.size - Vector2(24, 24)
+
+		if size.x > 0 and size.y > 0:
+			var fit_factor := minf(
+				maxf(available_size.x, 1.0) / size.x,
+				maxf(available_size.y, 1.0) / size.y
+			)
+			factor = minf(factor, fit_factor)
+
+	scale = Vector2.ONE * factor
 
 func _update_scale_pivot() -> void:
 	pivot_offset = size * scale_pivot

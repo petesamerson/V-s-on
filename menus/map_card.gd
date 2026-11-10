@@ -1,5 +1,10 @@
 extends Button
 
+
+const MAP_PREVIEW_SCRIPT = preload("res://menus/map_preview.gd")
+
+var preview_drawing
+
 @onready var viewport: SubViewport = (
 	$MarginContainer/VBoxContainer/Preview/SubViewport
 )
@@ -61,6 +66,10 @@ func configure(title: String, scene: PackedScene) -> void:
 	tooltip_text = "Choose " + title
 	_update_label(button_pressed)
 
+	if is_instance_valid(preview_drawing):
+		viewport.remove_child(preview_drawing)
+		preview_drawing.queue_free()
+
 	if is_instance_valid(layout):
 		viewport.remove_child(layout)
 		layout.queue_free()
@@ -71,7 +80,14 @@ func configure(title: String, scene: PackedScene) -> void:
 		push_error("Map preview needs a PlayableMap root.")
 		return
 
+	# Hide the gameplay artwork before adding the map.
+	layout.hide()
 	viewport.add_child(layout)
+
+	preview_drawing = MAP_PREVIEW_SCRIPT.new()
+	viewport.add_child(preview_drawing)
+	preview_drawing.configure(layout)
+
 	call_deferred("_fit_preview")
 
 func _update_label(selected: bool) -> void:
@@ -79,6 +95,7 @@ func _update_label(selected: bool) -> void:
 	name_label.modulate = (
 		Color("#00ead4") if selected else Color.WHITE
 	)
+	_resize_card()
 
 func _resize_card() -> void:
 	# Keep previews compact even when the grid has wide columns.
@@ -96,27 +113,13 @@ func _resize_card() -> void:
 	)
 
 func _fit_preview() -> void:
-	if not is_instance_valid(layout):
+	if not is_instance_valid(preview_drawing):
 		return
 
-	var ground := layout.ground
-	var cells := ground.get_used_cells()
+	var bounds: Rect2 = preview_drawing.bounds
 
-	if cells.is_empty():
+	if bounds.size.x <= 0 or bounds.size.y <= 0:
 		return
-
-	var bounds := Rect2(
-		ground.map_to_local(cells[0]),
-		Vector2.ZERO
-	)
-
-	for cell in cells:
-		bounds = bounds.expand(ground.map_to_local(cell))
-
-	# Include each tile's edges.
-	var tile_size := Vector2(ground.tile_set.tile_size)
-	bounds.position -= tile_size * 0.5
-	bounds.size += tile_size
 
 	var viewport_size := Vector2(viewport.size)
 	var available := viewport_size - Vector2(20, 20)
@@ -125,8 +128,8 @@ func _fit_preview() -> void:
 		return
 
 	var zoom := minf(
-		available.x / maxf(bounds.size.x, 1.0),
-		available.y / maxf(bounds.size.y, 1.0)
+		available.x / bounds.size.x,
+		available.y / bounds.size.y
 	)
 
 	viewport.canvas_transform = Transform2D(
@@ -134,7 +137,6 @@ func _fit_preview() -> void:
 		Vector2(0, zoom),
 		viewport_size * 0.5 - bounds.get_center() * zoom
 	)
-
 
 func _make_style(
 	background: Color,

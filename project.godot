@@ -40,4 +40,4 @@ version_control/autoload_on_startup=true
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
-environment/defaults/default_clear_color=Color(0.14044744, 0.14044747, 0.14044738, 1)
+environment/defaults/default_clear_color=Color(0.14406255, 0.14406255, 0.14406255, 1)

@@ -4,10 +4,13 @@
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="2_21hoe"]
 
 [node name="MapCard" type="Button" unique_id=1640756277]
-custom_minimum_size = Vector2(180, 220)
+custom_minimum_size = Vector2(180, 0)
 size_flags_horizontal = 3
+size_flags_vertical = 0
 toggle_mode = true
 script = ExtResource("1_wgmhj")
+preview_background = Color(0.18291757, 0.19336548, 0.19336504, 1)
+metadata/_edit_horizontal_guides_ = [-87.0]
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=2104329074]
 layout_mode = 1
@@ -43,7 +46,7 @@ render_target_update_mode = 4
 
 [node name="MapName" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1740271549]
 layout_mode = 2
+size_flags_vertical = 0
 theme_override_fonts/font = ExtResource("2_21hoe")
 theme_override_font_sizes/font_size = 20
-vertical_alignment = 2
-autowrap_mode = 3
+text_overrun_behavior = 3

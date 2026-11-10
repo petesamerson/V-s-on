@@ -3075,9 +3075,43 @@ func _play_next_sound() -> void:
 	game_sounds.stream = sound_queue.pop_front()
 	game_sounds.play()
 
+
 func _on_pause_pressed() -> void:
+	update_pause_match_info()
 	settings_cover.visible = true
 
+func update_pause_match_info() -> void:
+	var info := settings_cover.get_node(
+		"PausePanel/MarginContainer/VBoxContainer/MatchInfo"
+	) as Label
+
+	var map_name := map_id.capitalize()
+	var mode_text := "Pass and Play"
+
+	if tutorial_mode:
+		map_name = "Tutorial"
+		mode_text = "Tutorial"
+	elif online_game:
+		mode_text = "Online Multiplayer"
+	elif is_instance_valid(cpu_player):
+		var difficulty_names := [
+			"Very Easy",
+			"Easy",
+			"Normal",
+			"Hard",
+			"Very Hard",
+			"Expert",
+		]
+
+		var index := clampi(
+			cpu_player.difficulty - 1,
+			0,
+			difficulty_names.size() - 1
+		)
+
+		mode_text = "CPU: " + difficulty_names[index]
+
+	info.text = "Map: %s\n%s" % [map_name, mode_text]	
 
 func _on_continue_pressed() -> void:
 	settings_cover.visible = false

@@ -31,10 +31,10 @@ shader_parameter/drift_speed = 0.3
 shader_parameter/reduce_animation = false
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nc6jr"]
-content_margin_left = 80.0
-content_margin_top = 80.0
-content_margin_right = 80.0
-content_margin_bottom = 80.0
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
 bg_color = Color(0.16455176, 0.00022931896, 0.26400796, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu7sn"]
@@ -79,8 +79,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("2_kk4mm")
-expand_mode = 1
-stretch_mode = 5
+expand_mode = 2
 
 [node name="MenuBoard" type="Control" parent="MainScreen" unique_id=33099978]
 material = SubResource("ShaderMaterial_dy7ct")
@@ -201,26 +200,30 @@ script = ExtResource("9_rx1ud")
 
 [node name="DiscordContainer" type="PanelContainer" parent="." unique_id=1875814807]
 layout_mode = 1
-anchors_preset = 3
+anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -1225.0
-offset_top = -620.0
+offset_left = -196.0
+offset_top = -68.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 0
 grow_vertical = 0
-scale = Vector2(0.15, 0.15)
 theme_override_styles/panel = SubResource("StyleBoxFlat_nc6jr")
 script = ExtResource("9_kk4mm")
 
 [node name="DiscordButton" type="Button" parent="DiscordContainer" unique_id=2033366550]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.875, 0.875, 0.875, 1)
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 1)
+theme_override_constants/icon_max_width = 50
 theme_override_fonts/font = ExtResource("8_ysfef")
-theme_override_font_sizes/font_size = 159
+theme_override_font_sizes/font_size = 30
 text = "Discord"
 icon = ExtResource("10_68bju")
+expand_icon = true
 
 [node name="SettingsScreen" type="Control" parent="." unique_id=461391223]
 visible = false
@@ -244,6 +247,7 @@ theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
 [node name="CpuSettingsScreen" type="Control" parent="." unique_id=298421756]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
