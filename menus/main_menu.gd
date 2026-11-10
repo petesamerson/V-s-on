@@ -101,8 +101,6 @@ func _ready() -> void:
 	)
 	get_viewport().size_changed.connect(_on_mobile_viewport_resized)
 
-	$DiscordContainer.resized.connect(_update_discord_pivot)
-	_update_discord_pivot()
 	_setup_map_cards()
 	_update_settings_layout()
 
@@ -311,6 +309,7 @@ func update_mobile_scale():
 		close_button.offset_top = 0.0
 		close_button.offset_right = 0.0
 		close_button.offset_bottom = side
+	$DiscordContainer.call_deferred("refresh_layout")
 
 func _update_discord_pivot() -> void:
 	var discord_button_container := $DiscordContainer as PanelContainer

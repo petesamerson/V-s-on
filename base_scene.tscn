@@ -24,7 +24,7 @@
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
 [ext_resource type="Script" uid="uid://b05po3p6ykkd4" path="res://music_playlist.gd" id="33_music_playlist"]
-[ext_resource type="Script" path="res://game_hub_scale.gd" id="33_vru47"]
+[ext_resource type="Script" path="res://menus/game_hub_scale.gd" id="33_vru47"]
 [ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="35_ixgyq"]
 [ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
