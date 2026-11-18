@@ -5,18 +5,12 @@
 [ext_resource type="PackedScene" uid="uid://caic1yu3a6go1" path="res://pieces/Piece.tscn" id="12_01iy8"]
 [ext_resource type="Script" uid="uid://cqa7rx5tlb2hg" path="res://game_camera.gd" id="13_2mb0d"]
 [ext_resource type="PackedScene" uid="uid://m65ucpry42ve" path="res://pieces/TowerRotatePiece.tscn" id="13_jjdbg"]
-[ext_resource type="Script" uid="uid://byauyvv4yigqx" path="res://pieces/TowerRotatePiece.gd" id="14_01iy8"]
 [ext_resource type="PackedScene" uid="uid://y5au8wvdsi7d" path="res://pieces/eye_piece.tscn" id="14_17fj0"]
 [ext_resource type="PackedScene" uid="uid://cmd81nu6wec8w" path="res://pieces/HopPiece.tscn" id="15_hwg3g"]
 [ext_resource type="Texture2D" uid="uid://etdc0bowpxcl" path="res://sprites/capture1.png" id="15_u2j6w"]
 [ext_resource type="PackedScene" uid="uid://clsvmvbnvab3x" path="res://pieces/core_piece.tscn" id="16_do6al"]
-[ext_resource type="Script" uid="uid://ce1udyoosuvs4" path="res://pieces/HopPiece.gd" id="17_ay483"]
 [ext_resource type="PackedScene" uid="uid://oicaiahgfjhr" path="res://pieces/triangle_even_piece.tscn" id="17_ddjlp"]
 [ext_resource type="PackedScene" uid="uid://dgqhmggiljsm5" path="res://pieces/TriangleOddPiece.tscn" id="20_gqdld"]
-[ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://pieces/TriangleOddPiece.gd" id="20_h480d"]
-[ext_resource type="Script" uid="uid://yyorinitem65" path="res://pieces/TriangleEvenPiece.gd" id="21_h480d"]
-[ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://pieces/EyePiece.gd" id="22_ddjlp"]
-[ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://pieces/CorePiece.gd" id="26_u1i3c"]
 [ext_resource type="FontFile" uid="uid://0dgkkplooc23" path="res://fonts/ShareTechMono-Regular.ttf" id="30_ov3nv"]
 [ext_resource type="Script" uid="uid://bqfypsffpebum" path="res://board/board_touch_input.gd" id="31_344q1"]
 [ext_resource type="Texture2D" uid="uid://b65p6wya2ov8p" path="res://sprites/core_piece.png" id="31_ixihg"]
@@ -81,29 +75,6 @@ triangle_odd_piece_scene = ExtResource("20_gqdld")
 triangle_even_piece_scene = ExtResource("17_ddjlp")
 
 [node name="Pieces" type="Node2D" parent="Board" unique_id=1222516599]
-
-[node name="TowerRotatePiece" type="Node2D" parent="Board/Pieces" unique_id=88187508]
-script = ExtResource("14_01iy8")
-metadata/_custom_type_script = "uid://byauyvv4yigqx"
-
-[node name="HopPiece" type="Node2D" parent="Board/Pieces" unique_id=1626373803]
-script = ExtResource("17_ay483")
-metadata/_custom_type_script = "uid://ce1udyoosuvs4"
-
-[node name="TriangleOddPiece" type="Node2D" parent="Board/Pieces" unique_id=1407374514]
-script = ExtResource("20_h480d")
-metadata/_custom_type_script = "uid://bi2bkqvsov0p3"
-
-[node name="TriangleEvenPiece" type="Node2D" parent="Board/Pieces" unique_id=298132480]
-script = ExtResource("21_h480d")
-metadata/_custom_type_script = "uid://yyorinitem65"
-
-[node name="EyePiece" type="Node2D" parent="Board/Pieces" unique_id=841509770]
-script = ExtResource("22_ddjlp")
-
-[node name="CorePiece" type="Node2D" parent="Board/Pieces" unique_id=375656741]
-script = ExtResource("26_u1i3c")
-metadata/_custom_type_script = "uid://daqitf01c6qh3"
 
 [node name="TouchInput" type="Node" parent="Board" unique_id=626583005]
 script = ExtResource("31_344q1")
@@ -202,6 +173,7 @@ scale_pivot = Vector2(1, 0)
 
 [node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin" unique_id=649822847]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="TurnLabel" type="RichTextLabel" parent="TurnLayer/StatMargin/StatContainer" unique_id=384107744]
 layout_mode = 2

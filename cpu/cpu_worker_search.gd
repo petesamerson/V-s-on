@@ -16,6 +16,11 @@ var clones: Dictionary = {}
 var known_cores: Dictionary = {}
 var all_enemies_known: bool = false
 
+var starting_piece_lead: int = 0
+var starting_enemy_support: int = 0
+var late_game_sacrifice_discount: float = 0.0
+var starting_own_material: float = 0.0
+
 var memory_risk: Dictionary = {}
 var early_eye_protection: float = 0.0
 
@@ -66,6 +71,32 @@ func choose(
 	var prep_started_ms: int = Time.get_ticks_msec()
 
 	_build_simulation(live_board)
+
+	starting_piece_lead = 0
+	starting_enemy_support = 0
+
+	late_game_sacrifice_discount = 0.0
+	starting_own_material = 0.0
+
+	var enemy_core := _core(enemy_player)
+	if difficulty >= 4 and all_enemies_known and enemy_core != null:
+		starting_piece_lead = (
+			simulation.player_pieces[cpu_player - 1].size()
+			- simulation.player_pieces[enemy_player - 1].size()
+		)
+		starting_enemy_support = enemy_core.power_count
+		var own_pieces: Array = simulation.player_pieces[cpu_player - 1]
+		var enemy_pieces: Array = simulation.player_pieces[enemy_player - 1]
+		var non_core_count := own_pieces.size() + enemy_pieces.size() - 2
+
+		if starting_piece_lead >= 2 and non_core_count <= 10:
+			late_game_sacrifice_discount = minf(
+				0.50, 0.25 + 0.10 * float(starting_piece_lead - 2)
+			)
+			for piece in own_pieces:
+				if not piece is Model.DataCorePiece:
+					starting_own_material += float(piece.piece_value) * 100.0
+
 	recent_capturer = clones.get(recent_capturer_id) as Model.DataPiece
 
 	var roots: Array[Dictionary] = []
@@ -154,6 +185,12 @@ func choose(
 			return float(a["priority"]) > float(b["priority"])
 	)
 
+	if difficulty >= 4:
+		var winning_attack := _find_core_power_attack(roots)
+		if not winning_attack.is_empty():
+			simulation.dispose()
+			return winning_attack
+
 	# Cheap shortlist before applying and undoing every candidate.
 	roots = _trim_search_actions(roots, cpu_player, 48)
 
@@ -220,6 +257,9 @@ func choose(
 		var iteration_score: float = -INF
 		var alpha: float = -INF
 
+		var use_exchange_extension := difficulty < 5 or depth >= 4
+		var depth_started_ms := Time.get_ticks_msec()
+
 		for action in roots:
 
 			if _expired():
@@ -237,14 +277,19 @@ func choose(
 					depth - 1,
 					enemy_player,
 					alpha,
-					INF
+					INF,
+					use_exchange_extension
 				)
 
 			_pop(action, undo)
 
 			if absf(value) < WIN_SCORE * 0.5:
 				value += _legacy_preference(action)
-
+			print(
+				"CPU depth ", depth, ": ",
+				Time.get_ticks_msec() - depth_started_ms, " ms",
+				" | timed out: ", timed_out
+			)
 			if timed_out:
 				break
 
@@ -444,7 +489,8 @@ func _moves(piece: Model.DataPiece) -> Array[Vector2i]:
 func _actions(
 	side: int,
 	apply_limit: bool = true,
-	captures_only: bool = false
+	captures_only: bool = false,
+	prefer_core_safety: bool = true
 ) -> Array[Dictionary]:
 	simulation.current_player = side
 
@@ -476,16 +522,101 @@ func _actions(
 	)
 
 	if apply_limit:
-		actions = _trim_search_actions(
-			actions, side, branch_limit * 3
-		)
+		actions = _trim_search_actions(actions, side, branch_limit * 3)
 
-	actions = _prefer_core_safe_actions(actions, side)
+	if prefer_core_safety:
+		actions = _prefer_core_safe_actions(actions, side)
 
 	if apply_limit:
 		actions = _trim_search_actions(actions, side, branch_limit)
 
 	return actions
+
+func _find_core_power_attack(roots: Array[Dictionary]) -> Dictionary:
+	var enemy_core := _core(enemy_player)
+	if not all_enemies_known or enemy_core == null:
+		return {}
+	if enemy_core.power_count < 1 or enemy_core.power_count > 2:
+		return {}
+
+	var supporters: Dictionary = {}
+	for piece in simulation.player_pieces[enemy_player - 1]:
+		if piece != enemy_core and piece.cur_vision.has(enemy_core.get_cur_pos()):
+			supporters[piece] = true
+
+	var saved_deadline := deadline
+	var tactic_budget_ms := 100 if starting_piece_lead >= 2 else 35
+	deadline = mini(deadline, Time.get_ticks_msec() + tactic_budget_ms)
+	var result: Dictionary = {}
+
+	for attack in roots:
+		if _expired():
+			break
+
+		var destination: Vector2i = attack["destination"]
+		var target := simulation.get_enemy_piece_at_cell(destination, enemy_player)
+		var takes_support := supporters.has(target)
+
+		var undo := _push(attack)
+		var score := _terminal_score()
+		var wins := score == WIN_SCORE
+
+		if score == 0.0:
+			var replies := _actions(enemy_player, false, false, false)
+			var offers_piece := false
+			for reply in replies:
+				if supporters.has(reply["piece"]) and reply["destination"] == destination:
+					offers_piece = true
+					break
+
+			if not timed_out and (takes_support or offers_piece):
+				wins = _wins_after_every_reply(replies)
+
+		_pop(attack, undo)
+
+		if wins and not _expired():
+			result = attack["original"]
+			break
+
+	deadline = saved_deadline
+	# The tactical pass has its own limit. The regular search uses the
+	# original turn deadline and checks cancellation through _expired().
+	timed_out = false
+	return result
+
+
+func _wins_after_every_reply(replies: Array[Dictionary]) -> bool:
+	if replies.is_empty():
+		return false
+
+	for reply in replies:
+		if _expired():
+			return false
+
+		var undo := _push(reply)
+		var wins := _terminal_score() == 0.0 and _has_immediate_core_win()
+		_pop(reply, undo)
+
+		if not wins:
+			return false
+
+	return not timed_out
+
+
+func _has_immediate_core_win() -> bool:
+	var captures := _actions(cpu_player, false, true, false)
+	for capture in captures:
+		if _expired():
+			return false
+
+		var undo := _push(capture)
+		var wins := _terminal_score() == WIN_SCORE
+		_pop(capture, undo)
+
+		if wins:
+			return true
+
+	return false
 
 func _move_priority(action: Dictionary) -> float:
 	var piece := action["piece"] as Model.DataPiece
@@ -702,6 +833,7 @@ func _evaluate() -> float:
 		return terminal
 
 	var score: float = 0.0
+	var own_material = 0.0
 
 	for side in [cpu_player, enemy_player]:
 		var sign_value: float = 1.0 if side == cpu_player else -1.0
@@ -714,9 +846,11 @@ func _evaluate() -> float:
 
 			if not piece is Model.DataCorePiece:
 				var material_value: float = float(piece.piece_value) * 100.0
+
 				if piece is Model.DataEyePiece:
 					material_value += 300.0 + 600.0 * early_eye_protection
-
+				if side == cpu_player:
+					own_material += material_value
 				score += sign_value * material_value
 
 			for cell in piece.cur_vision:
@@ -757,6 +891,26 @@ func _evaluate() -> float:
 	score -= _memory_danger_cost()
 	score -= _early_eye_danger_cost()
 
+	if starting_piece_lead >= 2:
+		var enemy_core := _core(enemy_player)
+		var remaining_lead = (
+			simulation.player_pieces[cpu_player - 1].size()
+			- simulation.player_pieces[enemy_player - 1].size()
+		)
+		if enemy_core != null and remaining_lead > 0 and enemy_core.power_count <= 2:
+			var support_removed := maxi(0, starting_enemy_support - enemy_core.power_count)
+			var pressure_bonus := minf(900.0, 300.0 * float(starting_piece_lead - 1))
+			score += float(support_removed) * pressure_bonus
+
+	if late_game_sacrifice_discount > 0.0:
+		var remaining_lead = (
+			simulation.player_pieces[cpu_player - 1].size()
+			- simulation.player_pieces[enemy_player - 1].size()
+		)
+		if remaining_lead > 0:
+			var lost_material := maxf(0.0, starting_own_material - own_material)
+			score += lost_material * late_game_sacrifice_discount
+
 	return score
 
 
@@ -764,7 +918,8 @@ func _minimax(
 	depth: int,
 	side: int,
 	alpha: float,
-	beta: float
+	beta: float,
+	use_exchange_extension: bool
 ) -> float:
 
 
@@ -777,6 +932,10 @@ func _minimax(
 		return terminal
 
 	if depth <= 0:
+
+		if not use_exchange_extension:
+			return _evaluate()
+
 		return _search_exchanges(
 			side,
 			alpha,
@@ -802,7 +961,8 @@ func _minimax(
 			depth - 1,
 			next_side,
 			alpha,
-			beta
+			beta,
+			use_exchange_extension
 		)
 
 		_pop(action, undo)

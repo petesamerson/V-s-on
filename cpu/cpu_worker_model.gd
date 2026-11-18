@@ -505,13 +505,16 @@ class DataBoard extends RefCounted:
 			if p.cur_moves.has(move):
 				return true
 		return false
+	
+	func is_walkable_cell(cell: Vector2i) -> bool:
+		return cell_in_board(cell) and not wall_cells.has(cell)
 
 	func move_visible_and_unoccupied(
 		move: Vector2i,
 		currentCell: Vector2i,
 		piece: DataPiece
 	) -> bool:
-		if(cell_in_board(move) && move != currentCell):
+		if(is_walkable_cell(move) && move != currentCell):
 			if(hasCellInVision(piece.owned_player, move)):
 				if(!friendlyPieceExistsAtCell(piece.owned_player,move)):
 					if(!does_move_unpower_core(piece, move)):

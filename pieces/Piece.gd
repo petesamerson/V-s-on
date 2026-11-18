@@ -354,7 +354,7 @@ func handle_move_input_event(event):
 		var from_cell = board.local_to_map(position)
 		var moved = false
 
-		if cell in cur_moves:
+		if cell in cur_moves and board.is_walkable_cell(cell):
 			move_piece(cell)
 			moved = true
 		else:
