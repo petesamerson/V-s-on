@@ -26,6 +26,7 @@ boot_splash/minimum_display_time=2000
 NetworkManager="*res://network_manger.gd"
 AppSettings="*res://app_settings.gd"
 OfflineSave="*res://offline_save.gd"
+AndroidCorners="*res://utils/android_corners.gd"
 
 [display]
 
@@ -39,5 +40,6 @@ version_control/autoload_on_startup=true
 
 [rendering]
 
+renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.14406255, 0.14406255, 0.14406255, 1)

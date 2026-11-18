@@ -311,10 +311,6 @@ func update_mobile_scale():
 		close_button.offset_bottom = side
 	$DiscordContainer.call_deferred("refresh_layout")
 
-func _update_discord_pivot() -> void:
-	var discord_button_container := $DiscordContainer as PanelContainer
-	discord_button_container.pivot_offset = discord_button_container.size
-
 func _on_new_game_pressed() -> void:
 	open_game_setup(SetupMode.CPU)
 

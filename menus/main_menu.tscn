@@ -13,7 +13,7 @@
 [ext_resource type="Script" uid="uid://b6llevmqao3fn" path="res://menus/version_label.gd" id="9_rx1ud"]
 [ext_resource type="Texture2D" uid="uid://1mt42upc0lm4" path="res://sprites/discord-white-icon.png" id="10_68bju"]
 [ext_resource type="AudioStream" uid="uid://85ls8832opdk" path="res://audio/Menu1.wav" id="11_047xs"]
-[ext_resource type="Script" uid="uid://bi86i5nb020oe" path="res://menus/discord_layout.gd" id="11_wcdpt"]
+[ext_resource type="Script" path="res://menus/discord_layout.gd" id="34_corner_layout"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jix8l"]
 bg_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
@@ -214,7 +214,7 @@ offset_bottom = -16.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_nc6jr")
-script = ExtResource("11_wcdpt")
+script = ExtResource("34_corner_layout")
 
 [node name="DiscordButton" type="Button" parent="DiscordContainer" unique_id=2033366550]
 layout_mode = 2

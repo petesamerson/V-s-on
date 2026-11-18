@@ -14,7 +14,6 @@
 [ext_resource type="PackedScene" uid="uid://oicaiahgfjhr" path="res://pieces/triangle_even_piece.tscn" id="17_ddjlp"]
 [ext_resource type="PackedScene" uid="uid://dgqhmggiljsm5" path="res://pieces/TriangleOddPiece.tscn" id="20_gqdld"]
 [ext_resource type="Script" uid="uid://bi2bkqvsov0p3" path="res://pieces/TriangleOddPiece.gd" id="20_h480d"]
-[ext_resource type="Script" uid="uid://d0rfp5t7r56a8" path="res://menus/game_hub_scale.gd" id="21_6ow2y"]
 [ext_resource type="Script" uid="uid://yyorinitem65" path="res://pieces/TriangleEvenPiece.gd" id="21_h480d"]
 [ext_resource type="Script" uid="uid://ftmpuot6b08u" path="res://pieces/EyePiece.gd" id="22_ddjlp"]
 [ext_resource type="Script" uid="uid://daqitf01c6qh3" path="res://pieces/CorePiece.gd" id="26_u1i3c"]
@@ -24,7 +23,7 @@
 [ext_resource type="AudioStream" uid="uid://dt37wghx3s7og" path="res://audio/FirstTrack.wav" id="32_6ow2y"]
 [ext_resource type="Texture2D" uid="uid://cshqn1m5wowx0" path="res://sprites/pause_icon1.png" id="32_uukvf"]
 [ext_resource type="Script" uid="uid://b05po3p6ykkd4" path="res://music_playlist.gd" id="33_music_playlist"]
-[ext_resource type="Script" path="res://menus/game_hub_scale.gd" id="33_vru47"]
+[ext_resource type="Script" uid="uid://d0rfp5t7r56a8" path="res://menus/game_hub_scale.gd" id="33_vru47"]
 [ext_resource type="AudioStream" uid="uid://csqojbpe6senb" path="res://audio/funk1.wav" id="34_funk1"]
 [ext_resource type="Theme" uid="uid://bul14gu2xubjg" path="res://main_theme.tres" id="35_ixgyq"]
 [ext_resource type="AudioStream" uid="uid://cg3hwbs1bipd7" path="res://audio/omnimious1.wav" id="38_td7wt"]
@@ -198,6 +197,7 @@ theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 script = ExtResource("33_vru47")
 respect_mobile_safe_area = true
+mirror_landscape_side_inset = true
 scale_pivot = Vector2(1, 0)
 
 [node name="StatContainer" type="VBoxContainer" parent="TurnLayer/StatMargin" unique_id=649822847]
@@ -238,9 +238,13 @@ offset_left = -348.0
 offset_top = -204.0
 grow_horizontal = 0
 grow_vertical = 0
-script = ExtResource("21_6ow2y")
+script = ExtResource("33_vru47")
 respect_mobile_safe_area = true
 fit_to_mobile_safe_area = true
+mirror_landscape_side_inset = true
+rounded_corner = 2
+flush_right_on_rounded_screen = true
+scale_pivot = Vector2(1, 1)
 
 [node name="MarginContainer" type="MarginContainer" parent="TurnLayer/SelectionPanel" unique_id=228685583]
 layout_mode = 2
@@ -380,6 +384,7 @@ theme_override_font_sizes/font_size = 50
 icon = ExtResource("32_uukvf")
 
 [node name="SettingsCover" type="Panel" parent="TurnLayer" unique_id=580833331]
+visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

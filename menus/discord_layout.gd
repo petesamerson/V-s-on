@@ -1,18 +1,25 @@
 extends PanelContainer
 
 @export var corner_margin := 16.0
-
+var _layout_queued := false
 
 func _ready() -> void:
 	get_viewport().size_changed.connect(_queue_layout)
+	resized.connect(_queue_layout)
+	AndroidCorners.changed.connect(_queue_layout)
 	_queue_layout()
 
 
 func _queue_layout() -> void:
-	call_deferred("refresh_layout")
+	if _layout_queued:
+		return
+
+	_layout_queued = true
+	refresh_layout.call_deferred()
 
 
 func refresh_layout() -> void:
+	_layout_queued = true
 	var button := $DiscordButton as Button
 	var viewport := get_viewport()
 	var screen_rect := viewport.get_visible_rect()
@@ -80,7 +87,25 @@ func refresh_layout() -> void:
 	var right_inset := screen_rect.end.x - safe_rect.end.x
 	var bottom_inset := screen_rect.end.y - safe_rect.end.y
 
+	if OS.has_feature("android") or OS.has_feature("ios"):
+		var top_inset := safe_rect.position.y - screen_rect.position.y
+		bottom_inset = maxf(bottom_inset, top_inset)
+
+		if screen_rect.size.x > screen_rect.size.y:
+			var left_inset := safe_rect.position.x - screen_rect.position.x
+			right_inset = maxf(right_inset, left_inset)
+
 	offset_right = -right_inset - corner_margin
 	offset_bottom = -bottom_inset - corner_margin
 	offset_left = offset_right - desired_size.x
 	offset_top = offset_bottom - desired_size.y
+
+	# Preserve the existing layout unless the physical display curve
+	# requires more clearance above the bottom-right corner.
+	AndroidCorners.adjust(
+		self,
+		AndroidCorners.Corner.BOTTOM_RIGHT
+	)
+
+	# Allow future updates, including screen rotation.
+	_layout_queued = false
