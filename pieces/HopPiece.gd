@@ -89,4 +89,4 @@ func getTypeString() -> String:
 	return "Flake";
 
 func getTypedDescription() -> String:
-	return "This piece can move in the 6 directions but can only move 2 spaces away"
+	return "This piece can move in the 6 directions but can only move 2 spaces away. It is the only piece in the game that can be promoted"

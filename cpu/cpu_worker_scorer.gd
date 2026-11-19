@@ -66,6 +66,11 @@ var observed_enemy_capture_count := 0
 var last_enemy_capturer_id := -1
 
 var cpu_slice_started_us: int = 0
+var promotion_cells: Dictionary = {}
+const PROMOTION_SETUP_WINDOW := 8
+var promotion_moves_remaining := -1
+
+var prioritize_win := false
 
 const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
@@ -85,6 +90,12 @@ func take_turn() -> void:
 		return
 	if board == null or board.current_player != player_number:
 		return
+
+	var eye_count := 0
+	for piece: Model.DataPiece in board.player_pieces[player_number - 1]:
+		if piece is Model.DataEyePiece:
+			eye_count += 1
+	prioritize_win = eye_count > 2
 
 	cpu_slice_started_us = Time.get_ticks_usec()
 	cpu_turn_count += 1
@@ -231,6 +242,25 @@ func take_turn() -> void:
 				clampi(difficulty - 1, 0, 4)
 			]
 			var move_score := score_move(piece, destination, core_under_attack)
+			var early_eye_move_penalty := 0.0
+			if piece is Model.DataEyePiece:
+				var capture_count := (
+					board.player_captures[0].size()
+					+ board.player_captures[1].size()
+				)
+				if capture_count < EARLY_EYE_CAPTURE_LIMIT:
+					var target: Model.DataPiece = null
+					if board.hasCellInVision(player_number, destination):
+						target = board.get_enemy_piece_at_cell(destination, enemy_player)
+					if not target is Model.DataEyePiece:
+						early_eye_move_penalty = 2500.0
+
+			move_score -= early_eye_move_penalty
+			var unprotected_danger := is_unprotected_move(piece, destination)
+			var promotion_bonus := _score_promotion_position(
+				piece, destination, unprotected_danger
+			)
+			move_score += promotion_bonus
 
 			var reversal_penalty: float = return_move_penalty(
 				piece, destination, core_under_attack
@@ -243,8 +273,10 @@ func take_turn() -> void:
 				"piece": piece,
 				"destination": destination,
 				"score": move_score,
+				"early_eye_move_penalty": early_eye_move_penalty,
+				"promotion_bonus": promotion_bonus,
+				"unprotected_danger": unprotected_danger,
 				"reversal_penalty": reversal_penalty,
-				"unprotected_danger": is_unprotected_move(piece, destination),
 				"scout_score": score_scouting_action(
 					piece,
 					piece.get_cur_pos(),
@@ -371,7 +403,11 @@ func take_turn() -> void:
 	if not safer_actions.is_empty():
 		actions = safer_actions
 
-		if should_keep_scouting(enemy_player):
+		var has_safe_promotion := actions.any(
+			func(action: Dictionary) -> bool:
+				return float(action.get("promotion_bonus", 0.0)) > 0.0
+		)
+		if not prioritize_win and not has_safe_promotion and should_keep_scouting(enemy_player):
 			var preferred_scout_actions: Array[Dictionary] = []
 
 			for action in actions:
@@ -454,6 +490,87 @@ func take_turn() -> void:
 		)
 
 	last_enemy_capturer_id = -1
+
+func _score_promotion_position(
+	piece: Model.DataPiece,
+	destination: Vector2i,
+	unprotected_danger: bool
+) -> float:
+
+	if promotion_moves_remaining < 0 or unprotected_danger:
+		return 0.0
+
+	var lands_in_range := promotion_cells.has(destination)
+	var claims_now := (
+		promotion_moves_remaining <= 1
+		and piece is Model.DataHopPiece
+		and lands_in_range
+	)
+	var claim_bonus := 0.0
+	if claims_now:
+		claim_bonus = 900.0 if prioritize_win else 1500.0
+
+	if prioritize_win:
+		return claim_bonus
+	var denial_bonus := 0.0
+
+	if promotion_moves_remaining <= 3 and lands_in_range:
+		if board.hasCellInVision(piece.owned_player, destination):
+			var enemy := board.get_enemy_piece_at_cell(
+				destination, 3 - piece.owned_player
+			)
+			if enemy is Model.DataHopPiece:
+				denial_bonus = 180.0
+				if promotion_moves_remaining <= 2:
+					denial_bonus = 320.0
+
+	if piece is not Model.DataHopPiece:
+		return denial_bonus
+
+	if promotion_moves_remaining <= 1:
+		if claims_now:
+			return denial_bonus + claim_bonus
+
+		var origin := piece.get_cur_pos()
+		var distance_before := hex_distance(origin, board.board_center)
+		var distance_after := hex_distance(destination, board.board_center)
+		var progress := clampf(float(distance_before - distance_after), 0.0, 3.0)
+		return denial_bonus + 160.0 * progress
+
+	if promotion_moves_remaining > PROMOTION_SETUP_WINDOW:
+		return 0.0
+
+	var urgency := 1.0 - float(promotion_moves_remaining - 2) / 8.0
+	var origin := piece.get_cur_pos()
+	var score := 0.0
+
+	if not piece is Model.DataEyePiece:
+		var starts_in_range := promotion_cells.has(origin)
+		var ally_in_range := false
+		for ally: Model.DataPiece in board.player_pieces[piece.owned_player - 1]:
+			if ally == piece or not ally is Model.DataHopPiece:
+				continue
+			if promotion_cells.has(ally.get_cur_pos()):
+				ally_in_range = true
+				break
+
+		if not ally_in_range:
+			if starts_in_range and not lands_in_range:
+				score -= 140.0
+			elif not starts_in_range:
+				if lands_in_range:
+					score += 240.0
+				else:
+					var before := hex_distance(origin, board.board_center)
+					var after := hex_distance(destination, board.board_center)
+					score += 100.0 * clampf(float(before - after), 0.0, 3.0)
+
+	if lands_in_range and board.hasCellInVision(piece.owned_player, destination):
+		var enemy := board.get_enemy_piece_at_cell(destination, 3 - piece.owned_player)
+		if enemy != null:
+			score += 80.0
+
+	return score * urgency + denial_bonus
 
 func is_move_threatened(destination: Vector2i) -> bool:
 	var enemy_player := 1 if player_number == 2 else 2

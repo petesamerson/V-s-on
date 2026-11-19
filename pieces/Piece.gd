@@ -161,6 +161,8 @@ func can_control_piece() -> bool:
 		return false	
 	if owned_player != board.current_player:
 		return false
+	if board.promotion_pending:
+		return false
 	if board.online_game and owned_player != board.local_player:
 		return false
 	if is_instance_valid(board.cpu_player):

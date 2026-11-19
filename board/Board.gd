@@ -60,6 +60,9 @@ var player_selected_outlines: Array[TileMapLayer] = []
 var player_move_fills: Array[TileMapLayer] = []
 var core_attacker_highlights: TileMapLayer
 
+var enemy_promotion_label: Label
+var enemy_promotion_timer: Timer
+
 @export var white_fill_source_id: int
 @export var white_outline_source_id: int
 
@@ -132,6 +135,8 @@ func _ready() -> void:
 		NetworkManager.network_error.connect(_on_online_network_error)
 	elif play_vs_cpu:
 		intialize_cpu_player(2)
+
+	_refresh_promotion_marker()
 
 func _on_mobile_viewport_resized() -> void:
 	update_mobile_scale()
@@ -853,9 +858,287 @@ func spawn_player_location(center: Vector2i, player: int):
 		rotate_piece.draw_vision_change()
 
 
-# func remove_piece(piece: Piece):
-# 	player_pieces[piece.owned_player - 1].erase(piece)
-# 	pieces_container.remove_child(piece)
+signal promotion_chosen(kind: String)
+
+const PROMOTION_TEXTURE: Texture2D = preload("res://sprites/premotion1.png")
+const PROMOTION_FIRST_TURN := 40
+const PROMOTION_RESPAWN_TURNS := 10
+
+const PROMOTION_CHOICES := {
+	"EyePiece.gd": "Eye",
+	"HopPiece.gd": "Flake",
+	"TriangleOddPiece.gd": "Trihex",
+	"TriangleEvenPiece.gd": "Trihex",
+	"TowerRotatePiece.gd": "Sentry",
+}
+
+var piece_images := {
+	"EyePiece.gd": preload("res://sprites/eye_piece.png"),
+	"HopPiece.gd": preload("res://sprites/Hop2.6.png"),
+	"TriangleOddPiece.gd": preload("res://sprites/triangle_piece.png"),
+	"TriangleEvenPiece.gd": preload("res://sprites/triangle_piece.png"),
+	"TowerRotatePiece.gd": preload("res://sprites/tower1.png"),
+}
+var piece_rotations := {
+	"TriangleOddPiece.gd": -30.0,
+	"TriangleEvenPiece.gd": 30.0,
+	"TowerRotatePiece.gd": -30.0,
+}
+
+var promotion_turns_remaining := PROMOTION_FIRST_TURN - 1
+var promotion_pending := false
+var promotion_marker: Sprite2D
+var promotion_has_been_claimed := false
+var promotion_countdown_label: Label
+var promotion_highlight_layer: TileMapLayer
+
+func _promotion_enabled() -> bool:
+	return not tutorial_mode and not online_game
+
+func _refresh_promotion_marker() -> void:
+	if not _promotion_enabled():
+		return
+
+	if promotion_marker == null:
+		promotion_marker = Sprite2D.new()
+		promotion_marker.name = "PromotionPickup"
+		promotion_marker.texture = PROMOTION_TEXTURE
+		promotion_marker.position = map_to_local(board_center)
+		promotion_marker.z_index = 6
+
+		var texture_size := PROMOTION_TEXTURE.get_size()
+		var longest_side := maxf(texture_size.x, texture_size.y)
+		promotion_marker.scale = Vector2.ONE * (100.0 / longest_side)
+		add_child(promotion_marker)
+
+	promotion_marker.visible = promotion_turns_remaining == 0
+	_refresh_promotion_display()
+
+func _refresh_promotion_display() -> void:
+	if promotion_countdown_label == null:
+		promotion_countdown_label = Label.new()
+		promotion_countdown_label.name = "PromotionCountdown"
+		promotion_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		promotion_countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		promotion_countdown_label.add_theme_font_override(
+			"font", turn_label.get_theme_font("normal_font")
+		)
+		promotion_countdown_label.add_theme_font_size_override("font_size", 24)
+		promotion_countdown_label.add_theme_color_override(
+			"font_color", Color(1.0, 0.87, 0.48)
+		)
+		promotion_countdown_label.add_theme_color_override(
+			"font_outline_color", Color.BLACK
+		)
+		promotion_countdown_label.add_theme_constant_override("outline_size", 6)
+		stat_container.add_child(promotion_countdown_label)
+		stat_container.move_child(promotion_countdown_label, 1)
+
+	if promotion_highlight_layer == null:
+		promotion_highlight_layer = create_highlight_layer(
+			"PromotionClaimTiles", Color(1.0, 0.72, 0.22, 0.36)
+		)
+		promotion_highlight_layer.z_index = 3
+
+		var claim_cells := get_surrounding_cells(board_center)
+		claim_cells.append(board_center)
+		for cell in claim_cells:
+			if is_walkable_cell(cell):
+				promotion_highlight_layer.set_cell(
+					cell, white_fill_source_id, Vector2i.ZERO
+				)
+
+	var remaining := promotion_turns_remaining
+	promotion_countdown_label.visible = (
+		promotion_has_been_claimed and remaining >= 1 and remaining <= 3
+	)
+	if promotion_countdown_label.visible:
+		var unit := "move" if remaining == 1 else "moves"
+		promotion_countdown_label.text = "Promotion respawns in %d %s" % [
+			remaining, unit
+		]
+
+		promotion_highlight_layer.clear()
+
+	var pickup_active := remaining == 0
+	var warning_active := promotion_countdown_label.visible
+
+	if pickup_active or warning_active:
+		if is_walkable_cell(board_center):
+			promotion_highlight_layer.set_cell(
+				board_center, white_fill_source_id, Vector2i.ZERO
+			)
+
+	if pickup_active:
+		for cell in get_surrounding_cells(board_center):
+			if is_walkable_cell(cell):
+				promotion_highlight_layer.set_cell(
+					cell, white_fill_source_id, Vector2i.ZERO
+				)
+
+	promotion_highlight_layer.visible = pickup_active or warning_active
+	
+
+func _resolve_promotion(moved_piece: Piece) -> Piece:
+	var spawned_this_move := promotion_turns_remaining == 1
+
+	if promotion_turns_remaining > 0:
+		promotion_turns_remaining -= 1
+		_refresh_promotion_marker()
+		if promotion_turns_remaining > 0:
+			return moved_piece
+
+	var claim_cells := get_surrounding_cells(board_center)
+	claim_cells.append(board_center)
+
+	var moving_side := moved_piece.owned_player
+	var claimants: Array[Piece] = []
+
+	if spawned_this_move:
+		for side: int in [moving_side, 3 - moving_side]:
+			if side == moving_side and moved_piece is HopPiece:
+				if moved_piece.get_cur_pos() in claim_cells:
+					claimants.append(moved_piece)
+					continue
+
+			for piece: Piece in player_pieces[side - 1]:
+				if piece is HopPiece and piece.get_cur_pos() in claim_cells:
+					claimants.append(piece)
+					break
+	elif moved_piece is HopPiece and moved_piece.get_cur_pos() in claim_cells:
+		claimants.append(moved_piece)
+
+	if claimants.is_empty():
+		return moved_piece
+
+	promotion_pending = true
+	promotion_has_been_claimed = true
+	promotion_turns_remaining = PROMOTION_RESPAWN_TURNS
+	_refresh_promotion_marker()
+
+	var result_piece := moved_piece
+	for claimant in claimants:
+		var claimant_moved := claimant == moved_piece
+		var owner := claimant.owned_player
+		var cpu_claimed := (
+			is_instance_valid(cpu_player)
+			and owner == cpu_player.player_number
+		)
+
+		var new_kind := "EyePiece.gd"
+		if not cpu_claimed:
+			new_kind = await _choose_promotion("HopPiece.gd", owner)
+
+		var old_id := claimant.get_instance_id()
+		var was_cpu_last_move := cpu_claimed and cpu_player.last_moved_piece == claimant
+		var replacement := _replace_promoted_piece(claimant, new_kind)
+
+		if cpu_claimed:
+			if was_cpu_last_move:
+				cpu_player.last_moved_piece = replacement
+			for record: Dictionary in cpu_player.recent_moves:
+				if int(record.get("id", -1)) == old_id:
+					record["id"] = replacement.get_instance_id()
+
+		if claimant_moved:
+			result_piece = replacement
+
+	promotion_pending = false
+	return result_piece
+
+func _choose_promotion(current_kind: String, owner: int) -> String:
+	var picker := Window.new()
+	picker.title = "Promote piece"
+	picker.transient = true
+	picker.exclusive = true
+	picker.unresizable = true
+	add_child(picker)
+
+	var panel := PanelContainer.new()
+	picker.add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 16)
+	panel.add_child(margin)
+
+	var choices := VBoxContainer.new()
+	choices.add_theme_constant_override("separation", 8)
+	margin.add_child(choices)
+
+	for kind: String in PROMOTION_CHOICES:
+		if kind == current_kind:
+			continue
+
+		var button := Button.new()
+		button.tooltip_text = PROMOTION_CHOICES[kind]
+		button.custom_minimum_size.y = 72.0
+		button.pressed.connect(promotion_chosen.emit.bind(kind))
+		choices.add_child(button)
+
+		var center := CenterContainer.new()
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(center)
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+		var icon_frame := Control.new()
+		icon_frame.custom_minimum_size = Vector2(48.0, 48.0)
+		icon_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		center.add_child(icon_frame)
+
+		var icon := TextureRect.new()
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.texture = piece_images[kind]
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_frame.add_child(icon)
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.pivot_offset = Vector2(24.0, 24.0)
+		icon.rotation_degrees = piece_rotations.get(kind, 0.0)
+
+	var picker_size := Vector2i(panel.get_combined_minimum_size().ceil())
+	picker_size.x = maxi(picker_size.x, 240)
+	picker.popup_centered(picker_size)
+	(choices.get_child(0) as Button).grab_focus()
+
+	var chosen_kind: String = await promotion_chosen
+	picker.hide()
+	picker.queue_free()
+	return chosen_kind
+
+
+func _replace_promoted_piece(old_piece: Piece, kind: String) -> Piece:
+	var scene: PackedScene = _saved_piece_scenes()[kind]
+	var replacement := scene.instantiate() as Piece
+	var owner := old_piece.owned_player
+	var side := owner - 1
+	var cell := old_piece.get_cur_pos()
+	var old_id := old_piece.get_instance_id()
+
+	replacement.owned_player = owner
+	var piece_index: int = player_pieces[side].find(old_piece)
+	player_pieces[side][piece_index] = replacement
+
+	pieces_container.remove_child(old_piece)
+	old_piece.queue_free()
+	pieces_container.add_child(replacement)
+	replacement.setup(cell, self)
+	replacement.cur_vision = replacement.get_potential_vision(cell)
+
+	if side < player_last_moves.size() and player_last_moves[side] == old_piece:
+		player_last_moves[side] = replacement
+
+	if last_capture_capturer_ids[side] == old_id:
+		last_capture_capturer_ids[side] = replacement.get_instance_id()
+
+	update_all_piece_vision()
+	update_core_power()
+	if owner == get_viewer_player():
+		update_selection_panel(replacement)
+	_show_enemy_promotion(owner)
+	return replacement
+
 
 var play_capture: bool = false
 var enemy_captured_this_turn = false
@@ -944,38 +1227,24 @@ func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
 
 	return null
 
-# func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
-# 	var viewer := local_player if online_game else current_player
-# 	clear_board()
-# 	if(current_player == 1):
-# 		for p in player_pieces[0]:
-# 			if(!excluded_pieces.has(p)):
-# 				p.draw_current_vision()
-# 				p.update_piece_color()
-# 		for p in player_pieces[0]:
-# 			p.visible = true
-# 		for p in player_pieces[1]:
-# 			p.visible = false
-# 	else:
-# 		if(cpu_player == null):
-# 			for p in player_pieces[1]:
-# 				if(!excluded_pieces.has(p)):
-# 					p.draw_current_vision()
-# 					p.update_piece_color()
-# 			for p in player_pieces[0]:
-# 				p.visible = false
-# 			for p in player_pieces[1]:
-# 				p.visible = true
+func _show_enemy_promotion(owner: int) -> void:
+	if owner == get_viewer_player():
+		return
 
-# 	for i in player_pieces.size():
-# 		for j in player_pieces[i].size():
-# 			for v in player_pieces[i][j].cur_vision:
-# 				player_vision_tiles[i].append(v)
-# 				if (hasEnemyPieceInVision(current_player, v)):
-# 					setEnemyPieceVisiblity(v, true)
+	if enemy_promotion_label == null:
+		enemy_promotion_label = promotion_countdown_label.duplicate() as Label
+		enemy_promotion_label.name = "EnemyPromotionNotice"
+		enemy_promotion_label.text = "Enemy promoted"
+		stat_container.add_child(enemy_promotion_label)
+		stat_container.move_child(enemy_promotion_label, 2)
 
-# 	if(cpu_player == null || current_player == 1):
-# 		update_core_power()
+		enemy_promotion_timer = Timer.new()
+		enemy_promotion_timer.one_shot = true
+		add_child(enemy_promotion_timer)
+		enemy_promotion_timer.timeout.connect(enemy_promotion_label.hide)
+
+	enemy_promotion_label.show()
+	enemy_promotion_timer.start(3.0)
 
 func update_all_piece_vision(excluded_pieces: Array[Piece] = []):
 	var viewer := get_viewer_player()
@@ -1701,6 +1970,9 @@ func end_turn(movedPiece: Piece):
 		update_core_power()
 		tutorial_turn_completed.emit()
 		return
+
+	if _promotion_enabled():
+		movedPiece = await _resolve_promotion(movedPiece)
 
 	if not online_game:
 		if is_instance_valid(cpu_player):
@@ -2627,15 +2899,9 @@ func _on_next_pressed() -> void:
 
 	current_player = 2 if current_player == 1 else 1
 	update_all_piece_vision()
-	# move_camera_to_core()
 	turn_menu.hide()
 	save_offline_checkpoint()
 	var camera_sequence: int = camera.begin_auto_camera_sequence()
-	# if(player_last_moves.size() == player_pieces.size()):
-	# 	await update_move_camera(
-	# 		player_last_moves[current_player - 1]
-	# 	)
-		# Show the enemy's last move, if it is visible to the incoming player.
 	
 	
 
@@ -2722,6 +2988,8 @@ func save_offline_checkpoint(
 		"captures": captures,
 		"current_player": current_player if saved_player < 0 else saved_player,
 		"turn": turn,
+		"promotion_turns_remaining": promotion_turns_remaining,
+		"promotion_has_been_claimed": promotion_has_been_claimed,
 		"handoff_pending": handoff_pending,
 		"play_vs_cpu": play_vs_cpu,
 		"colors": GameColors.selected_color_indices.duplicate(),
@@ -2798,6 +3066,12 @@ func restore_offline_checkpoint(data: Dictionary) -> bool:
 	game_setup_complete = false
 	current_player = int(data["current_player"])
 	turn = int(data.get("turn", 1))
+	promotion_turns_remaining = maxi(
+		0,
+		int(data.get("promotion_turns_remaining", PROMOTION_FIRST_TURN - 1))
+	)
+	promotion_has_been_claimed = bool(data.get("promotion_has_been_claimed", false))
+	_refresh_promotion_marker()
 
 	for child in pieces_container.get_children():
 		pieces_container.remove_child(child)
@@ -2890,7 +3164,7 @@ func restore_offline_checkpoint(data: Dictionary) -> bool:
 		board_center
 	)
 	var saved_zoom: Vector2 = data.get("camera_zoom", Vector2.ONE)
-	camera.zoom = Vector2.ONE * clampf(saved_zoom.x, 0.4, 3.0)
+	camera.zoom = Vector2.ONE * clampf(saved_zoom.x, 0.4, 2.0)
 	camera.rebuild_map_bounds()
 	camera.force_update_scroll()
 	board_effects.start_resumed_game()

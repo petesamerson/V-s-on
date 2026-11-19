@@ -35,6 +35,17 @@ func prepare(cpu: Node) -> void:
 	engine.player_number = cpu.get("player_number")
 	engine.difficulty = cpu.get("difficulty")
 
+	engine.promotion_cells.clear()
+	engine.promotion_moves_remaining = -1
+
+	if source_board._promotion_enabled():
+		engine.promotion_moves_remaining = source_board.promotion_turns_remaining
+		var center: Vector2i = source_board.board_center
+		engine.promotion_cells[center] = true
+		for cell: Vector2i in source_board.get_surrounding_cells(center):
+			if source_board.is_walkable_cell(cell):
+				engine.promotion_cells[cell] = true
+
 	for side in range(2):
 		engine.board.player_captures[side].resize(
 			source_board.player_captures[side].size()

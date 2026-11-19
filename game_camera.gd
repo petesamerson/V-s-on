@@ -34,7 +34,7 @@ var wasPinched := false
 var touches: Dictionary = {}
 var previous_pinch_distance := 0.0
 const MIN_ZOOM := 0.4
-const MAX_ZOOM := 3.0
+const MAX_ZOOM := 2.0
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMagnifyGesture and not is_mobile_browser:

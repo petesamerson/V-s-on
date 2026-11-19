@@ -15,7 +15,7 @@ tile_map_data = PackedByteArray("AAD8//z/EAAAAAAAAAD9//z/EAAAAAAAAAD+//z/EAAAAAA
 tile_set = ExtResource("1_shohk")
 
 [node name="Center" type="Marker2D" parent="." unique_id=1393458318]
-position = Vector2(-7, -100)
+position = Vector2(-12, 50)
 
 [node name="Spawns" type="Node2D" parent="." unique_id=963728706]
 

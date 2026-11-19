@@ -18,12 +18,10 @@ var all_enemies_known: bool = false
 
 var starting_piece_lead: int = 0
 var starting_enemy_support: int = 0
-var late_game_sacrifice_discount: float = 0.0
-var starting_own_material: float = 0.0
+var depowering_bonus_per_support := 0.0
 
 var memory_risk: Dictionary = {}
 var early_eye_protection: float = 0.0
-
 var initial_known_tiles: Dictionary = {}
 var initial_positions: Dictionary = {}
 var recent_capturer: Model.DataPiece
@@ -36,6 +34,13 @@ var aggression: float = 1.0
 
 const SEARCH_SLICE_US: int = 4000
 const EXCHANGE_EXTENSION_DEPTH: int = 1
+
+const SENTRY_OPENING_CAPTURE_LIMIT := 8
+
+var opening_sentry_protection := false
+var starting_cpu_sentries := 0
+var starting_enemy_sentries := 0
+var opening_sentry_recapture := false
 
 const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
@@ -71,12 +76,20 @@ func choose(
 	var prep_started_ms: int = Time.get_ticks_msec()
 
 	_build_simulation(live_board)
+	var captures_so_far := (
+		live_board.player_captures[0].size()
+		+ live_board.player_captures[1].size()
+	)
+	opening_sentry_protection = captures_so_far < SENTRY_OPENING_CAPTURE_LIMIT
+
+	if opening_sentry_protection:
+		starting_cpu_sentries = _count_sentries(cpu_player)
+		starting_enemy_sentries = _count_sentries(enemy_player)
 
 	starting_piece_lead = 0
 	starting_enemy_support = 0
 
-	late_game_sacrifice_discount = 0.0
-	starting_own_material = 0.0
+	depowering_bonus_per_support = 0.0
 
 	var enemy_core := _core(enemy_player)
 	if difficulty >= 4 and all_enemies_known and enemy_core != null:
@@ -89,13 +102,16 @@ func choose(
 		var enemy_pieces: Array = simulation.player_pieces[enemy_player - 1]
 		var non_core_count := own_pieces.size() + enemy_pieces.size() - 2
 
-		if starting_piece_lead >= 2 and non_core_count <= 10:
-			late_game_sacrifice_discount = minf(
-				0.50, 0.25 + 0.10 * float(starting_piece_lead - 2)
-			)
-			for piece in own_pieces:
-				if not piece is Model.DataCorePiece:
-					starting_own_material += float(piece.piece_value) * 100.0
+		if difficulty >= 5:
+			var eye_count := 0
+			for piece: Model.DataPiece in own_pieces:
+				if piece is Model.DataEyePiece:
+					eye_count += 1
+
+			if eye_count >= 4:
+				depowering_bonus_per_support += 700.0
+			if non_core_count <= 10:
+				depowering_bonus_per_support += 450.0
 
 	recent_capturer = clones.get(recent_capturer_id) as Model.DataPiece
 
@@ -265,6 +281,13 @@ func choose(
 			if _expired():
 				break
 
+			opening_sentry_recapture = (
+				opening_sentry_protection
+				and action["piece"] is Model.DataTowerRotatePiece
+				and is_instance_valid(recent_capturer)
+				and action["destination"] == recent_capturer.get_cur_pos()
+			)
+
 			var undo: Dictionary = _push(action)
 
 			var value: float
@@ -280,7 +303,7 @@ func choose(
 					INF,
 					use_exchange_extension
 				)
-
+			opening_sentry_recapture = false
 			_pop(action, undo)
 
 			if absf(value) < WIN_SCORE * 0.5:
@@ -345,6 +368,12 @@ func choose(
 	simulation.dispose()
 	return best_original
 
+func _count_sentries(side: int) -> int:
+	var count := 0
+	for piece: Model.DataPiece in simulation.player_pieces[side - 1]:
+		if piece is Model.DataTowerRotatePiece:
+			count += 1
+	return count
 
 func _build_simulation(
 	live_board: Model.DataBoard,
@@ -732,12 +761,20 @@ func _legacy_preference(action: Dictionary) -> float:
 
 	# Remove the penalty from the discounted score, then apply it once
 	# at full strength.
+	var promotion_bonus := float(original.get("promotion_bonus", 0.0))
+	var early_eye_move_penalty := float(original.get("early_eye_move_penalty", 0.0))
+	var base_score := (
+		original_score + reversal_penalty - promotion_bonus + early_eye_move_penalty
+	)
+
 	return (
-		clampf(original_score + reversal_penalty, -5000.0, 5000.0) * 0.05
+		clampf(base_score, -5000.0, 5000.0) * 0.05
 		+ recapture_bonus
 		+ activity_preference
 		- reversal_penalty
-)
+		+ promotion_bonus
+		- early_eye_move_penalty
+	)
 
 func _push(action: Dictionary) -> Dictionary:
 	var piece := action["piece"] as Model.DataPiece
@@ -833,7 +870,7 @@ func _evaluate() -> float:
 		return terminal
 
 	var score: float = 0.0
-	var own_material = 0.0
+
 
 	for side in [cpu_player, enemy_player]:
 		var sign_value: float = 1.0 if side == cpu_player else -1.0
@@ -849,8 +886,6 @@ func _evaluate() -> float:
 
 				if piece is Model.DataEyePiece:
 					material_value += 300.0 + 600.0 * early_eye_protection
-				if side == cpu_player:
-					own_material += material_value
 				score += sign_value * material_value
 
 			for cell in piece.cur_vision:
@@ -891,26 +926,33 @@ func _evaluate() -> float:
 	score -= _memory_danger_cost()
 	score -= _early_eye_danger_cost()
 
-	if starting_piece_lead >= 2:
-		var enemy_core := _core(enemy_player)
+	var enemy_core := _core(enemy_player)
+	if all_enemies_known and enemy_core != null:
+		var support_removed := maxi(0, starting_enemy_support - enemy_core.power_count)
+		var pressure_per_support := depowering_bonus_per_support
+
 		var remaining_lead = (
 			simulation.player_pieces[cpu_player - 1].size()
 			- simulation.player_pieces[enemy_player - 1].size()
 		)
-		if enemy_core != null and remaining_lead > 0 and enemy_core.power_count <= 2:
-			var support_removed := maxi(0, starting_enemy_support - enemy_core.power_count)
-			var pressure_bonus := minf(900.0, 300.0 * float(starting_piece_lead - 1))
-			score += float(support_removed) * pressure_bonus
+		if starting_piece_lead >= 2 and remaining_lead > 0 and enemy_core.power_count <= 2:
+			pressure_per_support += minf(
+				900.0, 300.0 * float(starting_piece_lead - 1)
+			)
 
-	if late_game_sacrifice_discount > 0.0:
-		var remaining_lead = (
-			simulation.player_pieces[cpu_player - 1].size()
-			- simulation.player_pieces[enemy_player - 1].size()
-		)
-		if remaining_lead > 0:
-			var lost_material := maxf(0.0, starting_own_material - own_material)
-			score += lost_material * late_game_sacrifice_discount
+		score += float(support_removed) * pressure_per_support
 
+	if opening_sentry_protection:
+		var cpu_sentries_left := _count_sentries(cpu_player)
+		var cpu_sentries_lost := starting_cpu_sentries - cpu_sentries_left
+		var enemy_sentries_lost := starting_enemy_sentries - _count_sentries(enemy_player)
+		var sentry_exchanges := mini(cpu_sentries_lost, enemy_sentries_lost)
+		if opening_sentry_recapture:
+			sentry_exchanges = maxi(0, sentry_exchanges - 1)
+		if sentry_exchanges > 0:
+			score -= 800.0 * float(sentry_exchanges)
+			if cpu_sentries_left == 0:
+				score -= 450.0
 	return score
 
 
