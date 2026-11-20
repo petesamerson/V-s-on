@@ -759,12 +759,15 @@ func _legacy_preference(action: Dictionary) -> float:
 		original.get("reversal_penalty", 0.0)
 	)
 
-	# Remove the penalty from the discounted score, then apply it once
-	# at full strength.
 	var promotion_bonus := float(original.get("promotion_bonus", 0.0))
+	var development_bonus := float(original.get("development_bonus", 0.0))
 	var early_eye_move_penalty := float(original.get("early_eye_move_penalty", 0.0))
 	var base_score := (
-		original_score + reversal_penalty - promotion_bonus + early_eye_move_penalty
+		original_score
+		+ reversal_penalty
+		- promotion_bonus
+		- development_bonus
+		+ early_eye_move_penalty
 	)
 
 	return (
@@ -773,6 +776,7 @@ func _legacy_preference(action: Dictionary) -> float:
 		+ activity_preference
 		- reversal_penalty
 		+ promotion_bonus
+		+ development_bonus
 		- early_eye_move_penalty
 	)
 
@@ -1466,6 +1470,7 @@ func _early_eye_danger_cost() -> float:
 
 func _scouting_score() -> float:
 	var cheapest_revealer: Dictionary = {}
+	var safe_sentry_vision: Dictionary = {}
 	var risk_penalty: float = 0.0
 	var development_reward: float = 0.0
 
@@ -1492,6 +1497,10 @@ func _scouting_score() -> float:
 				break
 
 		var threatened: bool = simulation.is_piece_under_attack(piece)
+		if piece is Model.DataTowerRotatePiece and not threatened:
+			for cell in piece.cur_vision:
+				if simulation.cell_in_board(cell):
+					safe_sentry_vision[cell] = true
 		var reward_factor: float = 1.0
 		if not supported:
 			reward_factor = 0.45
@@ -1535,6 +1544,7 @@ func _scouting_score() -> float:
 	return (
 		minf(exploration_reward, 160.0)
 		+ minf(development_reward, 30.0)
+		+ minf(float(safe_sentry_vision.size()) * 3.0, 120.0)
 		- risk_penalty
 	)
 

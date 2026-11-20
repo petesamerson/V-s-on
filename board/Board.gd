@@ -925,7 +925,7 @@ func _refresh_promotion_display() -> void:
 		)
 		promotion_countdown_label.add_theme_font_size_override("font_size", 24)
 		promotion_countdown_label.add_theme_color_override(
-			"font_color", Color(1.0, 0.87, 0.48)
+			"font_color", Color.WHITE
 		)
 		promotion_countdown_label.add_theme_color_override(
 			"font_outline_color", Color.BLACK
@@ -936,32 +936,25 @@ func _refresh_promotion_display() -> void:
 
 	if promotion_highlight_layer == null:
 		promotion_highlight_layer = create_highlight_layer(
-			"PromotionClaimTiles", Color(1.0, 0.72, 0.22, 0.36)
+			"PromotionClaimTiles", Color.WHITE
 		)
 		promotion_highlight_layer.z_index = 3
 
-		var claim_cells := get_surrounding_cells(board_center)
-		claim_cells.append(board_center)
-		for cell in claim_cells:
-			if is_walkable_cell(cell):
-				promotion_highlight_layer.set_cell(
-					cell, white_fill_source_id, Vector2i.ZERO
-				)
-
 	var remaining := promotion_turns_remaining
-	promotion_countdown_label.visible = (
-		promotion_has_been_claimed and remaining >= 1 and remaining <= 3
-	)
-	if promotion_countdown_label.visible:
+	var pickup_active := remaining == 0
+	var warning_active := remaining >= 1 and remaining <= 3
+
+	promotion_countdown_label.visible = pickup_active or warning_active
+	if pickup_active:
+		promotion_countdown_label.text = "Promotion available"
+	elif warning_active:
 		var unit := "move" if remaining == 1 else "moves"
-		promotion_countdown_label.text = "Promotion respawns in %d %s" % [
-			remaining, unit
+		var verb := "respawns" if promotion_has_been_claimed else "spawns"
+		promotion_countdown_label.text = "Promotion %s in %d %s" % [
+			verb, remaining, unit
 		]
 
-		promotion_highlight_layer.clear()
-
-	var pickup_active := remaining == 0
-	var warning_active := promotion_countdown_label.visible
+	promotion_highlight_layer.clear()
 
 	if pickup_active or warning_active:
 		if is_walkable_cell(board_center):
