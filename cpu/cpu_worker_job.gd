@@ -19,6 +19,10 @@ var initial_directions: Dictionary = {}
 
 const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
+var budget_override_ms := 0
+var predicted_piece_id := -1
+var predicted_from := Vector2i.ZERO
+var predicted_to := Vector2i.ZERO
 
 # Call this on the main thread, before starting compute().
 func prepare(cpu: Node) -> void:
@@ -122,11 +126,203 @@ func prepare(cpu: Node) -> void:
 	engine.rng.seed = source_rng.seed
 	engine.rng.state = source_rng.state
 
+func position_key() -> Array:
+	var data_board: Model.DataBoard = engine.board
+	var pieces: Array = []
+
+	for group in data_board.player_pieces:
+		for piece: Model.DataPiece in group:
+			var direction := -1
+			if piece is Model.DataTowerRotatePiece:
+				direction = (piece as Model.DataTowerRotatePiece).cur_direction
+
+			var vision := piece.cur_vision.duplicate()
+			vision.sort()
+			pieces.append([piece.live_id, piece.get_cur_pos(), direction, vision])
+
+	return [
+		data_board.current_player,
+		engine.promotion_moves_remaining,
+		data_board.player_captures.duplicate(true),
+		[
+			worker_to_live.get(data_board.last_capture_capturer_ids[0], data_board.last_capture_capturer_ids[0]),
+			worker_to_live.get(data_board.last_capture_capturer_ids[1], data_board.last_capture_capturer_ids[1]),
+		],
+		engine.seen_by_player,
+		pieces,
+	]
+
+func prepare_cpu_geometry() -> Dictionary:
+	var data_board: Model.DataBoard = engine.board
+	var cpu_side: int = engine.player_number
+	data_board.current_player = cpu_side
+
+	for piece: Model.DataPiece in data_board.player_pieces[cpu_side - 1]:
+		if cancellation.is_cancelled():
+			break
+
+		var origin := piece.get_cur_pos()
+		if piece is Model.DataTowerRotatePiece:
+			var sentry := piece as Model.DataTowerRotatePiece
+			for action: Dictionary in sentry.generate_turn_actions():
+				if cancellation.is_cancelled():
+					break
+
+				var destination: Vector2i = action["destination"]
+				var direction: int = action["direction"]
+				sentry.get_potential_vision(destination, direction)
+				_warm_move_lines(data_board, destination, 10)
+		else:
+			piece.get_potential_vision(origin)
+			for destination: Vector2i in piece.generate_possible_moves(origin):
+				if cancellation.is_cancelled():
+					break
+
+				piece.get_potential_vision(destination)
+				_warm_move_lines(data_board, destination, piece.move_range)
+
+	var cache := data_board.export_geometry_cache()
+	data_board.dispose()
+	return cache
+
+
+func _warm_move_lines(
+	data_board: Model.DataBoard,
+	origin: Vector2i,
+	length: int
+) -> void:
+	for direction in range(6):
+		data_board.get_line_from_center(origin, direction, length)
+func predict_player_move(tried_moves: Dictionary) -> bool:
+	var data_board: Model.DataBoard = engine.board
+	var cpu_side: int = engine.player_number
+	var human_side := 3 - cpu_side
+
+	# Either side may promote automatically on this countdown tick.
+	if data_board.current_player != human_side or engine.promotion_moves_remaining == 1:
+		return false
+
+	data_board.regenerate_all_piece_moves(cpu_side, true)
+
+	var known_targets: Dictionary = {}
+	var threatened_cells: Dictionary = {}
+
+	for opponent: Model.DataPiece in data_board.player_pieces[cpu_side - 1]:
+		var cell := opponent.get_cur_pos()
+		if not data_board.hasCellInVision(human_side, cell):
+			continue
+
+		known_targets[cell] = opponent
+		var attacks := opponent.cur_moves
+		if opponent is Model.DataTowerRotatePiece:
+			attacks = (opponent as Model.DataTowerRotatePiece).cur_possible_rotate_moves
+
+		for target_cell in attacks:
+			threatened_cells[target_cell] = true
+
+	var predicted_piece: Model.DataPiece = null
+	var predicted_capture: Model.DataPiece = null
+	var predicted_cell := Vector2i.ZERO
+	var best_score := -INF
+
+	for piece: Model.DataPiece in data_board.player_pieces[human_side - 1]:
+		if piece is Model.DataCorePiece:
+			continue
+
+		var origin := piece.get_cur_pos()
+		if not data_board.hasCellInVision(cpu_side, origin):
+			continue
+
+		var moves := piece.generate_possible_moves(origin).duplicate()
+		var distance_before: int = engine.hex_distance(origin, data_board.board_center)
+
+		for destination: Vector2i in moves:
+			var tried_destinations: Array = tried_moves.get(piece.live_id, [])
+			if tried_destinations.has(destination):
+				continue
+			if not data_board.hasCellInVision(cpu_side, destination):
+				continue
+
+			if (
+				piece is Model.DataHopPiece
+				and engine.promotion_moves_remaining == 0
+				and engine.promotion_cells.has(destination)
+			):
+				continue
+
+			var captured := known_targets.get(destination) as Model.DataPiece
+			if captured is Model.DataCorePiece:
+				continue
+
+			var distance_after: int = engine.hex_distance(destination, data_board.board_center)
+			var score := float(distance_before - distance_after) * 12.0
+			var threatened := threatened_cells.has(destination)
+
+			if captured != null:
+				score += 75.0 + maxf(1.0, captured.piece_value) * 24.0
+
+			if threatened:
+				score -= 35.0 + maxf(1.0, piece.piece_value) * 24.0
+			else:
+				for ally: Model.DataPiece in data_board.player_pieces[human_side - 1]:
+					if ally != piece and ally.cur_vision.has(destination):
+						score += 25.0
+						break
+
+				if captured == null:
+					var following_moves: Array[Vector2i] = engine.get_moves_from_position(
+						piece, destination
+					)
+					var threat_bonus := 0.0
+					for target in known_targets:
+						if following_moves.has(target) and not moves.has(target):
+							var enemy := known_targets[target] as Model.DataPiece
+							threat_bonus = maxf(
+								threat_bonus, 20.0 + enemy.piece_value * 8.0
+							)
+					score += threat_bonus
+
+			if score > best_score:
+				best_score = score
+				predicted_piece = piece
+				predicted_capture = captured
+				predicted_cell = destination
+
+	if predicted_piece == null:
+		return false
+
+	predicted_piece_id = predicted_piece.live_id
+	predicted_from = predicted_piece.get_cur_pos()
+	predicted_to = predicted_cell
+
+	if predicted_capture != null:
+		data_board.player_captures[human_side - 1].append({"cell": predicted_cell})
+		data_board.last_capture_capturer_ids[human_side - 1] = predicted_piece.get_instance_id()
+		data_board.player_pieces[cpu_side - 1].erase(predicted_capture)
+		data_board.pieces_container.remove_child(predicted_capture)
+
+	predicted_piece.position = Vector2(predicted_cell)
+	data_board.current_player = cpu_side
+	if engine.promotion_moves_remaining > 0:
+		engine.promotion_moves_remaining -= 1
+
+	data_board.refresh_vision()
+	for piece: Model.DataPiece in data_board.player_pieces[cpu_side - 1]:
+		if data_board.hasCellInVision(human_side, piece.get_cur_pos()):
+			engine.seen_by_player = true
+			break
+
+	return true
+
+
 # Runs exclusively on a worker thread. It has no live Node references.
 func compute() -> Dictionary:
 	var started: int = Time.get_ticks_msec()
 	var budgets: Array[int] = [750, 1000, 1250, 2000, 5000, 10000]
-	engine.turn_deadline = started + budgets[clampi(engine.difficulty - 1, 0, 5)]
+	var budget_ms := budgets[clampi(engine.difficulty - 1, 0, 5)]
+	if budget_override_ms > 0:
+		budget_ms = mini(budget_ms, budget_override_ms)
+	engine.turn_deadline = started + budget_ms
 	engine.cancellation = cancellation
 	engine.take_turn()
 	if cancellation != null and cancellation.is_cancelled():
@@ -136,11 +332,14 @@ func compute() -> Dictionary:
 		return {"cancelled": true}
 
 	var result: Dictionary = {"piece_id": -1, "rotations": []}
+	result["reached_depth_limit"] = engine.reached_depth_limit
+	result["completed_search_depth"] = engine.completed_search_depth
 	if not engine.chosen_action.is_empty():
 		var chosen: Model.DataPiece = engine.chosen_action["piece"]
 		result["piece_id"] = chosen.live_id
 		result["from"] = chosen.get_cur_pos()
 		result["destination"] = engine.chosen_action["destination"]
+		result["direction"] = int(engine.chosen_action.get("direction", -1))
 	for node in engine.board.player_pieces[engine.player_number - 1]:
 		if node is Model.DataTowerRotatePiece:
 			var tower := node as Model.DataTowerRotatePiece

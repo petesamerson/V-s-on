@@ -735,16 +735,10 @@ func spawn_all_pieces():
 	update_core_power()
 	board_effects.play_setup()
 	save_offline_checkpoint()
+	
+	if is_instance_valid(cpu_player):
+		cpu_player.call_deferred("start_pondering")
 
-# func get_possible_spawn_locations() -> Array[Vector2i]:
-# 	var locations: Array[Vector2i] = []
-
-# 	for direction in range(6):
-# 		var line: Array[Vector2i] = get_line_from_center(Vector2i(10, 10), direction, 6)
-# 		if not line.is_empty():
-# 			locations.append(line[line.size() - 1])
-
-# 	return locations
 func get_possible_spawn_locations() -> Array[Vector2i]:
 	if not tutorial_mode:
 		return map_spawn_cells.duplicate()
@@ -904,7 +898,8 @@ func _refresh_promotion_marker() -> void:
 		promotion_marker.name = "PromotionPickup"
 		promotion_marker.texture = PROMOTION_TEXTURE
 		promotion_marker.position = map_to_local(board_center)
-		promotion_marker.z_index = 6
+		promotion_marker.z_index = 3		
+
 
 		var texture_size := PROMOTION_TEXTURE.get_size()
 		var longest_side := maxf(texture_size.x, texture_size.y)
@@ -933,6 +928,7 @@ func _refresh_promotion_display() -> void:
 		promotion_countdown_label.add_theme_constant_override("outline_size", 6)
 		stat_container.add_child(promotion_countdown_label)
 		stat_container.move_child(promotion_countdown_label, 1)
+		UITextScale.apply(promotion_countdown_label, mobile_text_scale())
 
 	if promotion_highlight_layer == null:
 		promotion_highlight_layer = create_highlight_layer(
@@ -1040,6 +1036,16 @@ func _resolve_promotion(moved_piece: Piece) -> Piece:
 	return result_piece
 
 func _choose_promotion(current_kind: String, owner: int) -> String:
+	var picker_scale := mobile_text_scale()
+	if is_mobile:
+		var choice_count := PROMOTION_CHOICES.size() - int(PROMOTION_CHOICES.has(current_kind))
+		var base_height := 32.0 + 72.0 * choice_count + 8.0 * maxi(0, choice_count - 1)
+		var viewport_size := get_viewport().get_visible_rect().size
+		var width_fit := (viewport_size.x - 32.0) / 240.0
+		var height_fit := (viewport_size.y - 64.0) / base_height
+		picker_scale = minf(picker_scale, minf(width_fit, height_fit))
+
+	var icon_side := 48.0 * picker_scale
 	var picker := Window.new()
 	picker.title = "Promote piece"
 	picker.transient = true
@@ -1053,11 +1059,11 @@ func _choose_promotion(current_kind: String, owner: int) -> String:
 
 	var margin := MarginContainer.new()
 	for side in ["left", "top", "right", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
+		margin.add_theme_constant_override("margin_" + side, roundi(16.0 * picker_scale))
 	panel.add_child(margin)
 
 	var choices := VBoxContainer.new()
-	choices.add_theme_constant_override("separation", 8)
+	choices.add_theme_constant_override("separation", roundi(8.0 * picker_scale))
 	margin.add_child(choices)
 
 	for kind: String in PROMOTION_CHOICES:
@@ -1066,7 +1072,7 @@ func _choose_promotion(current_kind: String, owner: int) -> String:
 
 		var button := Button.new()
 		button.tooltip_text = PROMOTION_CHOICES[kind]
-		button.custom_minimum_size.y = 72.0
+		button.custom_minimum_size.y = 72.0 * picker_scale
 		button.pressed.connect(promotion_chosen.emit.bind(kind))
 		choices.add_child(button)
 
@@ -1076,7 +1082,7 @@ func _choose_promotion(current_kind: String, owner: int) -> String:
 		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 		var icon_frame := Control.new()
-		icon_frame.custom_minimum_size = Vector2(48.0, 48.0)
+		icon_frame.custom_minimum_size = Vector2.ONE * icon_side
 		icon_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		center.add_child(icon_frame)
 
@@ -1087,11 +1093,11 @@ func _choose_promotion(current_kind: String, owner: int) -> String:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon_frame.add_child(icon)
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		icon.pivot_offset = Vector2(24.0, 24.0)
+		icon.pivot_offset = Vector2.ONE *( icon_side * 0.5)
 		icon.rotation_degrees = piece_rotations.get(kind, 0.0)
 
 	var picker_size := Vector2i(panel.get_combined_minimum_size().ceil())
-	picker_size.x = maxi(picker_size.x, 240)
+	picker_size.x = maxi(picker_size.x, roundi(240 * picker_scale))
 	picker.popup_centered(picker_size)
 	(choices.get_child(0) as Button).grab_focus()
 
@@ -1230,6 +1236,8 @@ func _show_enemy_promotion(owner: int) -> void:
 		enemy_promotion_label.text = "Enemy promoted"
 		stat_container.add_child(enemy_promotion_label)
 		stat_container.move_child(enemy_promotion_label, 2)
+		enemy_promotion_label.set_meta("ui_original_font_size", 24)
+		UITextScale.apply(enemy_promotion_label, mobile_text_scale())
 
 		enemy_promotion_timer = Timer.new()
 		enemy_promotion_timer.one_shot = true
@@ -1964,6 +1972,8 @@ func end_turn(movedPiece: Piece):
 		tutorial_turn_completed.emit()
 		return
 
+	if is_instance_valid(cpu_player) and current_player != cpu_player.player_number:
+		cpu_player.stop_pondering()
 	if _promotion_enabled():
 		movedPiece = await _resolve_promotion(movedPiece)
 
@@ -2089,6 +2099,7 @@ func _continue_cpu_turn() -> void:
 	else:
 		update_all_piece_vision()
 		turn_menu.hide()
+		cpu_player.call_deferred("start_pondering")
 		var camera_sequence: int = camera.begin_auto_camera_sequence()
 		update_turn_text()
 
@@ -3166,6 +3177,8 @@ func restore_offline_checkpoint(data: Dictionary) -> bool:
 		if current_player == cpu_player.player_number:
 			cpu_turn_in_progress = true
 			call_deferred("_continue_cpu_turn")
+		else:
+			cpu_player.call_deferred("start_pondering")
 
 	return true
 

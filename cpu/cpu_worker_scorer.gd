@@ -2,6 +2,9 @@ extends RefCounted
 const Model = preload("res://cpu/cpu_worker_model.gd")
 var chosen_action: Dictionary = {}
 var turn_deadline: int = 0
+var reached_depth_limit: bool = false
+var ponder_hint: Dictionary = {}
+var completed_search_depth: int = 0
 
 const CORE_CAPTURE_ENDGAME_PIECES := 3
 
@@ -351,6 +354,7 @@ func take_turn() -> void:
 
 	if difficulty >= 4 and not actions.is_empty():
 		var search = TacticalSearch.new()
+		search.ponder_hint = ponder_hint
 		search.cancellation = cancellation
 		search.turn_deadline = turn_deadline
 		var captures_so_far: int = (
@@ -384,6 +388,8 @@ func take_turn() -> void:
 			last_enemy_capturer_id
 		)
 		if not searched_action.is_empty():
+			reached_depth_limit = search.reached_depth_limit
+			completed_search_depth = search.completed_depth
 			actions.clear()
 			actions.append(searched_action)
 

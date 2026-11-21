@@ -329,6 +329,26 @@ class DataBoard extends RefCounted:
 	var _tile_lookup: Dictionary = {}
 	var _cross_line_cache: Dictionary = {}
 
+	func export_geometry_cache() -> Dictionary:
+		return {
+			"tiles": board_tiles,
+			"walls": wall_cells,
+			"vision": _vision_cache,
+			"lines": _line_cache,
+			"cross_lines": _cross_line_cache,
+		}
+
+	func import_geometry_cache(cache: Dictionary) -> int:
+		if cache.is_empty():
+			return 0
+		if cache["tiles"] != board_tiles or cache["walls"] != wall_cells:
+			return 0
+
+		_vision_cache = cache["vision"]
+		_line_cache = cache["lines"]
+		_cross_line_cache = cache["cross_lines"]
+		return _vision_cache.size() + _line_cache.size() + _cross_line_cache.size()
+
 	func potential_vision(cell: Vector2i, radius: int, direction: int = -1) -> Array[Vector2i]:
 		var key := Vector4i(cell.x, cell.y, radius, direction)
 		if not _vision_cache.has(key):

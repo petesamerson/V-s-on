@@ -10,7 +10,9 @@ var enemy_player: int
 var deadline: int
 var timed_out: bool = false
 var completed_depth: int = 0
+var reached_depth_limit := false
 var branch_limit: int = 8
+var ponder_hint: Dictionary = {}
 
 var clones: Dictionary = {}
 var known_cores: Dictionary = {}
@@ -57,6 +59,7 @@ func choose(
 	enemy_player = 2 if player_id == 1 else 1
 
 	completed_depth = 0
+	reached_depth_limit = false
 	timed_out = false
 	clones.clear()
 	known_cores.clear()
@@ -215,6 +218,24 @@ func choose(
 
 	roots = _prefer_core_safe_actions(roots, cpu_player, false)
 	roots = _trim_search_actions(roots, cpu_player, 18)
+	if not ponder_hint.is_empty():
+		var hint_used: bool = false
+		for i in range(roots.size()):
+			var original: Dictionary = roots[i]["original"]
+			var piece := original["piece"] as Model.DataPiece
+			if (
+				piece.live_id == int(ponder_hint["piece_id"])
+				and original["destination"] == ponder_hint["destination"]
+				and int(original.get("direction", -1)) == int(ponder_hint["direction"])
+			):
+				var hinted_action: Dictionary = roots[i]
+				roots.remove_at(i)
+				roots.push_front(hinted_action)
+				print("CPU ponder hint used from depth ", ponder_hint["completed_search_depth"])
+				hint_used = true
+				break
+		if not hint_used:
+			print("CPU ponder hint filtered out of the final shortlist")
 
 	var best_original: Dictionary = roots[0]["original"]
 	var fallback_score: float = -INF
@@ -329,6 +350,14 @@ func choose(
 			best_original = iteration_best
 			completed_depth = depth
 
+			if cancellation != null and cancellation.record_ponder_depth:
+				var checkpoint_piece := iteration_best["piece"] as Model.DataPiece
+				cancellation.save_ponder_checkpoint(
+					checkpoint_piece.live_id,
+					iteration_best["destination"],
+					int(iteration_best.get("direction", -1)),
+					depth
+				)
 			# Examine the previous completed depth's best move first.
 			var best_piece: Model.DataPiece = iteration_best["piece"]
 			var best_destination: Vector2i = iteration_best["destination"]
@@ -364,8 +393,10 @@ func choose(
 		" -> ",
 		roots.size()
 	)
+	reached_depth_limit = completed_depth == max_depth and not timed_out
 
 	simulation.dispose()
+
 	return best_original
 
 func _count_sentries(side: int) -> int:

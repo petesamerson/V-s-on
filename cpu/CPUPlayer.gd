@@ -75,16 +75,190 @@ const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 
 var _cancellation: Cancellation
 var _search_cancelled: bool = false
-
+var _ponder_thread: Thread
+var _ponder_job: WorkerJob
+var _ponder_cancellation: Cancellation
+var _ponder_key: Array = []
+var _ponder_active := false
+var _ponder_tried_moves: Dictionary = {}
+var _ponder_results: Array[Dictionary] = []
+var _ponder_preparing := false
+var _ponder_geometry: Dictionary = {}
+var _ponder_predictions_started := 0
 
 func cancel_search() -> void:
 	_search_cancelled = true
 	if _cancellation != null:
 		_cancellation.cancel()
+	if _ponder_cancellation != null:
+		_ponder_cancellation.cancel()
 
 
 func is_search_cancelled() -> bool:
 	return _search_cancelled
+
+func start_pondering() -> void:
+	if (
+		difficulty < 4
+		or _search_cancelled
+		or _ponder_active
+		or _ponder_thread != null
+		or _cpu_thread != null
+		or not is_inside_tree()
+		or not is_instance_valid(board)
+		or not board.game_setup_complete
+		or board.match_winner != 0
+		or board.current_player == player_number
+	):
+		return
+
+	_ponder_tried_moves.clear()
+	_ponder_results.clear()
+	_ponder_geometry = {}
+	_ponder_predictions_started = 0
+	_ponder_active = true
+	_start_ponder_preparation()
+
+
+func stop_pondering() -> void:
+	_ponder_active = false
+	if _ponder_thread != null and _ponder_thread.is_alive():
+		_ponder_cancellation.cancel()
+
+
+func _process(_delta: float) -> void:
+	if not _ponder_active:
+		return
+
+	if (
+		_search_cancelled
+		or not is_instance_valid(board)
+		or board.match_winner != 0
+		or board.current_player == player_number
+	):
+		stop_pondering()
+		return
+
+	if _ponder_thread != null:
+		if _ponder_thread.is_alive():
+			return
+		_finish_ponder_job()
+
+	_start_next_ponder_job()
+
+
+func _start_ponder_preparation() -> void:
+	var job := WorkerJob.new()
+	job.prepare(self)
+
+	_ponder_job = job
+	_ponder_preparing = true
+	_ponder_cancellation = Cancellation.new()
+	job.cancellation = _ponder_cancellation
+
+	var thread := Thread.new()
+	if thread.start(job.prepare_cpu_geometry, Thread.PRIORITY_LOW) != OK:
+		job.engine.board.dispose()
+		_ponder_job = null
+		_ponder_cancellation = null
+		_ponder_preparing = false
+		_ponder_active = false
+		return
+
+	_ponder_thread = thread
+
+
+func _start_next_ponder_job() -> void:
+	if _ponder_predictions_started >= 2:
+		_ponder_active = false
+		return
+	var job := WorkerJob.new()
+	job.prepare(self)
+
+	if not job.predict_player_move(_ponder_tried_moves):
+		job.engine.board.dispose()
+		_ponder_active = false
+		return
+
+	var tried_destinations: Array = _ponder_tried_moves.get(job.predicted_piece_id, [])
+	tried_destinations.append(job.predicted_to)
+	_ponder_tried_moves[job.predicted_piece_id] = tried_destinations
+
+	# var mobile := OS.has_feature("android") or OS.has_feature("ios")
+	# job.budget_override_ms = 1500 if mobile else 2500
+
+	_ponder_key = job.position_key()
+	_ponder_cancellation = Cancellation.new()
+	_ponder_cancellation.record_ponder_depth = true
+	job.cancellation = _ponder_cancellation
+
+	var thread := Thread.new()
+	_ponder_job = job
+
+	if thread.start(job.compute, Thread.PRIORITY_LOW) != OK:
+		job.engine.board.dispose()
+		_ponder_job = null
+		_ponder_cancellation = null
+		_ponder_key = []
+		_ponder_active = false
+		return
+
+	_ponder_thread = thread
+	_ponder_predictions_started += 1
+
+
+func _finish_ponder_job() -> void:
+	var result: Dictionary = _ponder_thread.wait_to_finish()
+
+	if _ponder_preparing:
+		_ponder_geometry = result
+	else:
+		var reply := _ponder_cancellation.read_ponder_checkpoint()
+		if (
+			not bool(result.get("cancelled", false))
+			and int(result.get("completed_search_depth", 0)) > 0
+			and int(result.get("piece_id", -1)) >= 0
+		):
+			reply = result
+
+		if not reply.is_empty():
+			_ponder_results.append({
+				"position": _ponder_key,
+				"reply": reply,
+			})
+
+	_ponder_preparing = false
+	_ponder_thread = null
+	_ponder_job = null
+	_ponder_cancellation = null
+	_ponder_key = []
+
+func _collect_pondered_turn(actual_key: Array) -> Dictionary:
+	stop_pondering()
+
+	var thread := _ponder_thread
+	if thread != null:
+		while thread.is_alive():
+			await get_tree().process_frame
+			if _ponder_thread != thread:
+				return {}
+
+		_finish_ponder_job()
+
+	var reply: Dictionary = {}
+	for entry: Dictionary in _ponder_results:
+		if entry["position"] == actual_key:
+			reply = entry["reply"]
+			break
+
+	if not reply.is_empty():
+		print("CPU ponder matched the played move at depth ", reply["completed_search_depth"])
+	elif not _ponder_tried_moves.is_empty():
+		print("CPU ponder had no reusable reply for the played position")
+
+	_ponder_results.clear()
+	_ponder_tried_moves.clear()
+	return reply
 
 func take_turn() -> void:
 	if _search_cancelled or not is_inside_tree():
@@ -93,36 +267,30 @@ func take_turn() -> void:
 		return
 	if _cpu_thread != null:
 		return
-	_cancellation = Cancellation.new()
-
-	var job = WorkerJob.new()
-	job.cancellation = _cancellation
+	var job := WorkerJob.new()
 	job.prepare(self)
 
-	var thread := Thread.new()
-	_cpu_thread = thread
-
-	var start_error: Error = thread.start(job.compute)
-	if start_error != OK:
-		_cpu_thread = null
-		_cancellation = null
-		push_error(
-			"Could not start CPU worker: %s"
-			% error_string(start_error)
-		)
+	var pondered := await _collect_pondered_turn(job.position_key())
+	if _search_cancelled or not is_inside_tree():
+		job.engine.board.dispose()
 		return
 
-	while true:
-		# _exit_tree() may already have joined and released this worker.
-		if _cpu_thread != thread:
-			return
-		if not thread.is_alive():
-			break
-		await get_tree().process_frame
+	var prepared_geometry := _ponder_geometry
+	_ponder_geometry = {}
 
-	var result: Dictionary = thread.wait_to_finish()
-	_cpu_thread = null
-	_cancellation = null
+	var result: Dictionary
+	if bool(pondered.get("reached_depth_limit", false)):
+		print("CPU ponder hit")
+		result = pondered
+		job.engine.board.dispose()
+	else:
+		var prepared_entries: int = job.engine.board.import_geometry_cache(prepared_geometry)
+		if prepared_entries > 0:
+			print("CPU preparation reused ", prepared_entries, " geometry entries")
+		job.engine.ponder_hint = pondered
+		result = await _run_turn_worker(job)
+		if result.is_empty():
+			return
 
 	if (
 		_search_cancelled
@@ -186,6 +354,31 @@ func take_turn() -> void:
 
 	chosen.make_cpu_move(destination)
 
+func _run_turn_worker(job: WorkerJob) -> Dictionary:
+	_cancellation = Cancellation.new()
+	job.cancellation = _cancellation
+
+	var thread := Thread.new()
+	_cpu_thread = thread
+
+	var start_error := thread.start(job.compute)
+	if start_error != OK:
+		job.engine.board.dispose()
+		_cpu_thread = null
+		_cancellation = null
+		push_error("Could not start CPU worker: %s" % error_string(start_error))
+		return {}
+
+	while thread.is_alive():
+		await get_tree().process_frame
+		if _cpu_thread != thread:
+			return {}
+
+	var result: Dictionary = thread.wait_to_finish()
+	_cpu_thread = null
+	_cancellation = null
+	return result
+
 func _find_live_cpu_piece(id: int) -> Piece:
 	for node in board.player_pieces[player_number - 1]:
 		var piece := node as Piece
@@ -195,6 +388,12 @@ func _find_live_cpu_piece(id: int) -> Piece:
 
 func _exit_tree() -> void:
 	cancel_search()
+	if _ponder_thread != null and _ponder_thread.is_started():
+		_ponder_thread.wait_to_finish()
+	_ponder_thread = null
+	_ponder_job = null
+	_ponder_cancellation = null
+	_ponder_key.clear()
 
 	if _cpu_thread != null and _cpu_thread.is_started():
 		_cpu_thread.wait_to_finish()
