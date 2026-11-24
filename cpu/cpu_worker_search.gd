@@ -44,6 +44,9 @@ var starting_cpu_sentries := 0
 var starting_enemy_sentries := 0
 var opening_sentry_recapture := false
 
+var stationary_exposure: Dictionary = {}
+var exposure_by_clone: Dictionary = {}
+
 const Cancellation = preload("res://cpu/cpu_cancellation.gd")
 var cancellation: Cancellation
 
@@ -422,6 +425,7 @@ func _build_simulation(
 
 	simulation.pieces_container = Model.PieceBag.new()
 
+	exposure_by_clone.clear()
 	var enemy_count: int = 0
 	var visible_enemy_count: int = 0
 
@@ -466,6 +470,11 @@ func _build_simulation(
 			].append(copy)
 
 			clones[source.get_instance_id()] = copy
+			var exposure: Dictionary = stationary_exposure.get(
+				source.get_instance_id(), {}
+			)
+			if not exposure.is_empty():
+				exposure_by_clone[copy.get_instance_id()] = exposure
 			initial_positions[copy.get_instance_id()] = (
 				copy.get_cur_pos()
 			)
@@ -1638,28 +1647,35 @@ func _known_exposure_cost() -> float:
 
 	return cost
 
+
 func _memory_danger_cost() -> float:
-	var total: float = 0.0
+	var total := 0.0
 
-	for node in simulation.player_pieces[cpu_player - 1]:
-		var piece := node as Model.DataPiece
-		var risk: float = float(
-			memory_risk.get(piece.get_cur_pos(), 0.0)
+	for piece: Model.DataPiece in simulation.player_pieces[cpu_player - 1]:
+		var cell := piece.get_cur_pos()
+		var risk := float(memory_risk.get(cell, 0.0))
+
+		if risk > 0.0:
+			var cost := minf(_exchange_value(piece), 1200.0) * 0.65
+			if piece is Model.DataCorePiece:
+				cost = 3000.0
+			total += risk * cost
+
+		var exposure: Dictionary = exposure_by_clone.get(
+			piece.get_instance_id(), {}
 		)
-
-		if risk <= 0.0:
+		if exposure.get("cell") != cell:
 			continue
 
-		var value: float = _exchange_value(piece)
-		var cost: float = minf(value, 1200.0) * 0.65
+		var extra_turns := clampi(int(exposure.get("turns", 0)) - 2, 0, 4)
+		if extra_turns == 0:
+			continue
 
-		if piece is Model.DataCorePiece:
-			cost = 3000.0
-
-		total += risk * cost
+		var piece_value := minf(_exchange_value(piece), 1200.0)
+		var risk_multiplier := 1.0 + 0.5 * clampf(risk, 0.0, 1.0)
+		total += piece_value * 0.02 * float(extra_turns) * risk_multiplier
 
 	return total
-
 
 
 func _piece_actions(piece: Model.DataPiece) -> Array[Dictionary]:

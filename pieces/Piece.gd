@@ -46,7 +46,7 @@ func setup(inital_pos: Vector2i, b: TileMapLayer):
 		effects.z_index = 3
 		tree_exiting.connect(effects.queue_free)
 
-	self.z_index = 4
+	self.z_index = 5
 	draw_vision_change()
 	
 # Called when the node enters the scene tree for the first time.
@@ -207,6 +207,8 @@ func generate_possible_moves(cur_location: Vector2i) -> Array[Vector2i]:
 
 func update_capture_on_board():
 	board.clear_captures()
+	if not selected or not can_control_piece():
+		return
 
 	for cell in cur_moves:
 		if not board.hasCellInVision(owned_player, cell):

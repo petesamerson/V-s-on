@@ -40,6 +40,8 @@ var cpu_cover_by_piece: Dictionary = {}
 var capture_danger: Dictionary = {}
 var recent_moves: Array[Dictionary] = []
 
+var stationary_exposure: Dictionary = {}
+
 @export var player_number: int = 2
 @export_range(1,6) var difficulty: int = 5
 
@@ -352,7 +354,9 @@ func take_turn() -> void:
 	if recent_moves.size() > 2:
 		recent_moves.pop_back()
 
-	chosen.make_cpu_move(destination)
+	chosen.move_piece(destination)
+	chosen.draw_vision_change()
+	await board.end_turn(chosen)
 
 func _run_turn_worker(job: WorkerJob) -> Dictionary:
 	_cancellation = Cancellation.new()
@@ -431,7 +435,9 @@ func recover_turn() -> bool:
 
 		last_moved_piece = piece
 		push_warning("CPU recovery: executing a live legal move.")
-		piece.make_cpu_move(moves[0])
+		piece.move_piece(moves[0])
+		piece.draw_vision_change()
+		await board.end_turn(piece)
 		return true
 
 	push_error("CPU recovery found no legal moves.")
@@ -452,6 +458,7 @@ const SAVE_ID_DICTIONARIES: Array[String] = [
 	"moved_piece_ids",
 	"enemy_last_seen",
 	"enemy_last_seen_turn",
+	"stationary_exposure",
 ]
 
 

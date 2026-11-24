@@ -9,7 +9,7 @@ const MEMORY_FIELDS: Array[String] = [
 	"observed_enemy_capture_count",
 ]
 const ID_DICTIONARIES: Array[String] = [
-	"moved_piece_ids", "enemy_last_seen", "enemy_last_seen_turn",
+	"moved_piece_ids", "enemy_last_seen", "enemy_last_seen_turn", "stationary_exposure"
 ]
 
 var engine = Scorer.new()
@@ -41,6 +41,29 @@ func prepare(cpu: Node) -> void:
 
 	engine.promotion_cells.clear()
 	engine.promotion_moves_remaining = -1
+
+	engine.pickup_revives = not source_board.use_legacy_promotions
+
+	# Match the CPU's choice order in Board._resolve_revives().
+	var revive_values := {
+		"EyePiece.gd": 10.0,
+		"TriangleOddPiece.gd": 5.0,
+		"TriangleEvenPiece.gd": 5.0,
+		"TowerRotatePiece.gd": 3.0,
+	}
+
+	for side in range(2):
+		var reserve: Dictionary = source_board.revive_reserves[side]
+		engine.revive_gain[side] = 0.0
+
+		for kind: String in revive_values:
+			if int(reserve.get(kind, 0)) > 0:
+				engine.revive_gain[side] = float(revive_values[kind]) - 1.0
+				break
+
+		engine.pickup_eligible[side] = (
+			not engine.pickup_revives or engine.revive_gain[side] > 0.0
+		)
 
 	if source_board._promotion_enabled():
 		engine.promotion_moves_remaining = source_board.promotion_turns_remaining
@@ -143,6 +166,8 @@ func position_key() -> Array:
 	return [
 		data_board.current_player,
 		engine.promotion_moves_remaining,
+		engine.pickup_revives,
+		engine.pickup_eligible.duplicate(),
 		data_board.player_captures.duplicate(true),
 		[
 			worker_to_live.get(data_board.last_capture_capturer_ids[0], data_board.last_capture_capturer_ids[0]),

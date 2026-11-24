@@ -292,11 +292,11 @@ func can_see_cell(origin: Vector2i, target: Vector2i) -> bool:
 
 func intialize_drawn_sprite_nodes():
 	rotate_sprites = Node2D.new()
-	rotate_sprites.z_index = 5
+	rotate_sprites.z_index = 6
 	add_child(rotate_sprites)
 
 	capture_sprites = Node2D.new()
-	capture_sprites.z_index = 5
+	capture_sprites.z_index = 6
 	add_child(capture_sprites)
 
 func draw_player_vision(cell: Vector2i, player_id: int) -> void:
@@ -853,6 +853,10 @@ func spawn_player_location(center: Vector2i, player: int):
 
 
 signal promotion_chosen(kind: String)
+signal promotion_source_chosen(piece: Piece)
+
+const UPGRADE_TEXTURE: Texture2D = preload("res://sprites/upgrade.png")
+var promotion_sources_by_cell: Dictionary = {}
 
 const PROMOTION_TEXTURE: Texture2D = preload("res://sprites/premotion1.png")
 const PROMOTION_FIRST_TURN := 40
@@ -898,7 +902,7 @@ func _refresh_promotion_marker() -> void:
 		promotion_marker.name = "PromotionPickup"
 		promotion_marker.texture = PROMOTION_TEXTURE
 		promotion_marker.position = map_to_local(board_center)
-		promotion_marker.z_index = 3		
+		promotion_marker.z_index = 4		
 
 
 		var texture_size := PROMOTION_TEXTURE.get_size()
@@ -942,12 +946,12 @@ func _refresh_promotion_display() -> void:
 
 	promotion_countdown_label.visible = pickup_active or warning_active
 	if pickup_active:
-		promotion_countdown_label.text = "Promotion available"
+		promotion_countdown_label.text = "%s available" % _pickup_name()
 	elif warning_active:
 		var unit := "move" if remaining == 1 else "moves"
 		var verb := "respawns" if promotion_has_been_claimed else "spawns"
-		promotion_countdown_label.text = "Promotion %s in %d %s" % [
-			verb, remaining, unit
+		promotion_countdown_label.text = "%s %s in %d %s" % [
+			_pickup_name(), verb, remaining, unit
 		]
 
 	promotion_highlight_layer.clear()
@@ -966,7 +970,62 @@ func _refresh_promotion_display() -> void:
 				)
 
 	promotion_highlight_layer.visible = pickup_active or warning_active
-	
+
+func _choose_promotion_source(
+	owner: int,
+	claim_cells: Array[Vector2i],
+	is_revive: bool = false
+) -> Piece:
+	promotion_sources_by_cell.clear()
+
+	for piece: Piece in player_pieces[owner - 1]:
+		var cell := piece.get_cur_pos()
+		if not piece is HopPiece or not claim_cells.has(cell):
+			continue
+		promotion_sources_by_cell[cell] = piece
+
+	if promotion_sources_by_cell.is_empty():
+		return null
+
+	var markers := Node2D.new()
+	markers.z_index = 7
+	add_child(markers)
+
+	var texture_size := UPGRADE_TEXTURE.get_size()
+	var marker_scale := 40.0 / maxf(texture_size.x, texture_size.y)
+
+	for cell: Vector2i in promotion_sources_by_cell:
+		var marker := Sprite2D.new()
+		marker.texture = UPGRADE_TEXTURE
+		marker.position = map_to_local(cell)
+		markers.add_child(marker)
+		_animate_board_icon(marker, marker_scale)
+
+	var skip_button: Button = null
+	if is_revive:
+		promotion_countdown_label.text = "P%d: Tap a marked Flake to revive" % owner
+		skip_button = Button.new()
+		skip_button.text = "Skip revive"
+		stat_container.add_child(skip_button)
+		skip_button.pressed.connect(func() -> void:
+			promotion_sources_by_cell.clear()
+			promotion_source_chosen.emit(null)
+		)
+	else:
+		promotion_countdown_label.text = "P%d: Select a Flake to promote" % owner
+
+	promotion_countdown_label.show()
+
+	var selected_piece: Piece = await promotion_source_chosen
+	promotion_sources_by_cell.clear()
+	markers.hide()
+	markers.queue_free()
+	if is_instance_valid(skip_button):
+		skip_button.hide()
+		skip_button.queue_free()
+
+	_refresh_promotion_display()
+	return selected_piece
 
 func _resolve_promotion(moved_piece: Piece) -> Piece:
 	var spawned_this_move := promotion_turns_remaining == 1
@@ -1000,14 +1059,17 @@ func _resolve_promotion(moved_piece: Piece) -> Piece:
 	if claimants.is_empty():
 		return moved_piece
 
+	if not use_legacy_promotions:
+		return await _resolve_revives(claimants, claim_cells, moved_piece)
+
 	promotion_pending = true
 	promotion_has_been_claimed = true
 	promotion_turns_remaining = PROMOTION_RESPAWN_TURNS
 	_refresh_promotion_marker()
 
 	var result_piece := moved_piece
-	for claimant in claimants:
-		var claimant_moved := claimant == moved_piece
+	for original_claimant: Piece in claimants:
+		var claimant := original_claimant
 		var owner := claimant.owned_player
 		var cpu_claimed := (
 			is_instance_valid(cpu_player)
@@ -1016,7 +1078,14 @@ func _resolve_promotion(moved_piece: Piece) -> Piece:
 
 		var new_kind := "EyePiece.gd"
 		if not cpu_claimed:
+			var selected_flake := await _choose_promotion_source(owner, claim_cells)
+			if not is_instance_valid(selected_flake):
+				continue
+
+			claimant = selected_flake
 			new_kind = await _choose_promotion("HopPiece.gd", owner)
+
+		var claimant_moved := claimant == moved_piece
 
 		var old_id := claimant.get_instance_id()
 		var was_cpu_last_move := cpu_claimed and cpu_player.last_moved_piece == claimant
@@ -1035,10 +1104,19 @@ func _resolve_promotion(moved_piece: Piece) -> Piece:
 	promotion_pending = false
 	return result_piece
 
-func _choose_promotion(current_kind: String, owner: int) -> String:
+func _choose_promotion(
+	current_kind: String,
+	_owner: int,
+	allowed_kinds: Array[String] = []
+) -> String:
+	var available_kinds: Array[String] = []
+	for kind: String in PROMOTION_CHOICES:
+		if kind != current_kind and (allowed_kinds.is_empty() or kind in allowed_kinds):
+			available_kinds.append(kind)
+
 	var picker_scale := mobile_text_scale()
 	if is_mobile:
-		var choice_count := PROMOTION_CHOICES.size() - int(PROMOTION_CHOICES.has(current_kind))
+		var choice_count := available_kinds.size()
 		var base_height := 32.0 + 72.0 * choice_count + 8.0 * maxi(0, choice_count - 1)
 		var viewport_size := get_viewport().get_visible_rect().size
 		var width_fit := (viewport_size.x - 32.0) / 240.0
@@ -1047,7 +1125,7 @@ func _choose_promotion(current_kind: String, owner: int) -> String:
 
 	var icon_side := 48.0 * picker_scale
 	var picker := Window.new()
-	picker.title = "Promote piece"
+	picker.title = "Revive a piece"
 	picker.transient = true
 	picker.exclusive = true
 	picker.unresizable = true
@@ -1066,10 +1144,7 @@ func _choose_promotion(current_kind: String, owner: int) -> String:
 	choices.add_theme_constant_override("separation", roundi(8.0 * picker_scale))
 	margin.add_child(choices)
 
-	for kind: String in PROMOTION_CHOICES:
-		if kind == current_kind:
-			continue
-
+	for kind in available_kinds:
 		var button := Button.new()
 		button.tooltip_text = PROMOTION_CHOICES[kind]
 		button.custom_minimum_size.y = 72.0 * picker_scale
@@ -1158,6 +1233,7 @@ func remove_piece(piece: Piece) -> void:
 	})
 	add_captured_piece_icon(capturer_index, piece)
 
+	_record_revive_loss(piece)
 	player_pieces[piece.owned_player - 1].erase(piece)
 	pieces_container.remove_child(piece)
 	piece.queue_free()
@@ -1226,6 +1302,123 @@ func get_enemy_piece_at_cell(cell: Vector2i, player: int) -> Piece:
 
 	return null
 
+var use_legacy_promotions := false
+var revive_reserves: Array[Dictionary] = [{}, {}]
+
+func _pickup_name() -> String:
+	return "Promotion" if use_legacy_promotions else "Revive"
+
+func _record_revive_loss(piece: Piece) -> void:
+	if use_legacy_promotions or not _promotion_enabled():
+		return
+
+	var kind: String = piece.get_script().resource_path.get_file()
+	if not PROMOTION_CHOICES.has(kind):
+		return
+
+	var reserve := revive_reserves[piece.owned_player - 1]
+	reserve[kind] = int(reserve.get(kind, 0)) + 1
+
+func _find_revive_cell(claimant: Piece) -> Variant:
+	for cell in get_surrounding_cells(claimant.get_cur_pos()):
+		if not is_walkable_cell(cell):
+			continue
+		if friendlyPieceExistsAtCell(claimant.owned_player, cell):
+			continue
+		if get_enemy_piece_at_cell(cell, 3 - claimant.owned_player) != null:
+			continue
+		return cell
+
+	return null
+
+func _refresh_capture_row_for_revives(owner: int) -> void:
+	if use_legacy_promotions or not _promotion_enabled():
+		return
+
+	var remaining_by_name: Dictionary = {}
+	for kind: String in PROMOTION_CHOICES:
+		var piece_name: String = PROMOTION_CHOICES[kind]
+		var count := int(revive_reserves[owner - 1].get(kind, 0))
+		remaining_by_name[piece_name] = (
+			int(remaining_by_name.get(piece_name, 0)) + count
+		)
+
+	var row := capture_rows[2 - owner]
+	for i in range(row.get_child_count() - 1, -1, -1):
+		var icon := row.get_child(i) as TextureRect
+		if icon == null or not remaining_by_name.has(icon.tooltip_text):
+			continue
+
+		var count := int(remaining_by_name[icon.tooltip_text])
+		icon.visible = count > 0
+		if icon.visible:
+			remaining_by_name[icon.tooltip_text] = count - 1
+		
+func _resolve_revives(
+	claimants: Array[Piece],
+	claim_cells: Array[Vector2i],
+	moved_piece: Piece
+) -> Piece:
+	promotion_pending = true
+	var result_piece := moved_piece
+
+	for claimant: Piece in claimants:
+		var owner := claimant.owned_player
+		var reserve := revive_reserves[owner - 1]
+		var choices: Array[String] = []
+
+		for kind: String in PROMOTION_CHOICES:
+			if kind != "HopPiece.gd" and int(reserve.get(kind, 0)) > 0:
+				choices.append(kind)
+
+		if choices.is_empty():
+			continue
+
+		var cpu_claimed := (
+			is_instance_valid(cpu_player)
+			and owner == cpu_player.player_number
+		)
+
+		var source_flake := claimant
+		if not cpu_claimed:
+			source_flake = await _choose_promotion_source(owner, claim_cells, true)
+			if not is_instance_valid(source_flake):
+				continue
+
+		var kind := choices[0]
+		if not cpu_claimed and choices.size() > 1:
+			kind = await _choose_promotion("HopPiece.gd", owner, choices)
+
+		var source_was_moved := source_flake == moved_piece
+		var source_id := source_flake.get_instance_id()
+		var was_cpu_last_move := cpu_claimed and cpu_player.last_moved_piece == source_flake
+
+		var replacement := _replace_promoted_piece(source_flake, kind)
+
+		if source_was_moved:
+			result_piece = replacement
+
+		if cpu_claimed:
+			if was_cpu_last_move:
+				cpu_player.last_moved_piece = replacement
+			for record: Dictionary in cpu_player.recent_moves:
+				if int(record.get("id", -1)) == source_id:
+					record["id"] = replacement.get_instance_id()
+
+		reserve[kind] = int(reserve[kind]) - 1
+		if reserve[kind] == 0:
+			reserve.erase(kind)
+
+		_refresh_capture_row_for_revives(owner)
+		promotion_has_been_claimed = true
+		promotion_turns_remaining = PROMOTION_RESPAWN_TURNS
+		_refresh_promotion_marker()
+
+	promotion_pending = false
+	return result_piece
+
+
+
 func _show_enemy_promotion(owner: int) -> void:
 	if owner == get_viewer_player():
 		return
@@ -1233,7 +1426,9 @@ func _show_enemy_promotion(owner: int) -> void:
 	if enemy_promotion_label == null:
 		enemy_promotion_label = promotion_countdown_label.duplicate() as Label
 		enemy_promotion_label.name = "EnemyPromotionNotice"
-		enemy_promotion_label.text = "Enemy promoted"
+		enemy_promotion_label.text = (
+			"Enemy promoted" if use_legacy_promotions else "Enemy revived a piece"
+		)
 		stat_container.add_child(enemy_promotion_label)
 		stat_container.move_child(enemy_promotion_label, 2)
 		enemy_promotion_label.set_meta("ui_original_font_size", 24)
@@ -1315,48 +1510,27 @@ func clear_captures():
 	for child in capture_sprites.get_children():
 		child.queue_free()
 	
-func set_take_piece_sprite(enemy_loc: Vector2i):
+func set_take_piece_sprite(enemy_loc: Vector2i) -> void:
 	var icon := Sprite2D.new()
 	icon.texture = capture_texture
 	icon.position = map_to_local(enemy_loc)
-	icon.scale = Vector2.ONE * 0.94
+	capture_sprites.add_child(icon)
+	_animate_board_icon(icon, 1.0)
+
+func _animate_board_icon(icon: Sprite2D, base_scale: float) -> void:
+	var resting_scale := Vector2.ONE * base_scale * 0.94
+	var peak_scale := Vector2.ONE * base_scale * 1.08
+	icon.scale = resting_scale
 	icon.modulate.a = 0.65
 
-	capture_sprites.add_child(icon)
-
-	# Binding the tween to the icon stops it automatically
-	# when selection cleanup frees the icon.
 	var pulse := icon.create_tween()
 	pulse.set_loops()
+	pulse.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
-	pulse.tween_property(
-		icon,
-		"scale",
-		Vector2.ONE * 1.08,
-		0.75
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	pulse.parallel().tween_property(
-		icon,
-		"modulate:a",
-		1.0,
-		0.75
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	pulse.tween_property(
-		icon,
-		"scale",
-		Vector2.ONE * 0.94,
-		0.75
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	pulse.parallel().tween_property(
-		icon,
-		"modulate:a",
-		0.65,
-		0.75
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	
+	pulse.tween_property(icon, "scale", peak_scale, 0.75)
+	pulse.parallel().tween_property(icon, "modulate:a", 1.0, 0.75)
+	pulse.tween_property(icon, "scale", resting_scale, 0.75)
+	pulse.parallel().tween_property(icon, "modulate:a", 0.65, 0.75)
 
 func friendlyPieceExistsAtCell(player: int, cell: Vector2i) -> bool:
 	for p in player_pieces[player-1]:
@@ -1974,6 +2148,7 @@ func end_turn(movedPiece: Piece):
 
 	if is_instance_valid(cpu_player) and current_player != cpu_player.player_number:
 		cpu_player.stop_pondering()
+	clear_captures()
 	if _promotion_enabled():
 		movedPiece = await _resolve_promotion(movedPiece)
 
@@ -1983,7 +2158,6 @@ func end_turn(movedPiece: Piece):
 		else:
 			save_offline_checkpoint(current_player, true, movedPiece)
 	var core_found = false
-	clear_captures()
 	displayed_warning_text = false
 	if(cpu_player == null or current_player != cpu_player.player_number):
 		queue_game_sound(PLAYER_MOVE_SOUND)
@@ -2061,7 +2235,7 @@ func _continue_cpu_turn() -> void:
 			return
 
 		# Retry once using a fresh snapshot if no move was completed.
-		if current_player == cpu_player.player_number:
+		if match_winner == 0 and current_player == cpu_player.player_number:
 			push_warning("CPU did not complete its turn; retrying once.")
 			await get_tree().process_frame
 			if _cpu_turn_should_stop():
@@ -2074,8 +2248,11 @@ func _continue_cpu_turn() -> void:
 				return
 
 		# If normal selection still failed, use the live legal fallback.
-		if current_player == cpu_player.player_number:
-			cpu_player.recover_turn()
+		if match_winner == 0 and current_player == cpu_player.player_number:
+			await cpu_player.recover_turn()
+			if _cpu_turn_should_stop():
+				cpu_turn_in_progress = false
+				return
 
 		cpu_turn_in_progress = (
 			current_player == cpu_player.player_number
@@ -2282,6 +2459,14 @@ func handle_touch_tap(screen_position: Vector2) -> void:
 	if settings_cover.visible or turn_menu.visible:
 		return
 	if get_tree().current_scene.has_node("SettingsOverlay"):
+		return
+
+	if promotion_pending:
+		var target_cell := screen_to_board_cell(screen_position)
+		var target := promotion_sources_by_cell.get(target_cell) as Piece
+		if is_instance_valid(target):
+			promotion_sources_by_cell.clear()
+			promotion_source_chosen.emit(target)
 		return
 
 	# Reuse the existing click logic only after confirming a tap.
@@ -2994,6 +3179,8 @@ func save_offline_checkpoint(
 		"turn": turn,
 		"promotion_turns_remaining": promotion_turns_remaining,
 		"promotion_has_been_claimed": promotion_has_been_claimed,
+		"use_legacy_promotions": use_legacy_promotions,
+		"revive_reserves": revive_reserves.duplicate(true),
 		"handoff_pending": handoff_pending,
 		"play_vs_cpu": play_vs_cpu,
 		"colors": GameColors.selected_color_indices.duplicate(),
@@ -3075,6 +3262,18 @@ func restore_offline_checkpoint(data: Dictionary) -> bool:
 		int(data.get("promotion_turns_remaining", PROMOTION_FIRST_TURN - 1))
 	)
 	promotion_has_been_claimed = bool(data.get("promotion_has_been_claimed", false))
+	use_legacy_promotions = bool(data.get("use_legacy_promotions", true))
+	revive_reserves = [{}, {}]
+
+	var saved_reserves: Variant = data.get("revive_reserves", [])
+	if saved_reserves is Array and saved_reserves.size() == 2:
+		for side in range(2):
+			if saved_reserves[side] is Dictionary:
+				for kind: String in PROMOTION_CHOICES:
+					var count := int(saved_reserves[side].get(kind, 0))
+					if count > 0:
+						revive_reserves[side][kind] = count
+
 	_refresh_promotion_marker()
 
 	for child in pieces_container.get_children():
@@ -3142,6 +3341,9 @@ func restore_offline_checkpoint(data: Dictionary) -> bool:
 			icon.modulate = GameColors.player_color(2 - side)
 			icon.tooltip_text = str(record.get("name", ""))
 			capture_rows[side].add_child(icon)
+
+	_refresh_capture_row_for_revives(1)
+	_refresh_capture_row_for_revives(2)
 
 	if is_instance_valid(cpu_player):
 		cpu_player.import_save_state(data["cpu"], id_map, piece_map)
